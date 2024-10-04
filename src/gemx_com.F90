@@ -16,7 +16,7 @@ INTERFACE
   end function en3
 END INTERFACE
 
-integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0
+integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm
@@ -39,6 +39,8 @@ REAL(8) :: lx,lz
 INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision
 REAL(8) :: cut,amp,tor,amie,emass,qel,rneu
 INTEGER :: iput,iget,idg,ision,isham,peritr,iadi
+real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, l_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
+
 
 REAL(8) :: vcut
 integer :: nonlin,nonline,iflut,ifluid,ipara
@@ -47,6 +49,11 @@ COMPLEX(8) :: IU
 REAL(8),DIMENSION(:,:,:,:),allocatable :: den
 REAL(8),DIMENSION(:,:,:),allocatable :: rho
 real(8),dimension(:,:,:),allocatable :: phi!,den_pre,dden
+
+!Calder Edit
+!real(8),dimension(:,:),allocatable :: phiavg
+!Calder Edit End
+
 REAL(8),DIMENSION(:,:,:),allocatable :: ex
 REAL(8),DIMENSION(:,:,:),allocatable :: ez
 REAL(8),DIMENSION(:,:,:),allocatable :: ezeta
@@ -120,6 +127,9 @@ allocate(time(0:nmx))
       
 ALLOCATE( rho(0:imx,0:jmx,0:kmx))
 allocate( phi(0:imx,0:jmx,0:kmx))!,den_pre(0:imx,0:jmx,0:kmx),dden(0:imx,0:jmx,0:kmx))
+!allocate(phiavg(0:imx,0:jmx))!,0:kmx)) !Calder Edit
+
+
 ALLOCATE( ex(0:imx,0:jmx,0:kmx)) 
 ALLOCATE( ez(0:imx,0:jmx,0:kmx)) 
 ALLOCATE( ezeta(0:imx,0:jmx,0:kmx))
@@ -140,6 +150,13 @@ allocate(gn0i(0:imx,0:jmx),gn0e(0:imx,0:jmx),gt0i(0:imx,0:jmx),gt0e(0:imx,0:jmx)
 allocate(gcpnex(0:imx,0:jmx),gcpnez(0:imx,0:jmx),gcptex(0:imx,0:jmx),gcptez(0:imx,0:jmx))          
 allocate(gnuobx(0:imx,0:jmx),gnuoby(0:imx,0:jmx),gupae0(0:imx,0:jmx)) 
 allocate(ileft(0:imx,0:jmx),jleft(0:imx,0:jmx),iright(0:imx,0:jmx),jright(0:imx,0:jmx))
+
+! Boltzmann Electron subroutine arrays for Newton solve
+allocate(phi_k(0:imx,0:jmx,0:kmx),dphidr(0:imx,0:jmx,0:kmx),dphi_kdr(0:imx,0:jmx,0:kmx),d2phidr2(0:imx,0:jmx,0:kmx),d2phi_kdr2(0:imx,0:jmx,0:kmx),d2phidz2(0:imx,0:jmx,0:kmx),d2phi_kdz2(0:imx,0:jmx,0:kmx))
+allocate(dphidz(0:imx,0:jmx,0:kmx),dphi_kdz(0:imx,0:jmx,0:kmx))
+allocate(OPPphi(0:imx,0:jmx,0:kmx),OPPphik(0:imx,0:jmx,0:kmx),l_hand(0:imx,0:jmx,0:kmx),r_hand(0:imx,0:jmx,0:kmx))
+
+
 
 !          particle array declarations
 allocate( mu(1:mmx))

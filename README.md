@@ -4,11 +4,11 @@ Gyrokinetic simulation of the tokamak edge including the scrape-off layer
 
 Please add any useful notes to this file. Place it anywhere and we can clean up later.
 
-GEMX.pdf is our equations or user manual.  Consider placing any notes on implementations in this overleaf document: https://www.overleaf.com/project/64456a5749a720661d4d1f0a
+GEMX.pdf is our equations or user manual.  Consider placing any notes on implementations in this overleaf document: <https://www.overleaf.com/project/64456a5749a720661d4d1f0a>
 
 Versions:
 
-Sept 13, 2023 
+Sept 13, 2023
 Have GK Poisson working and particle tracers in equilibrium B working.  Zhichen is working getting Alfven waves.  Field solve needs to be parallelized and optimized. Qiheng and Scott are cleaning up wrappers, adding diagnostic routines and .ipynb diagnostic scripts.
 
 ## Setup and Running
@@ -57,6 +57,7 @@ To run locally, the Nvidia HPC compilers and PETSc need to be installed.
 At the time of writing this, perlmutter uses version 23.9 of the Nvidia HPC compilers available [here](https://developer.nvidia.com/nvidia-hpc-sdk-releases).
 
 Update ```~/.bashrc``` with the following, per the [installation guide](https://docs.nvidia.com/hpc-sdk/archive/23.9/hpc-sdk-install-guide/index.html):
+
 ```bash
 NVARCH=`uname -s`_`uname -m`; export NVARCH
 NVCOMPILERS=/opt/nvidia/hpc_sdk; export NVCOMPILERS
@@ -67,13 +68,15 @@ export MANPATH=$MANPATH:$NVCOMPILERS/$NVARCH/23.9/comm_libs/mpi/man
 ```
 
 Then download PETSc to your preferred location (currently v3.19.3 is installed manually on NERSC for mp118) per the [installation instructions](https://petsc.org/release/install/):
+
 ```bash
 git clone -b release https://gitlab.com/petsc/petsc.git petsc
 cd petsc
 git checkout v3.19.3
 ```
 
-Update ```~/.bashrc``` with the following for PETSc as well:
+Update ```~/.bashrc``` with the following (and set the cloned path) for PETSc as well:
+
 ```bash
 export PETSC_PATH=<cloned-petsc-location>/install
 export LD_LIBRARY_PATH=$PETSC_PATH/lib:$LD_LIBRARY_PATH
@@ -82,14 +85,17 @@ export LD_LIBRARY_PATH=$PETSC_PATH/lib:$LD_LIBRARY_PATH
 Reload the terminal environment so PETSc and GEMX can be compiled: ```source ~/.bashrc```.
 
 Then configure PETSc to install to the chosen path:
+
 ```bash
 ./configure --prefix=$PETSC_PATH/install --with-debugging=0 --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpif90 COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3'
 ```
+
 This should set PETSc to be compiled with the Nvidia compilers given the Nvidia environment paths above.
 
 Finally, follow the instructions output by PETSc to further make and install the library.
 
 Then one can make and run GEMX using the instructions from before, but without needing ```source env.sh``` or ```sbatch```:
+
 ```bash
 git clone git@github.com:UCBoulder/GEMX.git
 cd src
@@ -100,7 +106,7 @@ cd ../bin
 
 ## Analysing Runs
 
-Scripts to read run output are also copied to the ```bin``` folder. Some are MATLAB scripts some are Jupyter notebook files. 
+Scripts to read run output are also copied to the ```bin``` folder. Some are MATLAB scripts some are Jupyter notebook files.
 
 MATLAB scripts ```readden.m```, ```readphi.m``` and ```phi_gif.m``` can be opened by MATLAB. ```readden.m``` will plot the ion's density and n_i*v_parallel  .   ```readphi.m``` will plot the perturbed fields, perturbed electron density and parallel current. ```phi_gif.m``` will plot a gif figure for the perturbed electrostatic field. Open the file, change the MATLAB working path to your running folder, run the script, select ```add to path```.
 
@@ -119,8 +125,8 @@ nonohing - Zhichen
 jycheng - Junyi
 stirkas - Stefan
 
-give -u <username> file.tar
-take -u <username> -a
+give -u \<username\> file.tar
+take -u \<username\> -a
 
 source env.sh
 

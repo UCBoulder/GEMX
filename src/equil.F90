@@ -7,6 +7,8 @@ MODULE equil
       real :: psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647
 
 !     GEM-X
+      !integer :: cont=259002 !Calder Edit
+
       integer :: nx=449,nz=433,nzeta=32
       real :: xdim,zdim,xctr,zctr,dxeq,dzeq
       
@@ -29,6 +31,13 @@ MODULE equil
 
       real,dimension(:,:,:),allocatable ::curlb
       
+      
+!     for phi average Calder Edit
+      integer :: num_lines, line
+      real,dimension(:,:),allocatable :: phiavg
+      real,dimension(:),allocatable :: psitab,weight00,weight10,weight01,weight11,jacobian,deno !Calder Edits
+      integer, dimension(:), allocatable :: gindex,iarray,jarray,priv
+       
 
 contains
       subroutine new_equil()
@@ -37,7 +46,7 @@ contains
       real(8) :: pi,pi2,r,th,s
 
       integer :: i,j,k,m,i1,j1,j2
-      real(8) :: dum,x
+      real(8) :: dum,x,tempn
       real(8) :: omegau          !,e,proton
  
 !     global equilibrium data
@@ -56,6 +65,8 @@ contains
       allocate(upae0(0:nr,0:ntheta),nuob(0:nr,0:ntheta),dnuobdr(0:nr,0:ntheta),dnuobdt(0:nr,0:ntheta))      
 
 !     GEM-X
+      allocate(phiavg(0:nx,0:nz)) !Calder Edit
+
       allocate(b0(0:nx,0:nz),b0x(0:nx,0:nz),b0z(0:nx,0:nz),b0zeta(0:nx,0:nz),dbdx(0:nx,0:nz),dbdz(0:nx,0:nz))
       allocate(t0i(0:nx,0:nz),t0e(0:nx,0:nz),xn0i(0:nx,0:nz),xn0e(0:nx,0:nz), &
                capnix(0:nx,0:nz),capnex(0:nx,0:nz),captix(0:nx,0:nz),captex(0:nx,0:nz), &
@@ -83,6 +94,33 @@ contains
         read(10,*) psi_p
         close(10)
         
+        !Calder Edits Start
+        !character(len=100) :: line_buffer
+         ! Open the dataset file
+      open(unit=10, file='jacodata.dat', status='old', action='read')
+      ! Determine the number of lines in the dataset file
+      num_lines = 80817
+      ! do
+      !     read(10, '(A)')!,end=100)! line_buffer
+      !     num_lines = num_lines + 1
+      ! enddo
+      ! rewind(10)
+
+      ! Allocate arrays based on number of lines
+      allocate(gindex(num_lines), psitab(num_lines), iarray(num_lines), jarray(num_lines), &
+               weight00(num_lines), weight10(num_lines), weight01(num_lines), weight11(num_lines), &
+               jacobian(num_lines), deno(num_lines), priv(num_lines))
+  
+      ! Read data from the dataset file into arrays
+      do line = 1, num_lines
+          read(10, *) gindex(line), psitab(line), iarray(line), jarray(line), &
+                      weight00(line), weight10(line), weight01(line), weight11(line), &
+                       jacobian(line), deno(line), priv(line)
+      enddo
+      !write(*,*) psitab
+      close(10)
+        !Calder Edits Finish
+
 
 
 !        open(unit=11, file = 'psi_test',status='unknown',action='write')
@@ -156,6 +194,43 @@ contains
             xn0e(i,j) = 1.*nu
          end do
       end do
+
+      !Calder Edit: realistic profilies for ITG runs
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! open(unit=10, file = 'Profiles/ti0_profile.dat',status='old',action='read')
+      ! read(10,*) t0i
+      ! close(10)
+
+      ! open(unit=10, file = 'Profiles/te0_profile.dat',status='old',action='read')
+      ! read(10,*) t0e
+      ! close(10)
+
+      ! open(unit=10, file = 'Profiles/ni0_profile.dat',status='old',action='read')
+      ! read(10,*) xn0i
+      ! close(10)
+
+      ! open(unit=10, file = 'Profiles/ne0_profile.dat',status='old',action='read')
+      ! read(10,*) xn0e
+      ! close(10)
+
+      !Manufactured Temperature Profiles: 0.5*(-np.tanh(5*np.array(profiles['psinorm'])-2.5)+1)*np.max(np.array(profiles['ti']))
+      open(unit=10, file = 'tif_profile.dat',status='old',action='read')
+      read(10,*) t0i
+      close(10)
+
+      open(unit=10, file = 'tef_profile.dat',status='old',action='read')
+      read(10,*) t0e
+      close(10)
+
+      !Put into SI units
+      t0i  = t0i*Tu
+      t0e  = t0e*Tu
+      ! xn0i = xn0i*1.0e21
+      ! xn0e = xn0e*1.0e21
+      ! xn0i = xn0e
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 
       open(unit=10, file = 'ne0.dat',status='old',action='read')

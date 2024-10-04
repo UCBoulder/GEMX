@@ -8,12 +8,13 @@
       use petscksp
 !      use para_com
 
-!      use gemx_com
-!      use equil
+
       implicit none
 
        integer :: status,mid_i,mid_j
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68
+       integer :: iter !Calder Edit
+
        real::random
        real :: tmp
        PetscInt is,js,iw,jw,idx,n_in_porcs
@@ -41,9 +42,10 @@
        three = 3
 
 
+      if (eBoltzmann == 0) then !Calder Edit
 
        PETSC_COMM_WORLD =  PETSC_COMM
-       
+      
 
        
        PetscCallA(PetscInitialize(petsc_ierr))
@@ -60,6 +62,7 @@
        PetscCallA(DMDAGetCorners(dm,is,js,PETSC_NULL_INTEGER,iw,jw,PETSC_NULL_INTEGER,petsc_ierr))
        PetscCallA(KSPSetFromOptions(ksp,petsc_ierr))
        PetscCallA(KSPSetUp(ksp,petsc_ierr))
+      end if !Calder Edit
 
 
   
@@ -127,6 +130,7 @@
               enddo
            enddo
            
+           phiavg=0 !Calder Edit
 
            call get_jpar(apar)
            call get_ne(0)
@@ -199,7 +203,8 @@
 
       if(ifield_solver .eq. 1 ) then
 
-       phi=0.0
+       phi = 0.0 
+       phiavg = 0.0
        denes=dene
 
 
@@ -207,7 +212,14 @@
        if(i3D /= 0) then
        do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
                  
+         do iter=0, iterations
+            call fluxavg(phi,phiavg)
+               if (eBoltzmann == 1) then
+                  call boltzsolve(phi)
+               else
 
+
+          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -221,12 +233,19 @@
             phi(i,j,k)=phi_array(idx)!*mask(i,j)
          enddo
           PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-      enddo
+            end if
+         enddo
+       enddo
             
       call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-   else
+   else   
        k=0
 
+       do iter=0, iterations
+         call fluxavg(phi,phiavg)
+         if (eBoltzmann == 1) then
+            call boltzsolve(phi)
+         else
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -240,16 +259,22 @@
 
 
         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+       
+        
 
          call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
          do k=1,kmx
             phi(:,:,k)=phi(:,:,0)
          end do
+
+       end if !Calder Edit
+      end do !Calder Edit
                
       end if
       
          
+      call efieldcalc(phi)
    
 
           
@@ -342,7 +367,14 @@
         phi=0.0
 
        if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1                
+       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
+       
+         do iter=0,iterations
+            call fluxavg(phi,phiavg)
+            if (eBoltzmann == 1) then
+               call boltzsolve(phi)
+            else      
+                     
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -355,7 +387,8 @@
             phi(i,j,k)=phi_array(idx)!*mask(i,j)
          enddo
          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-
+         end if
+	enddo
       enddo
 
       
@@ -364,6 +397,12 @@
    else
 
       k=0
+      
+         do iter=0, iterations
+            call fluxavg(phi,phiavg)
+            if (eBoltzmann == 1) then
+               call boltzsolve(phi)
+            else
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -385,12 +424,16 @@
          do k=1,kmx
             phi(:,:,k)=phi(:,:,0)
          end do
-         
+      end if !Calder Edit
+     end do !Calder Edit         
    end if
    
 
 
-
+   call efieldcalc(phi)
+   if (i3D == 1) then
+      call growthdiag(phi)
+   end if
 
 
 
@@ -417,6 +460,25 @@
 !      call smooth(jpar,3)
       call get_ne(1)
 
+
+      if(MyId==0 .and. mod(timestep,10)==0)then
+
+      open(unit=11, file = 'testphiavg',status='unknown',action='write')
+      do j=0,jmx
+         write(11,*) phiavg(:,j)
+      enddo
+      close(11)
+
+      open(unit=11, file = 'testER', status='unknown',action='write')
+      do j=0, jmx
+         write(11,*) ex(:,j,0)
+      end do
+
+      open(unit=11,file='testEZ', status='unknown',action='write')
+      do j=0,jmx
+         write(11,*) ez(:,j,0)
+      end do
+      end if
 
       
 
@@ -534,7 +596,11 @@ total_tm = total_tm + end_total_tm - start_total_tm
   tottm=lasttm-starttm
 
 
-       PetscCallA(PetscFinalize(petsc_ierr))
+      if (eBoltzmann == 0) then !Calder Edit
+         PetscCallA(PetscFinalize(petsc_ierr))
+      end if !Calder Edit
+
+
 
  100     call MPI_FINALIZE(ierr)
          end program gemx
@@ -575,7 +641,9 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) beta,nonlin,nonline,vcut
       read(115,*) dumchar
-      read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,icollision
+      read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,eAdiabatic,iterations,icollision
+      read(115,*) dumchar    !Calder Edit: eBoltzmann
+      read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
       read(115,*) psi_max,psi_min,R_min,Z_min, Z_internal, psi_div,psi_a
       close(115)
@@ -1854,7 +1922,15 @@ end subroutine field
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 else
-                   tmp_value = denes(i,j,k)-q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
+                if (iBoltzmann==0) then
+                tmp_value = denes(i,j,k)-q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
+                endif
+                        
+                if (eAdiabatic/=0) then
+                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j)
+                else 
+                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
+                endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
                 endif
@@ -2006,6 +2082,7 @@ end subroutine field
       call MPI_Allreduce(MPI_IN_PLACE, upar(:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
 
+      den(2,:,:,:) = den(iflag,:,:,:) 
       
          den2d2=0
          do k=0,kmx
@@ -2031,6 +2108,286 @@ end subroutine field
      integ_tm = integ_tm + end_integ_tm - start_integ_tm 
 
     end subroutine integ
+    
+    
+    
+!     !!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine fluxavg(input,output) !Currently only good for 2D case
+   use gemx_com
+   use equil
+
+   implicit none 
+
+   ! Input
+   real(8), dimension(0:imx,0:jmx,0:kmx) :: input !3D array to be flux averaged
+   ! Outputs
+   real(8), dimension(0:imx, 0:jmx) :: output ! 2D interpolated array
+
+   ! Local variables
+   real(8), dimension(:), allocatable :: phiavg1d, psi1d, phiavg1d_private
+   integer :: gi, xix, yjy, miw, psi_zero, store, k
+   real(8) :: weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1
+   allocate(phiavg1d(0:101),psi1d(0:101),phiavg1d_private(0:101))
+
+   phiavg1d = 0
+   psi1d = 0
+   phiavg1d_private = 0
+   
+   psi_zero = 1
+
+   !Computation
+   do line = 1, 101
+       phiavggi = 0.0d0 
+       store = 0
+       do gi = 1, num_lines
+         if (gindex(gi) == line-1) then
+               weightinput = (weight00(gi)*input(iarray(gi), jarray(gi),0) + &
+                           weight10(gi)*input(iarray(gi)+1, jarray(gi),0) + &
+                           weight01(gi)*input(iarray(gi), jarray(gi)+1,0) + &
+                           weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,0))
+   
+               if (i3D == 0) then                  
+                  phiavggi = phiavggi + (weightinput*jacobian(gi))/deno(gi)
+               else
+                  do k=1, kmx
+                     weightinput3D = (weight00(gi)*input(iarray(gi), jarray(gi),k) + &
+                                    weight10(gi)*input(iarray(gi)+1, jarray(gi),k) + &
+                                    weight01(gi)*input(iarray(gi), jarray(gi)+1,k) + &
+                                    weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,k))
+                  enddo
+                  weightinput = weightinput3D + weightinput
+                  phiavggi = phiavggi +(weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
+               end if
+
+            if (priv(gi) == 0) then
+               store = gi
+            end if
+         end if
+
+         !Remove redundancy from closed loop integration process
+         if (phiavggi /= 0) then
+            if (gindex(gi) /= line-1) then
+               if (i3D == 0) then
+                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/deno(gi-1)
+               else
+                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
+               end if
+               exit
+            end if
+         end if
+      end do
+
+      if (store /= 0) then
+         phiavg1d(line) = phiavggi
+         psi1d(psi_zero) = psitab(store)
+         psi_zero = psi_zero + 1
+      else 
+         phiavg1d_private(line) = phiavggi
+      end if
+   end do
+   
+   phiavg1d(0) = phiavg1d(1)
+   ! phiavg1d(0) = input(268,254,0)
+   
+   !Save psi1d and timesteps of phiavg1d to understand convergence
+   ! if (timestep == 10) then
+   !    open(unit=11, file = 'psi1d',status='unknown',action='write')
+   !                write(11,*) psi1d(:)
+   !             close(11)
+   ! endif
+
+   ! open(unit=11, file = 'phiavg1d',status='unknown',position='append')                
+   ! write(11,*) phiavg1d(:)
+   ! close(11)
+
+   !Initialize output to zero
+   output = 0.0
+   
+   !INTERPOLATION
+   do xix = 0, nx
+       do yjy = 0, nz
+           psival = psi_p(xix,yjy)
+           if (mask(xix,yjy) < 0.99) then 
+               output(xix,yjy) = 0
+           else
+               miw  = int(psival/(psi1d(2)-psi1d(1)))
+               wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
+               wmx1 = 1.-wmx0
+               if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) then !Private region under X-point
+                  output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
+               else   
+                  output(xix,yjy) = wmx0*phiavg1d(miw) + wmx1*phiavg1d(miw+1)
+               end if
+           end if
+       enddo
+    enddo
+end subroutine fluxavg
+            
+       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine efieldcalc(phi_input)
+   use gemx_com
+   use equil
+
+   implicit none 
+   ! Input
+   real(8), dimension(0:imx,0:jmx,0:kmx) :: phi_input !3D phi for calculation of E field
+
+   ! Local variables
+   integer :: i, j, k, kminus, kplus
+
+   do k=0, kmx
+      do i=2, imx-1
+         do j=2, jmx-1
+            ex(i,j,k)    = -(phi_input(i+1,j,k) - phi_input(i-1,j,k))/(2*(Rgrid(1)-Rgrid(0)))
+            ez(i,j,k)    = -(phi_input(i,j+1,k) - phi_input(i,j-1,k))/(2*(Zgrid(1)-Zgrid(0)))
+            if (k==0) then
+               kminus = kmx
+               ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,kminus))/(2*Rgrid(i)*(2*pi/(kmx+1)))
+            end if
+            if (k==kmx) then
+               kplus = 0
+               ezeta(i,j,k) = -(phi_input(i,j,kplus) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
+            else
+               ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
+            end if
+         end do
+      end do
+   end do
+
+end subroutine efieldcalc
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Growth Rate Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine growthdiag(input_phi)
+   use gemx_com
+   use equil
+
+   implicit none 
+
+   ! Input
+   real(8), dimension(0:imx,0:jmx,0:kmx) :: input_phi !3D input phi array
+
+   ! Local variables
+   integer :: store, k, gi, peak
+   real(8) :: phiavgsq, weightinput, phiavggi
+
+   phiavgsq = 0
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   peak     = 45 !Manually set contour number of peak temperature gradient
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   phiavggi = 0.0d0
+   store    = 0
+
+   do gi = 21760, 22540
+      if (gindex(gi) == peak) then
+         do k = 0, kmx
+            weightinput = (weight00(gi)*input_phi(iarray(gi), jarray(gi),k)*input_phi(iarray(gi), jarray(gi),k) + &
+                           weight10(gi)*input_phi(iarray(gi)+1, jarray(gi),k)*input_phi(iarray(gi)+1, jarray(gi),k) + &
+                           weight01(gi)*input_phi(iarray(gi), jarray(gi)+1,k)*input_phi(iarray(gi), jarray(gi)+1,k) + &
+                           weight11(gi)*input_phi(iarray(gi)+1, jarray(gi)+1,k)*input_phi(iarray(gi)+1, jarray(gi)+1,k))
+         end do
+         phiavggi = phiavggi + (weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
+
+         if (priv(gi)==0) then
+            store = gi
+         end if
+      end if
+
+      if (phiavggi /= 0) then
+         if (gindex(gi) /= peak) then
+            phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
+            exit
+         end if
+      end if
+   end do
+
+   if (store /= 0) then
+      phiavgsq = phiavggi
+   end if
+
+   open(unit=11, file = 'testphiavgsq',status='unknown',position='append')                
+   write(11,*) timestep, phiavgsq
+   close(11)
+
+end subroutine
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann-Poisson Electron Solver!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine boltzsolve(input_phi)
+   use gemx_com
+   use equil
+
+   implicit none
+   ! Input
+   real(8), dimension(0:imx,0:jmx,0:kmx) :: input_phi !3D input phi array
+
+   ! Local Variables
+   integer :: i, j, k
+
+   do i=0, imx
+      do j=0, jmx
+         do k=0, kmx
+            if (input_phi(i,j,k) == 0) then
+               phi_k(i,j,k) = 0.005+(ran2(iseed)*0.005)
+            else
+               phi_k(i,j,k) = 1.01*input_phi(i,j,k)
+            end if
+         end do
+      end do
+   end do
+
+   do i=0,imx
+      do j=0,jmx
+         do k=0,kmx
+            dphidr(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i+1,j,k)-input_phi(i-1,j,k))/(2*dx)
+            dphi_kdr(i,j,k) = c2_over_vA2(i,j)*(phi_k(i+1,j,k)-phi_k(i-1,j,k))/(2*dx)
+
+            dphidz(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i,j+1,k)-input_phi(i,j-1,k))/(2*dz)
+            dphi_kdz(i,j,k) = c2_over_vA2(i,j)*(phi_k(i,j+1,k)-phi_k(i,j-1,k))/(2*dz)
+         end do
+      end do
+   end do
+
+   do i=0,imx
+      do j=0,jmx
+         do k=0,kmx
+            d2phidr2(i,j,k)      = (dphidr(i+1,j,k)-dphidr(i-1,j,k))/(2*dx)
+            d2phi_kdr2(i,j,k)    = (dphi_kdr(i+1,j,k)-dphi_kdr(i-1,j,k))/(2*dx)
+
+            d2phidz2(i,j,k)      = (dphidz(i,j+1,k)-dphidz(i,j-1,k))/(2*dz)
+            d2phi_kdz2(i,j,k)    = (dphi_kdz(i,j+1,k)-dphi_kdz(i,j-1,k))/(2*dz)
+            
+            OPPphi(i,j,k)  = (d2phidr2(i,j,k)+d2phidz2(i,j,k))
+            OPPphik(i,j,k) = (d2phi_kdr2(i,j,k)+d2phi_kdz2(i,j,k))
+   
+            l_hand(i,j,k) = (OPPphik(i,j,k)-OPPphi(i,j,k))/(phi_k(i,j,k)-input_phi(i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j)*exp(input_phi(i,j,k)*e/t0e(i,j)))
+
+            if (i3D == 0) then
+               r_hand(i,j,k) = (OPPphi(i,j,k)+q(1)*mu0*den2d2(i,j)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k))))
+            else 
+               r_hand(i,j,k) = (OPPphi(i,j,k)+q(1)*mu0*den(2,i,j,k)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k))))
+            end if
+
+            input_phi(i,j,k) = phi_k(i,j,k) - (r_hand(i,j,k)/l_hand(i,j,k))
+            ! input_phi(i,j,k) = OPPphik(i,j,k)
+
+            if (mask(i,j)<0.99) then
+               input_phi(i,j,:) = 0
+            end if
+         end do
+      end do
+   end do
+
+   ! if (timestep == 1) then
+   !    open(unit=11, file = 'testboltzmann',status='unknown',action='write')
+   !    do j=0, jmx
+   !    write(11,*) input_phi(:,j,0)
+   !    end do
+   !    close(11)
+   ! end if
+
+end subroutine
+
+
+    
     
            
        
