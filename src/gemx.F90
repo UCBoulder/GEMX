@@ -6,14 +6,30 @@
       use petsc
       use petscdmda
       use petscksp
+      use iso_c_binding
 !      use para_com
 
 
       implicit none
 
+      interface
+      !    subroutine revers_c(num, n, revers) bind(c, name = 'revers_c_')
+      !       use iso_c_binding
+      !       integer (c_int) :: num, n
+      !       real (c_double) :: revers
+      !    end subroutine revers_c
+
+         subroutine parperp_c(vpar, vperp2, m, cnt, MyId) bind(c, name = 'parperp_c_')
+            use iso_c_binding
+            integer (c_int) :: m, pi, cnt, MyId
+            real (c_double) :: vpar, vperp2
+         end subroutine parperp_c
+      end interface
+
        integer :: status,mid_i,mid_j
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68
        integer :: iter !Calder Edit
+       integer :: dbg=0
 
        real::random
        real :: tmp
@@ -33,6 +49,10 @@
 
 !       call init
        call initialize
+
+       do while (dbg.eq.1)
+         call sleep(1)
+       end do
 
 
        
@@ -924,17 +944,19 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !        Version 2 does it Willy's way...
 
          subroutine parperp(vpar,vperp2,m,pi,cnt,MyId)
+         !REAL(8) :: myStart, myEnd !timing stuff
 
-         REAL(8) :: vpar,vperp2,r1,r2,t,pi
+         REAL(8) :: vpar,vperp2,r1,r2,pi,t !removed t from here, please put back eventually :)
          INTEGER :: m,iflag,cnt,MyId
          REAL(8) :: c0,c1,c2
          REAL(8) :: d1,d2,d3
          data c0,c1,c2/2.515517,0.802853,0.010328/
          data d1,d2,d3/1.432788,0.189269,0.001308/
 
+         !call cpu_time(myStart)
 
-          r1=revers(m+MyId*cnt,7)
-          r2=revers(m+MyId*cnt,11)
+         call revers_f(m+MyId*cnt,7,r1) 
+         call revers_f(m+MyId*cnt,11,r2)
 
 
 !.....quiet start---see denavit pf '71(?) & abramowitz hand book
@@ -948,7 +970,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          iflag=-1
   110    continue
          if(r1.ge.1.e-6) then
-           t=sqrt(log(1.0/(r1*r1)))
+           t=sqrt(dlog(1.0/(r1*r1)))
          else
            t=5.0
            write(*,*)'parperp2 warning  m= ',m
@@ -958,6 +980,9 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          vpar=vpar*iflag
 
           vperp2=-2.0*dlog(r2)
+          !more timing stuff
+         ! call cpu_time(myEnd)
+         ! write(*,*) (myEnd-myStart)
 
         return
         end
@@ -1302,6 +1327,8 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       REAL(8) :: avgv,myavgv,avgw,myavgw
       real(8) :: dumx,dumy,dumz,jacp,rand(4)
       REAL(8) :: wx0,wx1,wz0,wz1,avex=0
+      !Vars for timing
+      REAL(8) :: myStart, myEnd
 
       cnt=int(tmm(1)/numprocs)
       cnt=mmx
@@ -1312,6 +1339,10 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       myavgw = 0.
 
       m=1
+      !Timing info
+      
+      call cpu_time(myStart)
+
       do while(m<=mm(1))
 !     load a slab of ions...
 
@@ -1336,7 +1367,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             zeta2(m)=dumz
             x2(m)=dumx
             z2(m)=dumy
-            call parperp(vpar,vperp2,m,pi,cnt,MyId)
+            call parperp_c(vpar,vperp2,m,cnt,MyId) !calling c function here now!
 
             x=x2(m)
             i = int(x/dxeq)
@@ -1370,6 +1401,9 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             myavgw=myavgw+w2(m)
             m = m+1            
          end do
+         !End Timing Stuff
+         call cpu_time(myEnd)
+         write(*,*) (myEnd-myStart)
 
 !             do i=1,mmx
 !                avex=avex+x2(i)
