@@ -1,6 +1,5 @@
 F90 := ftn
 
-EXE := gemx
 ROOT := ..
 BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
@@ -12,6 +11,7 @@ LIBS := -L${PETSC_PATH}/lib -lpetsc
 INCS := -I${PETSC_PATH}/include
 SHELLS := $(wildcard *.sh)
 SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
+EXE := gemx
 
 #Setup flags for various situations.
 DEBUG ?= 0 #Use 'make DEBUG=1' to build with debug capabilities.
