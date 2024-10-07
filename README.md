@@ -24,11 +24,9 @@ cd ../bin
 sbatch <job_script_name>
 ```
 
-All files necessary to run are copied to the ```bin``` folder. However this is done everytime ```make``` is called so changes to the input file ```gemx.in``` or NERSC job scripts may get overwritten
-if compiling code updates.
+All files necessary to run are copied to the ```bin``` folder. However this is done everytime ```make``` is called so changes to the input file ```gemx.in``` or NERSC job scripts may get overwritten if compiling code updates. To get around this the ```newRun.py``` script is provided to make run directories which are stored in ```runs``` and not source controlled.
 
-A temporary fix is to make a new run directory and copy files there from ```bin```. Then update the job script to call ```../bin/gemx``` rather than ```./gemx```. Then you can have specific run files which call the latest version of the code.
-${\color{red}\textbf{\textrm{(This should be automated with a script.)}}}$
+The ```newRun.py``` script generates new run folders in runs, ```run001```, ```run002```, and so on. Everything from bin is copied there except ```gemx``` which is remade as a symbolic link to the original in ```bin```. That way when recompiling, all run directories will point to the latest version of the code. You can also pass a run folder name with the ```-n``` flag using the run script.
 
 To clean up run output, use the reset script in the run directory: ```./reset.sh```
 

@@ -1,0 +1,4 @@
+# Ignore everything in this directory (all run folders).
+*
+# Except this file (so this folder itself gets source controlled).
+!.gitignore
