@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import shutil
-import argparse
 
 def create_run_directory(run_name=None):
-    #Defalt num_digits for dir name. Will make larger numbers by default if necessary.
-    num_digits = 3
-
     # Define paths
+    bin_dir  = "bin"
     runs_dir = "runs"
-    bin_dir = "bin"
     
     # Create the 'runs' directory if it doesn't exist
     if not os.path.exists(runs_dir):

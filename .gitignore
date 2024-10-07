@@ -1,5 +1,6 @@
 #Ignore all build and runtime files.
 bin
+runs/*
 src/*.mod
 src/*.o
 src/gemx
