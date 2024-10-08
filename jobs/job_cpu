@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/bash -l
+
 #SBATCH -A mp118
 #SBATCH -C cpu
 #SBATCH -N 1
@@ -14,4 +15,8 @@ export OMP_NUM_THREADS=1
 
 source env.sh
 export SLURM_CPU_BIND="cores"
+
+#Store local code updates in run dir.
+./storeChanges.sh
+
 srun -n 16 ./gemx >& run.out

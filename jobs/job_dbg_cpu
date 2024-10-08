@@ -1,5 +1,5 @@
+#!/bin/bash -l
 
-#!/bin/bash
 #SBATCH -A mp118
 #SBATCH -C cpu
 #SBATCH -N 1
@@ -19,4 +19,8 @@ ulimit -c unlimited
 
 source env.sh
 export SLURM_CPU_BIND="cores"
+
+#Store local code updates in run dir.
+./storeChanges.sh
+
 srun -n 16 ./gemx >& run.out

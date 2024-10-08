@@ -22,4 +22,8 @@ export ATP_ENABLED=1
 ulimit -c unlimited
 
 export SLURM_CPU_BIND="cores"
+
+#Store local code updates in run dir.
+./storeChanges.sh
+
 srun ./gemx
