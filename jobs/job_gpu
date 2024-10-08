@@ -19,4 +19,8 @@ export OMP_NUM_THREADS=8
 
 source env.sh
 export SLURM_CPU_BIND="cores"
+
+#Store local code updates in run dir.
+./storeChanges.sh
+
 srun ./gemx

@@ -1,6 +1,6 @@
 F90 := ftn
 
-ROOT := ..
+ROOT := $(shell git rev-parse --show-toplevel)
 BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
 SCRIPTDIR := $(ROOT)/scripts
@@ -11,6 +11,7 @@ LIBS := -L${PETSC_PATH}/lib -lpetsc
 INCS := -I${PETSC_PATH}/include
 SHELLS := $(wildcard *.sh)
 SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
+DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx
 
 #Setup flags for various situations.
@@ -28,7 +29,7 @@ ifeq ($(DEBUG),1)
 		JOB := job_dbg_cpu
 		OPT :=  $(OPT_COMMON_DBG) $(OPT_COMMON) $(OPT_CPU) $(OPT_CPU_DBG)
 	else
-		JOB := job_dbg
+		JOB := job_dbg_gpu
 		OPT :=  $(OPT_COMMON_DBG) $(OPT_COMMON) $(OPT_GPU)
 	endif
 else
@@ -36,7 +37,7 @@ else
 		JOB := job_cpu
 		OPT := $(OPT_COMMON_REL) $(OPT_COMMON) $(OPT_CPU)
 	else
-		JOB := job
+		JOB := job_gpu
 		OPT := $(OPT_COMMON_REL) $(OPT_COMMON) $(OPT_GPU)
 	endif
 endif
@@ -48,9 +49,10 @@ ifneq ($(NERSC_HOST),perlmutter)
 	SHELLS := $(filter-out env.sh,$(SHELLS))
 endif
 
+all: $(EXE) install check_diff
+
 $(EXE): $(OBJS)
 	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS)
-	$(MAKE) install
 
 pputil.o: pputil.F90
 	$(F90) -c $(OPT) pputil.F90
@@ -72,6 +74,15 @@ outd.o: outd.F90 gemx_com.o equil.o
 
 fcnt.o: fcnt.F90
 	$(F90) -c $(OPT) fcnt.F90
+
+#Check for git diffs in the src directory
+check_diff:
+	@echo "Checking for changes in $(REPO_ROOT)/src"
+	@git diff $(REPO_ROOT)/src >> $(DIFF)
+	@git rev-parse HEAD >> $(DIFF)
+	@git branch --show-current >> $(DIFF)
+	@echo "$(JOB)" >> "$(DIFF)"
+	@echo "Diff saved in runs folder."
 
 clean:
 	$(RM) *.o *.lst *.mod gemx

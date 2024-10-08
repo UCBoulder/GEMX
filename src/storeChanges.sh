@@ -1,7 +1,3 @@
-#!/bin/bash -l
-
 #Store local code updates in run dir.
 REPO_ROOT=$(git rev-parse --show-toplevel)
-cp $(REPO_ROOT)/bin/codeChanges.txt .
-
-mpirun -n 1 ./gemx
+cp $REPO_ROOT/bin/codeChanges.txt .

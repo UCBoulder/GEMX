@@ -6,7 +6,9 @@ import shutil
 def create_run_directory(run_name=None):
     # Define paths
     bin_dir  = "bin"
+    job_dir  = "jobs"
     runs_dir = "runs"
+    host = os.environ.get("NERSC_HOST")
     
     # Create the 'runs' directory if it doesn't exist
     if not os.path.exists(runs_dir):
@@ -39,12 +41,23 @@ def create_run_directory(run_name=None):
                 # Copy the directory and its contents
                 shutil.copytree(full_entry_path, os.path.join(run_dir, entry))
             elif os.path.isfile(full_entry_path):
-                if entry == 'gemx':
+                if (entry == 'gemx'):
                     # Create an absolute symbolic link to the gemx file
                     abs_bin_path = os.path.abspath(full_entry_path)
-                    os.symlink(abs_bin_path, os.path.join(run_dir, 'gemx'))
+                    os.symlink(abs_bin_path, os.path.join(run_dir, entry))
+                #Let job script move code changes at run time so latest version.
+                #Move job scripts furhter below since only one is in bin.
+                elif (entry[:3] == 'job' or entry == 'codeChanges.txt'):
+                    continue
                 else:
                     shutil.copy(full_entry_path, run_dir)
+
+        #Copy all job scripts necessary. Rather than using symlink so they can be updated and stored with the run.
+        for entry in os.listdir(job_dir):
+            full_entry_path = os.path.join(job_dir, entry)
+            if (host == 'perlmutter' and entry != 'job_local') or \
+               (host != 'perlmutter' and entry == 'job_local'):
+                shutil.copy(full_entry_path,run_dir)
         
         print(f"Created run directory: {run_dir}")
     

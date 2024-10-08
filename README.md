@@ -20,17 +20,21 @@ git clone git@github.com:UCBoulder/GEMX.git
 cd src
 source env.sh
 make
-cd ../bin
-sbatch <job_script_name>
+cd ..
+./newRun.py
+cd runs/run001
+sbatch job
 ```
 
 All files necessary to run are copied to the ```bin``` folder. However this is done everytime ```make``` is called so changes to the input file ```gemx.in``` or NERSC job scripts may get overwritten if compiling code updates. To get around this the ```newRun.py``` script is provided to make run directories which are stored in ```runs``` and not source controlled.
 
-The ```newRun.py``` script generates new run folders in runs, ```run001```, ```run002```, and so on. Everything from bin is copied there except ```gemx``` which is remade as a symbolic link to the original in ```bin```. That way when recompiling, all run directories will point to the latest version of the code. You can also pass a run folder name with the ```-n``` flag using the run script.
+The ```newRun.py``` script generates new run folders in runs: ```run001```, ```run002```, and so on. You can also pass a run folder name with ```-n``` flag using the run script. Everything from ```bin``` is copied to the run directory except ```gemx``` and ```codeChanges.txt```. The executable ```gemx``` is remade as a symbolic link to the original in ```bin```. That way when recompiling, all run directories will point to the latest version of the code.
+
+The file ```codeChanges.txt``` will be copied over by the job scripts at run time. This file is generated at compile time and stores the most recent info about the code (local changes to source code, git commit, branch, and compile info via the job script name in ```bin``` (gpu/cpu/debug/etc.))
 
 To clean up run output, use the reset script in the run directory: ```./reset.sh```
 
-Different job scripts will be moved depending on make flags. They currently have different names for clarity.
+All job scripts for the necessary system are copied over to the run directory so changes to them are stored in the run folder. They currently have different names for clarity.
 
 The code can be run using cpu or gpu. As well as in debug mode as described below.
 
@@ -98,8 +102,10 @@ Then one can make and run GEMX using the instructions from before, but without n
 git clone git@github.com:UCBoulder/GEMX.git
 cd src
 make
-cd ../bin
-./job_local
+cd ..
+./newRun.py
+cd runs/run001
+./job
 ```
 
 ## Analysing Runs
