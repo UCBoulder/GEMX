@@ -2279,8 +2279,7 @@ subroutine efieldcalc(phi_input)
             if (k==0) then
                kminus = kmx
                ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,kminus))/(2*Rgrid(i)*(2*pi/(kmx+1)))
-            end if
-            if (k==kmx) then
+            else if (k==kmx) then
                kplus = 0
                ezeta(i,j,k) = -(phi_input(i,j,kplus) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
             else
