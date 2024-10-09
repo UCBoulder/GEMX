@@ -56,10 +56,13 @@ ifneq ($(NERSC_HOST),perlmutter)
 	SHELLS := $(filter-out env.sh,$(SHELLS))
 endif
 
-all: $(EXE) install check_diff
+all: $(EXE)
 
+#Do all make tasks here so that nothing happens if up to date and not cleaned.
 $(EXE): $(OBJS_C) $(OBJS) 
 	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS) $(OBJS_C)
+	$(MAKE) install
+	$(MAKE) check_diff
 
 #Fortran compilation.
 pputil.o: pputil.F90
@@ -98,7 +101,6 @@ check_diff:
 	@git branch --show-current >> $(DIFF)
 	@echo "$(JOB)" >> "$(DIFF)"
 	@echo "Diff saved in runs folder."
->>>>>>> 48fe68c84e9416d35d51c70609ec41ad45b2022f
 
 clean:
 	$(RM) *.o *.lst *.mod gemx

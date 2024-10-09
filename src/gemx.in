@@ -30,4 +30,6 @@
 
 'psi_out_bound,  psi_inner_bound,  R_min_for_mask, Z_min_for_mask, Z_X_point, psi_lower_divertor,     psi_a'
     0.29	 	       -1		               1.0		   	 -1.5			-1.2		     0.305		          0.311647
-                                                                                                                                             0.305
+
+'dbg'
+0

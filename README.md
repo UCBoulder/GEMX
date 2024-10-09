@@ -116,6 +116,10 @@ MATLAB scripts ```readden.m```, ```readphi.m``` and ```phi_gif.m``` can be opene
 
 Python script ```readphi.ipynb``` should be placed in the running folder to be run. It will plot the traced particles' orbits.
 
+## Development Guidelines
+
+For consistency, try to stick to the [google style guide](https://google.github.io/styleguide/cppguide.html) for C++ and the [PEP8 python style guide](https://peps.python.org/pep-0008/) for Python.
+
 ## Cheat Sheet
 
 tar cvf * - When taring up GEMX, do not include top directory, just the files and any subdirectories.

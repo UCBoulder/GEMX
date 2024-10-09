@@ -29,7 +29,6 @@
        integer :: status,mid_i,mid_j
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68
        integer :: iter !Calder Edit
-       integer :: dbg=0
 
        real::random
        real :: tmp
@@ -50,10 +49,10 @@
 !       call init
        call initialize
 
+      !Allow time for attaching in debug mode.
        do while (dbg.eq.1)
          call sleep(1)
        end do
-
 
        
   outk=0!(kmx+1)/2
@@ -666,6 +665,8 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
       read(115,*) psi_max,psi_min,R_min,Z_min, Z_internal, psi_div,psi_a
+      read(115,*) dumchar
+      read(115,*) dbg
       close(115)
       
       nsm=1
