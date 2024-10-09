@@ -77,8 +77,8 @@ fcnt.o: fcnt.F90
 
 #Check for git diffs in the src directory
 check_diff:
-	@echo "Checking for changes in $(REPO_ROOT)/src"
-	@git diff $(REPO_ROOT)/src >> $(DIFF)
+	@echo "Checking for changes in $(ROOT)/src"
+	@git diff $(ROOT)/src >> $(DIFF)
 	@git rev-parse HEAD >> $(DIFF)
 	@git branch --show-current >> $(DIFF)
 	@echo "$(JOB)" >> "$(DIFF)"
