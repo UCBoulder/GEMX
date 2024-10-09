@@ -56,11 +56,9 @@ ifneq ($(NERSC_HOST),perlmutter)
 	SHELLS := $(filter-out env.sh,$(SHELLS))
 endif
 
-all: $(EXE)
-
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
-$(EXE): $(OBJS_C) $(OBJS) 
-	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS) $(OBJS_C)
+$(EXE): $(OBJS)
+	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS)
 	$(MAKE) install
 	$(MAKE) check_diff
 
