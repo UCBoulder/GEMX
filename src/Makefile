@@ -57,8 +57,8 @@ ifneq ($(NERSC_HOST),perlmutter)
 endif
 
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
-$(EXE): $(OBJS)
-	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS)
+$(EXE): $(OBJS) $(OBJS_C)
+	$(F90) -o $(EXE) $(OPT) $(LIBS) $(OBJS) $(OBJS_C)
 	$(MAKE) install
 	$(MAKE) check_diff
 
@@ -89,7 +89,7 @@ fcnt_c.o: fcnt_c.cpp
 	$(CPP) -c $(INCS_C) $(OPT_C) fcnt_c.cpp
 
 gemx_c.o: gemx_c.cpp 
-	$(CPP) -c $(INCS_C) $(OPT_C)  gemx_c.cpp
+	$(CPP) -c $(INCS_C) $(OPT_C) gemx_c.cpp
 
 #Check for git diffs in the src directory
 check_diff:
