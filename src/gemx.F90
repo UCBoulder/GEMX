@@ -53,7 +53,6 @@
        do while (dbg.eq.1)
          call sleep(1)
        end do
-
        
   outk=0!(kmx+1)/2
    

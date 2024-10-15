@@ -2,11 +2,11 @@
 
 #SBATCH -A mp118
 #SBATCH --qos=debug
+#SBATCH --time=00:30:00
 #SBATCH -C cpu
 #SBATCH -N 1
 #SBATCH -c 1
 #SBATCH --ntasks-per-node=16
-#SBATCH --time=00:30:00
 #SBATCH -o run.out
 #SBATCH -e run.err
 #SBATCH -J gemx_cpu_dbg
