@@ -1,0 +1,22 @@
+{
+   "folders": [
+      {
+         "path": "."
+      }
+   ],
+   "settings": {
+      "C_Cpp.autoAddFileAssociations": false,
+      "[cpp]": {
+         "editor.tabSize": 3
+      },
+      "[makefile]": {
+         "editor.tabSize": 4
+      },
+      "[python]": {
+         "editor.tabSize": 4
+      },
+      "[markdown]": {
+         "editor.tabSize": 4
+      }
+   }
+}

@@ -38,6 +38,8 @@ All job scripts for the necessary system are copied over to the run directory so
 
 The code can be run using cpu or gpu. As well as in debug mode as described below.
 
+Input files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing.
+
 ### Running on CPU
 
 To run serially on cpu use ```make CPU=1```. It's possible to run ```OpenACC``` parallel on CPU with the ```-acc=multicore``` flag rather than ```-acc=host``` but this might not work depending on the CPUs and probably using ```OpenMP``` would be more prudent on CPU.
@@ -48,7 +50,9 @@ Create a debug build by calling ```make DEBUG=1```. This will lower the optimiza
 
 Also the debug job script will dump core files as well if needed on perlmutter. The core dump files can be read with ```gdb gemx <core_file>```.
 
-Note, bounds checks are disabled by OpenACC. A cpu run would be required.
+Note, bounds checks are disabled by OpenACC. A CPU run would be required, or valgrind can be used to bound check CPU code when OpenACC is using GPU.
+
+There is a ```dbg``` flag in ```gemx.in``` which can be set to ```1``` to enter an infinite while loop. A file ```launch.json``` is included for VSCode users to attach to the process and debug at real time. Set ```dbg=0``` in the debug console once attached to continue. This is meant for local runs, not perlmutter.
 
 ### Running Locally
 
@@ -69,6 +73,12 @@ export PATH=$NVCOMPILERS/$NVARCH/23.9/comm_libs/mpi/bin:$PATH
 export MANPATH=$MANPATH:$NVCOMPILERS/$NVARCH/23.9/comm_libs/mpi/man
 ```
 
+We also need to set an MPI path in ```~/.bashrc``` to include the header files when compiling (this path could be defined earlier and used above as well):
+
+```bash
+export MPIPATH=$NVCOMPILERS/$NVARCH/23.9/comm_libs/mpi
+```
+
 Then download PETSc to your preferred location (currently v3.19.3 is installed manually on NERSC for mp118) per the [installation instructions](https://petsc.org/release/install/):
 
 ```bash
@@ -77,10 +87,10 @@ cd petsc
 git checkout v3.19.3
 ```
 
-Update ```~/.bashrc``` with the following (and set the cloned path) for PETSc as well:
+Update ```~/.bashrc``` with the following (and set your cloned path) for PETSc as well:
 
 ```bash
-export PETSC_PATH=<cloned-petsc-location>/install
+export PETSC_PATH=<cloned-petsc-location>/installation
 export LD_LIBRARY_PATH=$PETSC_PATH/lib:$LD_LIBRARY_PATH
 ```
 
@@ -89,12 +99,10 @@ Reload the terminal environment so PETSc and GEMX can be compiled: ```source ~/.
 Then configure PETSc to install to the chosen path:
 
 ```bash
-./configure --prefix=$PETSC_PATH/install --with-debugging=0 --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpif90 COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3'
+./configure --prefix=$PETSC_PATH --with-debugging=0 --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpif90 COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3'
 ```
 
-This should set PETSc to be compiled with the Nvidia compilers given the Nvidia environment paths above.
-
-Finally, follow the instructions output by PETSc to further make and install the library.
+This should set PETSc to be compiled with the Nvidia compilers given the Nvidia environment paths above. Then just follow the command line instructions output by PETSc to further make and install the library.
 
 Then one can make and run GEMX using the instructions from before, but without needing ```source env.sh``` or ```sbatch```:
 
@@ -105,12 +113,12 @@ make
 cd ..
 ./newRun.py
 cd runs/run001
-./job
+./job_local
 ```
 
 ## Analysing Runs
 
-Scripts to read run output are also copied to the ```bin``` folder. Some are MATLAB scripts some are Jupyter notebook files.
+Scripts to read run output are also copied to the ```bin``` and ```run``` folders. Some are MATLAB scripts some are Jupyter notebook files at the moment.
 
 MATLAB scripts ```readden.m```, ```readphi.m``` and ```phi_gif.m``` can be opened by MATLAB. ```readden.m``` will plot the ion's density and n_i*v_parallel  .   ```readphi.m``` will plot the perturbed fields, perturbed electron density and parallel current. ```phi_gif.m``` will plot a gif figure for the perturbed electrostatic field. Open the file, change the MATLAB working path to your running folder, run the script, select ```add to path```.
 
