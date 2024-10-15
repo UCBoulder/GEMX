@@ -1,17 +1,17 @@
 #!/bin/bash -l
 
-#SBATCH -q regular
-#SBATCH -N 1
-#SBATCH --ntasks-per-node=16
-#SBATCH -c 8
-#SBATCH -t 24:00:00
-#SBATCH -J gemx_gpu
-#SBATCH -C gpu
-#SBATCH --gres=gpu:4
-#SBATCH -e run.err
-#SBATCH -o run.out
-#SBATCH --gpu-bind=map_gpu:0,1,2,3
 #SBATCH -A mp118_g
+#SBATCH -q regular
+#SBATCH -C gpu
+#SBATCH -N 1
+#SBATCH -c 8
+#SBATCH --ntasks-per-node=16
+#SBATCH -t 24:00:00
+#SBATCH --gres=gpu:4
+#SBATCH --gpu-bind=map_gpu:0,1,2,3
+#SBATCH -o run.out
+#SBATCH -e run.err
+#SBATCH -J gemx_gpu
 
 export OMP_PROC_BIND=spread
 export OMP_PLACES=threads
@@ -23,4 +23,4 @@ export SLURM_CPU_BIND="cores"
 #Store local code updates in run dir.
 ./storeChanges.sh
 
-srun ./gemx
+srun ./gemx > run.out 2> run.err

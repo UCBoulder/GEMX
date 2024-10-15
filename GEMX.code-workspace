@@ -11,6 +11,12 @@
       },
       "[makefile]": {
          "editor.tabSize": 4
+      },
+      "[python]": {
+         "editor.tabSize": 4
+      },
+      "[markdown]": {
+         "editor.tabSize": 4
       }
    }
 }

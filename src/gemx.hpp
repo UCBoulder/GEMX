@@ -2,5 +2,5 @@
 
 extern "C"
 {
-   void parperp_c_(double* vpar,double* vperp2,int& m,int& cnt,int& MyId);
+   void parperp_c_(double* vpar,double* vperp2, const int& m, const int& cnt, const int& MyId);
 }

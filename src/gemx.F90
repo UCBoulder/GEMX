@@ -21,8 +21,8 @@
 
          subroutine parperp_c(vpar, vperp2, m, cnt, MyId) bind(c, name = 'parperp_c_')
             use iso_c_binding
-            integer (c_int) :: m, pi, cnt, MyId
             real (c_double) :: vpar, vperp2
+            integer (c_int), value :: m, cnt, MyId
          end subroutine parperp_c
       end interface
 
@@ -1340,8 +1340,8 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       myavgw = 0.
 
       m=1
+
       !Timing info
-      
       call cpu_time(myStart)
 
       do while(m<=mm(1))
@@ -1404,7 +1404,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          end do
          !End Timing Stuff
          call cpu_time(myEnd)
-         write(*,*) (myEnd-myStart)
+         write(*,*) 'time: ', (myEnd-myStart)
 
 !             do i=1,mmx
 !                avex=avex+x2(i)
