@@ -3,7 +3,6 @@ F90 := ftn
 ROOT := $(shell git rev-parse --show-toplevel)
 BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
-SCRIPTDIR := $(ROOT)/scripts
 
 SRCS := $(wildcard *.F90)
 OBJS := $(SRCS:.F90=.o)
@@ -22,6 +21,12 @@ OPT_CPU := -acc=host #Default to serial for cpu. -acc=multicore for parallel but
 OPT_GPU := -acc -Minfo=accel
 OPT_CPU_DBG := -Mbounds #Note, bounds checking disabled on gpu by OpenACC.
 
+#If not on perlmutter use local run script and local compiler.
+ifneq ($(NERSC_HOST),perlmutter)
+	F90 := mpif90
+	JOB := job_local
+endif
+
 ifeq ($(DEBUG),1)
 	ifeq ($(CPU),1)
 		JOB := job_dbg_cpu
@@ -38,12 +43,6 @@ else
 		JOB := job_gpu
 		OPT := $(OPT_COMMON_REL) $(OPT_COMMON) $(OPT_GPU)
 	endif
-endif
-
-#If not on perlmutter use local run script and local compiler.
-ifneq ($(NERSC_HOST),perlmutter)
-	F90 := mpif90
-	JOB := job_local
 endif
 
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
