@@ -13,8 +13,6 @@ OBJS := $(SRCS:.F90=.o)
 OBJS_C := $(SRCS_C:.cpp=.o)
 LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc
 INCS := -I${PETSC_PATH}/include
-SHELLS := $(wildcard *.sh)
-SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
 DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx
 
@@ -113,7 +111,4 @@ install:
 	mkdir -p $(BINDIR) $(BINDIR)/out $(BINDIR)/dump $(BINDIR)/matrix
 	cp -f gemx $(BINDIR)
 	cp -f gemx.in $(BINDIR)
-	cp -f *.dat $(BINDIR)
 	cp -f $(JOBDIR)/$(JOB) $(BINDIR)
-	cp -f $(SCRIPTS) $(BINDIR)
-	cp -f $(SHELLS) $(BINDIR)

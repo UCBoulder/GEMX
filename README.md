@@ -23,22 +23,26 @@ make
 cd ..
 ./newRun.py
 cd runs/run001
-sbatch job
+sbatch job_gpu
 ```
 
-All files necessary to run are copied to the ```bin``` folder. However this is done everytime ```make``` is called so changes to the input file ```gemx.in``` or NERSC job scripts may get overwritten if compiling code updates. To get around this the ```newRun.py``` script is provided to make run directories which are stored in ```runs``` and not source controlled.
+Mostly files related to the build are copied to the ```bin``` folder, including ```gemx.in``` and the ```job``` associated with the make configuration. This folder is meant to just store some of these
+build related files, but not meant to be run out of because recompiling will overwrite changes to the job/input files for instance. To get around this issue the ```newRun.py``` script is provided to make run directories which are stored in ```runs``` and not source controlled. Run directories should contain their own versions of job/input files associated with the run, so that originals remain
+unchanged.
 
 The ```newRun.py``` script generates new run folders in runs: ```run001```, ```run002```, and so on. You can also pass a run folder name with ```-n``` flag using the run script. Everything from ```bin``` is copied to the run directory except ```gemx``` and ```codeChanges.txt```. The executable ```gemx``` is remade as a symbolic link to the original in ```bin```. That way when recompiling, all run directories will point to the latest version of the code.
 
-The file ```codeChanges.txt``` will be copied over by the job scripts at run time. This file is generated at compile time and stores the most recent info about the code (local changes to source code, git commit, branch, and compile info via the job script name in ```bin``` (gpu/cpu/debug/etc.))
-
-To clean up run output, use the reset script in the run directory: ```./reset.sh```
+The file ```codeChanges.txt``` will be copied over by the job scripts at run time. This file is generated at compile time and stores the most recent info about the code (local changes to source code, git commit, branch, and compile info via the job script name in ```bin``` (gpu/cpu/debug/etc.)) That way old runs can be recreated fairly easily.
 
 All job scripts for the necessary system are copied over to the run directory so changes to them are stored in the run folder. They currently have different names for clarity.
 
+The shell scripts are symbolic links to the ```tools``` folder similar to ```gemx```, since when changes should be made to these they likely should be source controlled and updated for every run.
+
+To clean up run output, use the reset script in the run directory: ```./reset.sh```. ```env.sh``` is for loading the perlmutter environment, and is also provided in the ```src``` directory.
+
 The code can be run using cpu or gpu. As well as in debug mode as described below.
 
-Input files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing.
+Again, run-specific files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing. Then probably a new run folder should be made as the old ones are more or less obsolete, but the updated run-specific files could be copied manually to old run directories if preferred.
 
 ### Running on CPU
 
@@ -50,9 +54,9 @@ Create a debug build by calling ```make DEBUG=1```. This will lower the optimiza
 
 Also the debug job script will dump core files as well if needed on perlmutter. The core dump files can be read with ```gdb gemx <core_file>```.
 
-Note, bounds checks are disabled by OpenACC. A CPU run would be required, or valgrind can be used to bound check CPU code when OpenACC is using GPU.
+Note, bounds checks are disabled by OpenACC. A CPU run would be required, or a tool like valgrind could be used to bound check CPU code when OpenACC is using GPU.
 
-There is a ```dbg``` flag in ```gemx.in``` which can be set to ```1``` to enter an infinite while loop. A file ```launch.json``` is included for VSCode users to attach to the process and debug at real time. Set ```dbg=0``` in the debug console once attached to continue. This is meant for local runs, not perlmutter.
+There is a ```dbg``` flag in ```gemx.in``` which can be set to ```1``` to enter an infinite while loop. A file ```launch.json``` is included for VSCode users to attach to the process and debug at real time. Set ```dbg=0``` in the debug console once attached to continue. This is meant for local runs, not perlmutter, though it can really work anywhere as long as it is run on only 1 MPI process, otherwise all others will be stuck in an infinite while loop and MPI calls won't work when they need to sync.
 
 ### Running Locally
 
@@ -96,7 +100,7 @@ export LD_LIBRARY_PATH=$PETSC_PATH/lib:$LD_LIBRARY_PATH
 
 Reload the terminal environment so PETSc and GEMX can be compiled: ```source ~/.bashrc```.
 
-Then configure PETSc to install to the chosen path:
+Then configure PETSc to install to the chosen path and for an optimized build:
 
 ```bash
 ./configure --prefix=$PETSC_PATH --with-debugging=0 --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpif90 COPTFLAGS='-O3' CXXOPTFLAGS='-O3' FOPTFLAGS='-O3'
@@ -118,11 +122,14 @@ cd runs/run001
 
 ## Analysing Runs
 
-Scripts to read run output are also copied to the ```bin``` and ```run``` folders. Some are MATLAB scripts some are Jupyter notebook files at the moment.
+Scripts to read run output are also copied to the ```run``` folders. Some are MATLAB scripts some are Jupyter notebook files at the moment. They are stored in the ```analysis``` folder.
 
-MATLAB scripts ```readden.m```, ```readphi.m``` and ```phi_gif.m``` can be opened by MATLAB. ```readden.m``` will plot the ion's density and n_i*v_parallel  .   ```readphi.m``` will plot the perturbed fields, perturbed electron density and parallel current. ```phi_gif.m``` will plot a gif figure for the perturbed electrostatic field. Open the file, change the MATLAB working path to your running folder, run the script, select ```add to path```.
+MATLAB scripts ```readden.m```, ```readphi.m``` and ```phi_gif.m``` can be opened by MATLAB. ```readden.m``` will plot the ion's density and n_i*v_parallel.   ```readphi.m``` will plot the perturbed fields, perturbed electron density and parallel current. ```phi_gif.m``` will plot a gif figure for the perturbed electrostatic field. Open the file, change the MATLAB working path to your running folder, run the script, select ```add to path```.
 
 Python script ```readphi.ipynb``` should be placed in the running folder to be run. It will plot the traced particles' orbits.
+
+These could also be made symbolic links to the originals, so they can be updated for all runs, but then personal changes need to be worked around somehow (unique data paths, data plotted in jupyter notebooks) or those specific changes should be removed before updating source controlled files. This is fine with python/matlab though when using a GUI/IDE to set relative run directories for instance
+and output plots in said GUI.
 
 ## Development Guidelines
 
