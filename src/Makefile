@@ -37,7 +37,6 @@ ifneq ($(NERSC_HOST),perlmutter)
 	else
 		OPT_C := -O4 $(OPT_COMMON_C)
 	endif
-endif
 
 ifeq ($(DEBUG),1)
 	ifeq ($(CPU),1)
