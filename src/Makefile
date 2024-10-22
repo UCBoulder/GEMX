@@ -9,8 +9,6 @@ SRCS := $(wildcard *.F90)
 OBJS := $(SRCS:.F90=.o)
 LIBS := -L${PETSC_PATH}/lib -lpetsc
 INCS := -I${PETSC_PATH}/include
-SHELLS := $(wildcard *.sh)
-SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
 DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx
 
@@ -46,7 +44,6 @@ endif
 ifneq ($(NERSC_HOST),perlmutter)
 	F90 := mpif90
 	JOB := job_local
-	SHELLS := $(filter-out env.sh,$(SHELLS))
 endif
 
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
@@ -93,7 +90,4 @@ install:
 	mkdir -p $(BINDIR) $(BINDIR)/out $(BINDIR)/dump $(BINDIR)/matrix
 	cp -f gemx $(BINDIR)
 	cp -f gemx.in $(BINDIR)
-	cp -f *.dat $(BINDIR)
 	cp -f $(JOBDIR)/$(JOB) $(BINDIR)
-	cp -f $(SCRIPTS) $(BINDIR)
-	cp -f $(SHELLS) $(BINDIR)
