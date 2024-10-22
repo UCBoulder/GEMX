@@ -42,7 +42,7 @@ To clean up run output, use the reset script in the run directory: ```./reset.sh
 
 The code can be run using cpu or gpu. As well as in debug mode as described below.
 
-Again, run-specific files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing. Then probably a new run folder should be made as the old ones are more or less obsolete, but the updated run-specific files could be copied manually to old run directories if preferred.
+Again, run-specific files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing. Then probably a new run folder should be made as the old ones are more or less obsolete, but the updated files read at run time could be copied manually to old run directories if preferred.
 
 ### Running on CPU
 

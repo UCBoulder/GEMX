@@ -4,7 +4,6 @@ CPP := cpp
 ROOT := $(shell git rev-parse --show-toplevel)
 BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
-SCRIPTDIR := $(ROOT)/scripts
 
 SRCS := $(wildcard *.F90)
 INCS_C := $(wildcard *.hpp)
@@ -32,7 +31,6 @@ ifneq ($(NERSC_HOST),perlmutter)
 	F90 := mpif90
 	CPP := mpicxx
 	JOB := job_local
-	SHELLS := $(filter-out env.sh,$(SHELLS))
 	CPU := 1
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall $(OPT_COMMON_C)
