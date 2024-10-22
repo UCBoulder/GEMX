@@ -40,7 +40,7 @@ The shell scripts are symbolic links to the ```tools``` folder similar to ```gem
 
 To clean up run output, use the reset script in the run directory: ```./reset.sh```. ```env.sh``` is for loading the perlmutter environment, and is also provided in the ```src``` directory.
 
-The code can be run using cpu or gpu. As well as in debug mode as described below.
+The code will run with GPU acceleration by default, but can be run cpu only as well as mentioned below. It can be run with debug capablities as well as described below.
 
 Again, run-specific files like ```gemx.in``` or job scripts are meant to be changed in the run directory to not affect the source-controlled versions. If changes should be permanent, remember to change the original files as well when pushing. Then probably a new run folder should be made as the old ones are more or less obsolete, but the updated run-specific files could be copied manually to old run directories if preferred.
 
