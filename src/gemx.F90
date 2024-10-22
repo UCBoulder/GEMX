@@ -22,7 +22,7 @@
          subroutine parperp_c(vpar, vperp2, m, cnt, MyId) bind(c, name = 'parperp_c_')
             use iso_c_binding
             real (c_double) :: vpar, vperp2
-            integer (c_int), value :: m, cnt, MyId
+            integer (c_int) :: m, cnt, MyId
          end subroutine parperp_c
       end interface
 
