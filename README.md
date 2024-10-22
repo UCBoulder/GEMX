@@ -52,7 +52,7 @@ To run serially on cpu use ```make CPU=1```. It's possible to run ```OpenACC``` 
 
 Create a debug build by calling ```make DEBUG=1```. This will lower the optimization and add check flags.
 
-Also the debug job script will dump core files as well if needed on perlmutter. The core dump files can be read with ```gdb gemx <core_file>```.
+Also the debug job script will dump core files as well if needed on perlmutter. The core dump files can be read with ```gdb gemx <core_file>```. The stack trace can be looked at using bt or backtrace; the stack trace doesn't seem to be output in run.err even with the current compiler settings.
 
 Note, bounds checks are disabled by OpenACC. A CPU run would be required, or a tool like valgrind could be used to bound check CPU code when OpenACC is using GPU.
 
