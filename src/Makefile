@@ -1,5 +1,5 @@
 F90 := ftn
-CPP := cpp
+CPP := CC
 
 ROOT := $(shell git rev-parse --show-toplevel)
 BINDIR := $(ROOT)/bin
