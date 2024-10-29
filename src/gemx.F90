@@ -30,14 +30,8 @@
        external ComputeRHS,ComputeMatrix,ComputeInitialGuess
 
 
-
 !       call init
        call initialize
-
-       !Allow time for attaching in debug mode.
-       do while (dbg.eq.1)
-         call sleep(1)
-       end do
 
 
 
@@ -655,10 +649,16 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) dbg
       close(115)
+
+      !Allow time for attaching in debug mode.
+      do while (dbg.eq.1)
+         call sleep(1)
+      end do
       
       nsm=1
       
       call new_gemx_com()
+
       ns = 1
       tmm(ns)=mmx!ntracer
 !      mm(ns)=int(ntracer/numprocs)
