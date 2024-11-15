@@ -16,7 +16,7 @@ INTERFACE
   end function en3
 END INTERFACE
 
-integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg
+integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations, nstep_E
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm
@@ -30,7 +30,7 @@ integer,dimension(0:10006):: rand_table
 
 INTEGER,dimension(:),allocatable :: mm,tmm,lr
 REAL(8),dimension(:),allocatable :: mims,q
-INTEGER :: timestep,iseed,iez
+INTEGER :: timestep,iseed,iez,smooth_order
 
 real(8),dimension(:),allocatable :: time
 REAL(8) :: dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr
@@ -74,7 +74,7 @@ real(8),dimension(:,:),allocatable :: gn0i,gt0i,gn0e,gt0e,gcptex,gcptez,gcpnex,g
 integer,dimension(:,:),allocatable :: ileft,jleft,iright,jright
       
 !          particle array declarations
-REAL(8),DIMENSION(:),allocatable :: mu
+REAL(8),DIMENSION(:),allocatable :: mu,P_energy,p_psi
 REAL(8),DIMENSION(:),allocatable :: x2,zeta2,z2,u2
 REAL(8),DIMENSION(:),allocatable :: x3,zeta3,z3,u3
 REAL(8),DIMENSION(:),allocatable :: w2,w3
@@ -159,7 +159,7 @@ allocate(OPPphi(0:imx,0:jmx,0:kmx),OPPphik(0:imx,0:jmx,0:kmx),l_hand(0:imx,0:jmx
 
 
 !          particle array declarations
-allocate( mu(1:mmx))
+allocate( mu(1:mmx),P_energy(1:mmx),p_psi(1:mmx))
 allocate( x2(1:mmx),zeta2(1:mmx),z2(1:mmx),u2(1:mmx))
 allocate( x3(1:mmx),zeta3(1:mmx),z3(1:mmx),u3(1:mmx))
 allocate( w2(1:mmx),w3(1:mmx))

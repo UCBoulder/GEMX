@@ -9,7 +9,7 @@ MODULE equil
 !     GEM-X
       !integer :: cont=259002 !Calder Edit
 
-      integer :: nx=449,nz=433,nzeta=32
+      integer :: nx, nz,nzeta
       real :: xdim,zdim,xctr,zctr,dxeq,dzeq
       
       real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2
@@ -51,6 +51,8 @@ contains
  
 !     global equilibrium data
 
+
+      
       allocate(sf(0:nr), psi(0:nr),&
          psip(0:nr),&
          zeff(0:nr),nue0(0:nr),&
@@ -97,7 +99,7 @@ contains
         !Calder Edits Start
         !character(len=100) :: line_buffer
          ! Open the dataset file
-      open(unit=10, file='jacodata.dat', status='old', action='read')
+      !open(unit=10, file='jacodata.dat', status='old', action='read')
       ! Determine the number of lines in the dataset file
       num_lines = 80817
       ! do
@@ -112,13 +114,13 @@ contains
                jacobian(num_lines), deno(num_lines), priv(num_lines))
   
       ! Read data from the dataset file into arrays
-      do line = 1, num_lines
-          read(10, *) gindex(line), psitab(line), iarray(line), jarray(line), &
-                      weight00(line), weight10(line), weight01(line), weight11(line), &
-                       jacobian(line), deno(line), priv(line)
-      enddo
+      !do line = 1, num_lines
+      !    read(10, *) gindex(line), psitab(line), iarray(line), jarray(line), &
+      !                weight00(line), weight10(line), weight01(line), weight11(line), &
+      !                 jacobian(line), deno(line), priv(line)
+     ! enddo
       !write(*,*) psitab
-      close(10)
+     ! close(10)
         !Calder Edits Finish
 
 
@@ -181,14 +183,14 @@ contains
       vu=1
       xu = proton*vu/(e*Bu)
       xu=1
-      nu = 2.5e19
+      nu = 1e20
       beta = 4*3.14159*1e-7*nu*Tu/Bu**2
 
 
       !     assign T, n profiles 
       do i = 0,nx
          do j = 0,nz
-            t0i(i,j) = 1.*Tu
+            t0i(i,j) = 0.2*Tu
             t0e(i,j) = 1.*Tu
             xn0i(i,j) = 1.*nu
             xn0e(i,j) = 1.*nu
@@ -215,35 +217,41 @@ contains
       ! close(10)
 
       !Manufactured Temperature Profiles: 0.5*(-np.tanh(5*np.array(profiles['psinorm'])-2.5)+1)*np.max(np.array(profiles['ti']))
-      open(unit=10, file = 'tif_profile.dat',status='old',action='read')
-      read(10,*) t0i
-      close(10)
+     ! open(unit=10, file = 'tif_profile.dat',status='old',action='read')
+     ! read(10,*) t0i
+     ! close(10)
 
-      open(unit=10, file = 'tef_profile.dat',status='old',action='read')
-      read(10,*) t0e
-      close(10)
+     ! open(unit=10, file = 'tef_profile.dat',status='old',action='read')
+     ! read(10,*) t0e
+     ! close(10)
 
       !Put into SI units
-      t0i  = t0i*Tu
-      t0e  = t0e*Tu
+     ! t0i  = t0i*Tu
+     ! t0e  = t0e*Tu
       ! xn0i = xn0i*1.0e21
       ! xn0e = xn0e*1.0e21
       ! xn0i = xn0e
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      write(*,*) T0i
 
 
 
-      open(unit=10, file = 'ne0.dat',status='old',action='read')
-	read(10,*) xn0e
-      close(10)
- 
+!      open(unit=10, file = 'ne0.dat',status='old',action='read')
+!	read(10,*) xn0e
+!      close(10)
 
-      open(unit=10, file = 'ti0.dat',status='old',action='read')
-	read(10,*) t0i
-      close(10)
+!      open(unit=10, file = 'Te0.dat',status='old',action='read')
+!      read(10,*) t0e
+!      close(10)
+
+!      open(unit=10, file = 'Ti0.dat',status='old',action='read')
+!	read(10,*) t0i
+!      close(10)
 
       xn0e=xn0e*nu
-      t0i=t0i*Tu
+!      t0i=t0i*Tu
+      t0e  = t0e*Tu
+
       xn0i=xn0e
 
 

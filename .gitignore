@@ -4,3 +4,4 @@ runs/*
 src/*.mod
 src/*.o
 src/gemx
+analysis/.ipynb_checkpoints

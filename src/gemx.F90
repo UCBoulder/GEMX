@@ -30,9 +30,9 @@
        external ComputeRHS,ComputeMatrix,ComputeInitialGuess
 
 
+
 !       call init
        call initialize
-
 
 
        
@@ -72,7 +72,7 @@
 
 
        if(iget.eq.0)call loadi
-       call integ(2)
+!       call integ(2)
 
                if(myid==0)then
                 open(unit=11, file = 'testden',status='unknown',action='write')
@@ -98,6 +98,9 @@
 
         tor_n=1
 
+        ex=0
+        ez=0
+        ezeta=0
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!initialize perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         do k=0,kmx
               do i=0,imx
@@ -213,13 +216,13 @@
        do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
                  
          do iter=0, iterations
-            call fluxavg(phi,phiavg)
+         !   call fluxavg(phi,phiavg)
                if (eBoltzmann == 1) then
                   call boltzsolve(phi)
                else
 
 
-          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+!          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -239,10 +242,14 @@
             
       call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
    else   
-       k=0
+      k=0
+
+      call smooth2D(den2d2,smooth_order)
+
 
        do iter=0, iterations
-         call fluxavg(phi,phiavg)
+          !call fluxavg(phi,phiavg)
+          phi=0
          if (eBoltzmann == 1) then
             call boltzsolve(phi)
          else
@@ -259,22 +266,22 @@
 
 
         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-       
-        
 
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+        call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+
+       end if !Calder Edit
+    end do !Calder Edit
+
 
          do k=1,kmx
             phi(:,:,k)=phi(:,:,0)
          end do
-
-       end if !Calder Edit
-      end do !Calder Edit
                
       end if
       
          
-      call efieldcalc(phi)
+     if(timestep>nstep_E)  call efieldcalc(phi)
    
 
           
@@ -342,7 +349,7 @@
           else
              if(ision==1)call ppush(timestep)
              !             if(ifluid==1)call pintef
-             if(ifluid==1)call integ(1)
+!             if(ifluid==1)call integ(1)
 
 !             if(myid==0)then
 !                open(unit=11, file = 'testden',status='unknown',action='write')
@@ -370,7 +377,7 @@
        do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
        
          do iter=0,iterations
-            call fluxavg(phi,phiavg)
+         !   call fluxavg(phi,phiavg)
             if (eBoltzmann == 1) then
                call boltzsolve(phi)
             else      
@@ -397,16 +404,19 @@
    else
 
       k=0
+      call smooth2D(den2d2,smooth_order)
+
       
          do iter=0, iterations
-            call fluxavg(phi,phiavg)
+            !call fluxavg(phi,phiavg)
+            phi=0
             if (eBoltzmann == 1) then
                call boltzsolve(phi)
             else
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+            PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+            PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+            PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+            PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
 
          do idx=1, vec_end-vec_start
             i=mod(idx-1,(iw))+is
@@ -419,18 +429,21 @@
 
             PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+            call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+
+         end if !Calder Edit
+        end do !Calder Edit
+
 
          do k=1,kmx
             phi(:,:,k)=phi(:,:,0)
          end do
-      end if !Calder Edit
-     end do !Calder Edit         
    end if
    
 
 
-   call efieldcalc(phi)
+  if(timestep>nstep_E)  call efieldcalc(phi)
    if (i3D == 1) then
       call growthdiag(phi)
    end if
@@ -488,27 +501,49 @@
     else
         if(ision==1)call cpush(timestep)
         !        if(ifluid==1)call cintef(timestep)
-        if(ifluid==1)call integ(2)
+!        if(ifluid==1)call integ(2)
         !        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
      end if
      
 
-        if(myid==0 .and. mod(timestep,10)==0)then
-           open(unit=11, file = 'testden2',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) den2d2(:,j)
-           enddo
-           close(11)
-           open(unit=11, file = 'testdiffden',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) dden2d(:,j)
-           enddo
-           open(unit=11, file = 'testupar',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) upar(:,j,0)
-           enddo
-           close(11)
-        end if
+!     if(myid==0 .and. mod(timestep,10)==0)then
+!        if (timestep==nstep_E)then
+!           open(unit=11, file = 'testden2_start',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) den2d2(:,j)
+!           enddo
+!           close(11)
+!           open(unit=11, file = 'testdiffden_start',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) dden2d(:,j)
+!           enddo
+!           open(unit=11, file = 'testupar_start',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) upar(:,j,0)
+!           open(unit=11, file = 'testphi_start',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) phi(:,j,0)
+!           enddo
+!           enddo
+!           close(11)
+!        end if
+        
+     
+!           open(unit=11, file = 'testden2',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) den2d2(:,j)
+!           enddo
+!           close(11)
+!           open(unit=11, file = 'testdiffden',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) dden2d(:,j)
+!           enddo
+!           open(unit=11, file = 'testupar',status='unknown',action='write')
+!           do j=0,jmx
+!              write(11,*) upar(:,j,0)
+!           enddo
+!           close(11)
+!        end if
         
 
     
@@ -542,7 +577,7 @@
                do k=0,kmx
                   
                   write(11,*) phi(:,mid_j,k)
-                  enddo
+                enddo
                close(11)
             end if
             
@@ -627,7 +662,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) imx,jmx,kmx,mmx,nmx,nsmx,ntube
       read(115,*) dumchar
-      read(115,*) dt,nm,nsm,iez
+      read(115,*) dt,nm,nstep_E,nsm,iez,smooth_order
       read(115,*) dumchar
       read(115,*) iput,iget,ision,peritr
       read(115,*) dumchar
@@ -646,19 +681,11 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
       read(115,*) psi_max,psi_min,R_min,Z_min, Z_internal, psi_div,psi_a
-      read(115,*) dumchar
-      read(115,*) dbg
       close(115)
-
-      !Allow time for attaching in debug mode.
-      do while (dbg.eq.1)
-         call sleep(1)
-      end do
       
       nsm=1
       
       call new_gemx_com()
-
       ns = 1
       tmm(ns)=mmx!ntracer
 !      mm(ns)=int(ntracer/numprocs)
@@ -670,6 +697,12 @@ total_tm = total_tm + end_total_tm - start_total_tm
       emass = 1./amie
       qel = -1
 
+      nx=imx
+      nz=jmx
+      nzeta=kmx
+
+
+      
       call new_equil()
       lx = xdim
       lz = zdim
@@ -1306,7 +1339,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       use equil
       implicit none
       INTEGER :: i,j,k,m,idum,ns,m1
-      REAL(8) :: vpar,vperp2,r,x,z,b,ter,bfldp
+      REAL(8) :: vpar,vperp2,r,x,z,b,ter,bfldp,nmax,n_temp,n_total=0
       REAL(8) :: avgv,myavgv,avgw,myavgw
       real(8) :: dumx,dumy,dumz,jacp,rand(4)
       REAL(8) :: wx0,wx1,wz0,wz1,avex=0
@@ -1320,12 +1353,38 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       myavgw = 0.
 
       m=1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      xn0i=0.8e19
+!      xn0e=0.8e19
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      nmax=MAXVAL(xn0i)
+
+      do i=2,imx-2
+         do j=2,jmx-2
+            n_total=n_total+xn0i(i,j)*(xctr-xdim/2+i*dx)
+         end do
+      end do
+
+
+      open(unit=10, file = 'rdata.dat',status='old',action='read')
+	read(10,*) x2
+      close(10)
+
+      open(unit=10, file = 'zdata.dat',status='old',action='read')
+	read(10,*) z2
+      close(10)    
+      
       do while(m<=mm(1))
 !     load a slab of ions...
 
+
+         x2(m)=x2(m)-xctr+xdim/2
+         z2(m)=z2(m)-zctr+zdim/2
 !         dumx=xdim*(ran2(iseed)+0.01)*0.9
 !         dumy=zdim*(ran2(iseed)+0.01)*0.9
-
+         dumx=x2(m)
+         dumy=z2(m)
          !revers(MyId*cnt+j,2) !ran2(iseed)
          dumx=2*dxeq+(xdim-4*dxeq)*ran2(iseed)  !revers(MyId*cnt+j,2) !ran2(iseed)
          dumy=2*dzeq+(zdim-4*dzeq)*ran2(iseed) !revers(MyId*cnt+j,3) !ran2(iseed)
@@ -1335,15 +1394,28 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !         dumx=dxeq+(xdim-2*dxeq)*m/((mm(1)))
          
          r = xctr-xdim/2+dumx
-         jacp = r/(xctr+xdim/2)
+         i = int(dumx/dxeq)
+         wx0 = ((i+1)*dxeq-dumx)/dxeq
+         wx1 = 1.-wx0
+
+         k = int(dumy/dzeq)
+         wz0 = ((k+1)*dzeq-dumy)/dzeq
+         wz1 = 1-wz0         
+
+         n_temp=wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
+                   +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
+         jacp = r/(xctr+xdim/2-2*dxeq)*n_temp/nmax
+
+
+
 !         if(ran2(iseed)<jacp)then
 !            x2(m)=min(dumx,xdim-dxeq)
 !            z2(m)=min(dumy,zdim-dzeq)
 !            x2(m)=max(dumx,dxeq)
 !            z2(m)=max(dumz,dzeq)
-            zeta2(m)=dumz
-            x2(m)=dumx
-            z2(m)=dumy
+!            zeta2(m)=dumz
+!            x2(m)=dumx
+!            z2(m)=dumy
             call parperp(vpar,vperp2,m,pi,cnt,MyId)
 
             x=x2(m)
@@ -1363,34 +1435,59 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
             u2(m)=vpar/sqrt(mims(1)/ter)
             mu(m)=0.5*vperp2/bfldp*ter
-
+!            write(*,*) 0.5*u2(m)**2*mims(1)+mu(m)*bfldp
+            P_energy(m)=0.5*u2(m)**2*mims(1)+mu(m)*bfldp
             myavgv=myavgv+u2(m)
 
 !    LINEAR: perturb w(m) to get linear growth...
 !            w2(m)=2.*amp*ran2(iseed)
             w2(m)= (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
-!            w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+            !            w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!test_weight!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            w2(m) = n_total*(kmx+1)/(xctr*numprocs*mmx)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            
+            
  
                
 
             
             myavgw=myavgw+w2(m)
-            m = m+1            
+            m = m+1
+!         end if
+         
          end do
+ 
 
 !             do i=1,mmx
 !                avex=avex+x2(i)
 !             end do
-!         write(*,*)avex/mmx
+         !         write(*,*)avex/mmx
+!             write(*,*) P_energy!, u2(m)!, mims(1), mu(m), bfldp
+         
              if (MyId==0) then
+!                write(*,*) P_energy!, u2(m)!, mims(1), mu(m), bfldp
 
-         open(unit=11, file = 'testdepo_posi',status='unknown',action='write')
-               do j=mmx-10000,mmx
+                open(unit=11, file = 'initialv_par',status='unknown',action='write')
+                do i=1, mm(1)
+!                   write(*,*) u2(m)
+                    write(11,*) u2(i)
+                 end do
+                 
+                  close(11)
                   
-                  write(11,*) x2(j),z2(j),zeta2(j)
-               enddo
-               close(11)
+                  open(unit=11, file = 'energeez',status='unknown',action='write')
+                  do i=1,mm(1)
+!                     write(*,*) P_energy(m)
+                     write(11,*) P_energy(i)
+                  end do
+                  
+                close(11)
+
              end if
 
       
@@ -1409,6 +1506,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          u3(m)=u2(m)
 !         w2(m) = w2(m)-myavgw
          w3(m)=w2(m)
+!         write(*,*)u3(m)
  180  continue
 
       return
@@ -1922,10 +2020,16 @@ end subroutine field
                 if(i3D==0)then
                    if (iBoltzmann==0) then
                       tmp_value = denes(i,j,k)-q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
-                   else
-                      tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
-                   end if
-                
+                   elseif (eAdiabatic/=0) then
+                      !tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j)
+                      tmp_value = -q(1)*mu0*den2d2(i,j) + xn0e(i,j)*e*mu0*(1-e/t0e(i,j)*phiavg(i,j))
+
+                   else 
+                     tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
+                  end if
+                  
+
+                   
                    !                 tmp_value = 1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2010,6 +2114,14 @@ end subroutine field
        upar=0
        !$acc parallel loop gang vector
        do m=1,mm(1)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!test weight!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!         
+!          if (abs(w3(m)-1)>0.001.and.abs(w3(m))>0.001) then
+!             write (*,*) 'w3(',m,')=',w3(m)
+!          end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          
 
          x=x3(m)
          i = int(x/dxeq)
@@ -2120,117 +2232,137 @@ end subroutine field
     
     
 !     !!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine fluxavg(input,output) !Currently only good for 2D case
-   use gemx_com
-   use equil
+ subroutine fluxavg(input,output)
+  use gemx_com
+  use equil
 
-   implicit none 
+  implicit none 
 
-   ! Input
-   real(8), dimension(0:imx,0:jmx,0:kmx) :: input !3D array to be flux averaged
-   ! Outputs
-   real(8), dimension(0:imx, 0:jmx) :: output ! 2D interpolated array
+  ! Input
+  real(8), dimension(0:imx,0:jmx,0:kmx) :: input !3D array to be flux averaged
+  ! Outputs
+  real(8), dimension(0:imx, 0:jmx) :: output ! 2D interpolated array
 
-   ! Local variables
-   real(8), dimension(:), allocatable :: phiavg1d, psi1d, phiavg1d_private
-   integer :: gi, xix, yjy, miw, psi_zero, store, k
-   real(8) :: weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1
-   allocate(phiavg1d(0:101),psi1d(0:101),phiavg1d_private(0:101))
+  ! Local variables
+  real(8), dimension(:), allocatable :: phiavg1d, psi1d, psi1d_private,phiavg1d_private
+  integer :: gi, xix, yjy, miw, psi_zero, store, k, line_large, line_small
+  real(8) :: weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1, psi_private_min
+  allocate(phiavg1d(0:101),psi1d(0:101),psi1d_private(0:101),phiavg1d_private(0:101))
 
-   phiavg1d = 0
-   psi1d = 0
-   phiavg1d_private = 0
-   
-   psi_zero = 1
+  phiavg1d         = 0
+  phiavg1d_private = 0
+  psi1d            = 0
+  psi1d_private    = 0
+  
+  line_large = 1
+  line_small = 0
+  psi_zero   = 1
+  !input      = 1
 
-   !Computation
-   do line = 1, 101
-       phiavggi = 0.0d0 
-       store = 0
-       do gi = 1, num_lines
-         if (gindex(gi) == line-1) then
-               weightinput = (weight00(gi)*input(iarray(gi), jarray(gi),0) + &
-                           weight10(gi)*input(iarray(gi)+1, jarray(gi),0) + &
-                           weight01(gi)*input(iarray(gi), jarray(gi)+1,0) + &
-                           weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,0))
-   
-               if (i3D == 0) then                  
-                  phiavggi = phiavggi + (weightinput*jacobian(gi))/deno(gi)
-               else
-                  do k=1, kmx
-                     weightinput3D = (weight00(gi)*input(iarray(gi), jarray(gi),k) + &
-                                    weight10(gi)*input(iarray(gi)+1, jarray(gi),k) + &
-                                    weight01(gi)*input(iarray(gi), jarray(gi)+1,k) + &
-                                    weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,k))
-                  enddo
-                  weightinput = weightinput3D + weightinput
-                  phiavggi = phiavggi +(weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
-               end if
+  !Computation
+  do line = 1, 101
+      phiavggi = 0.0d0 
+      store = 0
+      do gi = 1, num_lines
+        if (gindex(gi) == line-1) then
+              weightinput = (weight00(gi)*input(iarray(gi), jarray(gi),0) + &
+                          weight10(gi)*input(iarray(gi)+1, jarray(gi),0) + &
+                          weight01(gi)*input(iarray(gi), jarray(gi)+1,0) + &
+                          weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,0))
+  
+              if (i3D == 0) then                  
+                 phiavggi = phiavggi + (weightinput*jacobian(gi))/deno(gi)
+        
+              else
+                 do k=1, kmx
+                    weightinput3D = (weight00(gi)*input(iarray(gi), jarray(gi),k) + &
+                                   weight10(gi)*input(iarray(gi)+1, jarray(gi),k) + &
+                                   weight01(gi)*input(iarray(gi), jarray(gi)+1,k) + &
+                                   weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,k))
+                    weightinput = weightinput3D + weightinput
+                 enddo
+                 phiavggi = phiavggi +(weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
+              end if
 
-            if (priv(gi) == 0) then
-               store = gi
-            end if
-         end if
-
-         !Remove redundancy from closed loop integration process
-         if (phiavggi /= 0) then
-            if (gindex(gi) /= line-1) then
-               if (i3D == 0) then
-                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/deno(gi-1)
-               else
-                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
-               end if
-               exit
-            end if
-         end if
-      end do
-
-      if (store /= 0) then
-         phiavg1d(line) = phiavggi
-         psi1d(psi_zero) = psitab(store)
-         psi_zero = psi_zero + 1
-      else 
-         phiavg1d_private(line) = phiavggi
-      end if
-   end do
-   
-   phiavg1d(0) = phiavg1d(1)
-   ! phiavg1d(0) = input(268,254,0)
-   
-   !Save psi1d and timesteps of phiavg1d to understand convergence
-   ! if (timestep == 10) then
-   !    open(unit=11, file = 'psi1d',status='unknown',action='write')
-   !                write(11,*) psi1d(:)
-   !             close(11)
-   ! endif
-
-   ! open(unit=11, file = 'phiavg1d',status='unknown',position='append')                
-   ! write(11,*) phiavg1d(:)
-   ! close(11)
-
-   !Initialize output to zero
-   output = 0.0
-   
-   !INTERPOLATION
-   do xix = 0, nx
-       do yjy = 0, nz
-           psival = psi_p(xix,yjy)
-           if (mask(xix,yjy) < 0.99) then 
-               output(xix,yjy) = 0
-           else
-               miw  = int(psival/(psi1d(2)-psi1d(1)))
-               wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
-               wmx1 = 1.-wmx0
-               if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) then !Private region under X-point
-                  output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
-               else   
-                  output(xix,yjy) = wmx0*phiavg1d(miw) + wmx1*phiavg1d(miw+1)
-               end if
+           if (priv(gi) == 0) then
+              store = gi
            end if
-       enddo
-    enddo
-end subroutine fluxavg
-            
+        end if
+
+        !Remove redundancy from closed loop integration process
+        if (phiavggi /= 0) then
+           if (gindex(gi) /= line-1) then
+              if (i3D == 0) then
+                 phiavggi = phiavggi - (weightinput*jacobian(gi-1))/deno(gi-1)
+              else
+                 phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
+              end if
+              exit
+           end if
+        end if
+     end do
+     
+     if (store /= 0) then
+        phiavg1d(psi_zero) = phiavggi
+        psi1d(psi_zero)    = psitab(store)
+        psi_zero = psi_zero + 1
+     else 
+        if (line_small == 0) then
+           psi_private_min = psitab(line)
+        end if
+        phiavg1d_private(line_small) = phiavggi
+        psi1d_private(line_small) = psitab(gi)
+        line_small = line_small + 1
+     end if
+  end do
+  phiavg1d(0) = phiavg1d(1)
+  
+  open(unit=11, file = 'testphiavg1d',status='unknown',action='write')
+  write(11,*) phiavg1d
+  close(11)
+
+
+
+  
+  ! phiavg1d(0) = input(268,254,0)
+  
+  !Save psi1d and timesteps of phiavg1d to understand convergence
+  ! if (timestep == 10) then
+  !    open(unit=11, file = 'psi1d',status='unknown',action='write')
+  !                write(11,*) psi1d(:)
+  !             close(11)
+  ! endif
+
+  ! open(unit=11, file = 'phiavg1d',status='unknown',position='append')                
+  ! write(11,*) phiavg1d(:)
+  ! close(11)
+
+  !Initialize output to zero
+  output(xix,yjy) = 0.0
+  
+  !INTERPOLATION
+  do xix = 0, nx
+      do yjy = 0, nz
+          psival = psi_p(xix,yjy)
+          if (mask(xix,yjy) < 0.99) then 
+              output(xix,yjy) = 0
+          else
+              if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) then !Private region under X-point
+                 miw  = int((psival-psi_private_min)/(psi1d(2)-psi1d(1)))
+                 wmx0 = ((miw+1)*(psi1d_private(2)-psi1d_private(1))-psival)/(psi1d(2)-psi1d(1))
+                 wmx1 = 1.-wmx0
+                 output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
+              else 
+                 miw  = int(psival/(psi1d(2)-psi1d(1)))
+                 wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
+                 wmx1 = 1.-wmx0  
+                 output(xix,yjy) = wmx0*phiavg1d(miw) + wmx1*phiavg1d(miw+1)
+              end if
+          end if
+      enddo
+   enddo
+  !  output = output*32
+end subroutine fluxavg           
        
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine efieldcalc(phi_input)
@@ -2252,8 +2384,7 @@ subroutine efieldcalc(phi_input)
             if (k==0) then
                kminus = kmx
                ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,kminus))/(2*Rgrid(i)*(2*pi/(kmx+1)))
-            end if
-            if (k==kmx) then
+            elseif (k==kmx) then
                kplus = 0
                ezeta(i,j,k) = -(phi_input(i,j,kplus) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
             else
@@ -2394,7 +2525,35 @@ subroutine boltzsolve(input_phi)
 
 end subroutine
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!smooth 2D!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+       subroutine smooth2D(matrix,order)
+       use gemx_com
+       use equil
+
+       IMPLICIT NONE
+       real,dimension(0:imx,0:jmx)::matrix!,temp
+       real,dimension(:,:),allocatable::temp
+       integer::i,j,k,order
+
+       allocate(temp(0:imx,0:jmx))
+
+
+!       matrix=1
+       temp = matrix
+      
+      do k=1,order
+          do i=2,imx-2
+             do j=2,jmx-2
+                   temp(i,j)=(matrix(i,j)+matrix(i+1,j)+matrix(i,j+1)+matrix(i-1,j)+matrix(i,j-1))*0.2
+              end do
+           end do
+           matrix=temp
+       end do
+        
+    ! write(*,*) matrix
+     end subroutine smooth2D
+     
     
     
            

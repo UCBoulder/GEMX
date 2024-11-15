@@ -21,19 +21,19 @@
       if (n.eq.nm)  close(935)
 
 
-      open(unit=11, file = './out/testne',status='unknown',action='write')
-      do j=0,jmx
-         write(11,*) dene(:,j,0)
+      if (n.eq.ncurr) open(unit=11, file = './out/test_p_psi',status='unknown',action='write')
+      do m=1,ntracer
+         write(11,*) timestep, m, p_psi(m)
       enddo
-      close(11)
+       if (n.eq.nm) close(11)
 
  !     if (k==1) then
      
-       open(unit=11, file = './out/testphi',status='unknown',action='write')
-       do j=0,jmx
-          write(11,*) phi(:,j,0)  !k is assumed to be 0
-       enddo
-       close(11)
+!       open(unit=13, file = './out/testphi',status='unknown',action='write')
+!       do j=0,jmx
+!          write(13,*) phi(:,j,0)  !k is assumed to be 0
+!       enddo
+!       close(13)
       endif
 
 

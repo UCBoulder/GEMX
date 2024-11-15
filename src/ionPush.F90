@@ -81,24 +81,23 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
-                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
-         energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
-         energy =  max(energy0,0.1*T_center)
-         if (icollision==1) then
-                  nudi=nudi0*ni_temp/(energy)**1.5
-                        ! call random_number(rrr)
-                        ! p_m = int(2*rrr-1)
-         end if
+!         ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
+!                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
+!         energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
+!         energy =  max(energy0,0.1*T_center)
+!         if (icollision==1.and.timestep>nstep_E) then
+!                  nudi=nudi0*ni_temp/(energy)**1.5
 
-!         write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
+         
 
-         u2(m)=u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)
-         globle_integer = mod(globle_integer+1,10007)
-!         write(*,*) rand_table(globle_integer-1), u2(m),u3(m)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
-!         write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
 
-         mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
+!         u2(m)=u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)
+!         globle_integer = mod(globle_integer+1,10007)
+
+
+!         mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
+!      end if
+      
 
          
 
@@ -398,6 +397,8 @@
             wz0=float(k+1)-zeta/dzeta
             wz1=1.-wz0
 
+            p_psi(m)=wx0*wy0*psi_p(i,j)+wx1*wy0*psi_p(i+1,j)+wx0*wy1*psi_p(i,j+1)+wx1*wy1*psi_p(i+1,j+1)
+
               k_plus_1=k+1
               if(k==kmx) k_plus_1=0
             exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) &
@@ -493,6 +494,7 @@
           
 
          edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
+
 
          x3(m) = x2(m) + dt*xdot
          z3(m) = z2(m) + dt*zdot

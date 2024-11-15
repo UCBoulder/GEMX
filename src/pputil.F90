@@ -19,8 +19,10 @@ CONTAINS
      use mpi
      INTEGER, INTENT(IN) :: ntube,kmx,i3D
      INTEGER, INTENT(OUT) :: nproc
-	INTEGER, INTENT(OUT) :: idproc,com1,com2, com_petsc,petsc_color,petsc_rank
-	INTEGER :: ierr,npp,n_tor_planes
+     INTEGER, INTENT(OUT) :: idproc,com1,com2, com_petsc,petsc_color,petsc_rank
+     INTEGER :: ierr,npp,n_tor_planes
+
+
 !
 	CALL MPI_INIT(ierr)
 	CALL MPI_COMM_SIZE(MPI_COMM_WORLD, npp, ierr)
@@ -42,8 +44,13 @@ CONTAINS
            n_tor_planes=1
         end if
         
-           p_color= int(me*(n_tor_planes)/npp)
-           p_rank = mod(me,npp/(kmx+1))
+        p_color= int(me*(n_tor_planes)/npp)
+        if (npp<n_tor_planes) then
+           p_rank=0
+        else
+           p_rank = mod(me,npp/n_tor_planes)
+        end if
+        
            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,p_color,p_rank,PETSC_COMM,ierr)
            petsc_color=p_color
            petsc_rank=p_rank
