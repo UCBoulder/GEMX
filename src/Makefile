@@ -1,10 +1,9 @@
 F90 := ftn
-CPP := cpp
+CPP := CC
 
 ROOT := $(shell git rev-parse --show-toplevel)
 BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
-SCRIPTDIR := $(ROOT)/scripts
 
 SRCS := $(wildcard *.F90)
 INCS_C := $(wildcard *.hpp,*.h)
@@ -12,10 +11,8 @@ INCS_C += -I$(MPIPATH)/include
 SRCS_C := $(wildcard *.cpp) #C++ sources
 OBJS := $(SRCS:.F90=.o)
 OBJS_C := $(SRCS_C:.cpp=.o)
-LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc
+LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc -lmpi_cxx
 INCS := -I${PETSC_PATH}/include
-SHELLS := $(wildcard *.sh)
-SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
 DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx
 
@@ -35,8 +32,6 @@ ifneq ($(NERSC_HOST),perlmutter)
 	F90 := mpif90
 	CPP := mpicxx
 	JOB := job_local
-	LIBS += -lmpi_cxx
-	SHELLS := $(filter-out env.sh,$(SHELLS))
 	CPU := 1
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall $(OPT_COMMON_C)
@@ -118,7 +113,4 @@ install:
 	mkdir -p $(BINDIR) $(BINDIR)/out $(BINDIR)/dump $(BINDIR)/matrix
 	cp -f gemx $(BINDIR)
 	cp -f gemx.in $(BINDIR)
-	cp -f *.dat $(BINDIR)
 	cp -f $(JOBDIR)/$(JOB) $(BINDIR)
-	cp -f $(SCRIPTS) $(BINDIR)
-	cp -f $(SHELLS) $(BINDIR)
