@@ -7,7 +7,8 @@ JOBDIR := $(ROOT)/jobs
 SCRIPTDIR := $(ROOT)/scripts
 
 SRCS := $(wildcard *.F90)
-INCS_C := $(wildcard *.hpp)
+INCS_C := $(wildcard *.hpp,*.h)
+INCS_C += -I$(MPIPATH)/include
 SRCS_C := $(wildcard *.cpp) #C++ sources
 OBJS := $(SRCS:.F90=.o)
 OBJS_C := $(SRCS_C:.cpp=.o)
@@ -34,6 +35,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	F90 := mpif90
 	CPP := mpicxx
 	JOB := job_local
+	LIBS += -lmpi_cxx
 	SHELLS := $(filter-out env.sh,$(SHELLS))
 	CPU := 1
 	ifeq ($(DEBUG),1)
@@ -95,6 +97,9 @@ fcnt_c.o: fcnt_c.cpp
 
 gemx_c.o: gemx_c.cpp 
 	$(CPP) -c $(OPT_C) gemx_c.cpp
+
+gemx_com_c.o: gemx_com_c.cpp
+	$(CPP) -c $(OPT_C) gemx_com_c.cpp
 
 #Check for git diffs in the src directory
 check_diff:

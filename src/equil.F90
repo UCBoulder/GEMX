@@ -1,5 +1,13 @@
 MODULE equil
-      IMPLICIT NONE
+   use iso_c_binding
+   IMPLICIT NONE
+   INTERFACE
+   subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+   end subroutine new_gemx_com_c
+   
+   END INTERFACE
+      
+
       real :: mimp=2,chgi=1
       real :: beta,rmaj0,a,q0,r0,q0p,q0abs,shat0
       real :: dR,dth,mu0,e,proton
@@ -9,8 +17,10 @@ MODULE equil
 !     GEM-X
       !integer :: cont=259002 !Calder Edit
 
-      integer :: nx=449,nz=433,nzeta=32
-      real :: xdim,zdim,xctr,zctr,dxeq,dzeq
+      integer :: nzeta=32
+      integer, bind(c) :: nx=449, nz=433
+      real :: zctr
+      real, bind(c) :: dxeq, xdim, xctr, zdim, dzeq
       
       real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2
       real,dimension(:,:),allocatable :: t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez
@@ -20,7 +30,7 @@ MODULE equil
                                       zeff,nue0,phinc,phincp,&
                                       er,upari, Rgrid, Zgrid
       real,dimension(:,:),allocatable :: t0s,xn0s,capts,capns,vpars,vparsp,psi_p,mask,mask2,mask3,mask4
-      real:: bu,tu,nu,xu,frequ,vu,eru
+      real, bind(c):: bu,tu,nu,xu,frequ,vu,eru
 
 !     for including bstar effects
       real,dimension(:),allocatable :: psip2
@@ -37,7 +47,13 @@ MODULE equil
       real,dimension(:,:),allocatable :: phiavg
       real,dimension(:),allocatable :: psitab,weight00,weight10,weight01,weight11,jacobian,deno !Calder Edits
       integer, dimension(:), allocatable :: gindex,iarray,jarray,priv
-       
+
+   ! ============================================================================================================================
+   !pointers I am externing to C++
+   type(c_ptr), bind(c) :: t0i_ptr, xn0i_ptr, b0_ptr, b0zeta_ptr
+   type(c_ptr), bind(c) :: Rgrid_ptr
+
+   ! ============================================================================================================================       
 
 contains
       subroutine new_equil()
@@ -423,7 +439,15 @@ contains
  !     write(11,*) dR
  !     close(11)
 
-      
+
+  !Rgrid_ptr = c_loc(Rgrid(0))
+
+  t0i_ptr = c_loc(t0i(0,0))
+  xn0i_ptr = c_loc(xn0i(0,0))
+  b0_ptr = c_loc(b0(0,0)) 
+  b0zeta_ptr = c_loc(b0zeta(0,0))
+  
+  call new_gemx_com_c();   
   end subroutine new_equil
 
             

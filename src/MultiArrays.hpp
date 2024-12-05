@@ -6,8 +6,13 @@
 template<typename T>
 class Array2D {
 public:
-   Array2D(const T* const data, const std::size_t x, const std::size_t y)
-      : data_(const_cast<T*>(data)), x_(x), y_(y) {}
+   Array2D(){}
+
+   void CreateArray2D(const T* const data, const std::size_t x, const std::size_t y){
+      data_ = const_cast<T*>(data);
+      x_ = x+1; //for fortran arrays starting at 0, edge cases need to be included for max value. if array starts at 1,1 need to subtract one from index
+      y_ = y+1;
+   }
 
    // Column-major access
    T& operator()(const std::size_t i, const std::size_t j) {
@@ -24,11 +29,17 @@ private:
 template<typename T>
 class Array3D {
 public:
-   Array3D(const T* const data, const std::size_t x, const std::size_t y, const std::size_t z)
-      : data_(const_cast<T*>(data)), x_(x), y_(y), z_(z) {}
+   Array3D(){}
+
+   void CreateArray3D(const T* const data, const std::size_t x, const std::size_t y, const std::size_t z){
+      data_ = const_cast<T*>(data);
+      x_ = x+1;
+      y_ = y+1;
+      z_ = z+1;
+   }
 
    // Column-major access
-   T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
+   inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
       return data_[(k * y_ + j) * x_ + i];  // Column-major order
    }
 

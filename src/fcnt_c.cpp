@@ -4,7 +4,7 @@
 #include <iostream>
 
 //Function used in gemx.f90
-double revers_c(const int& num, const int& n){
+double revers_c_(const int& num, const int& n){
    //const auto start = std::chrono::high_resolution_clock::now();
    double rev = 0.0;
    double power = 1.0;
@@ -13,9 +13,9 @@ double revers_c(const int& num, const int& n){
    int irem = 0;
 
    while(inum > 0){
-      iquot = int(inum/(n));
+      iquot = int(inum/n);
       irem = inum - n*iquot;
-      power = power/(n);
+      power = power/n;
       rev = rev + irem*power;
       inum = iquot;
    }

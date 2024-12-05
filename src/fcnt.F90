@@ -7,7 +7,7 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !
-      function revers_f(num,n,r) !r (Add if passing thr other way)
+      function revers_f(num,n) !r (Add if passing thr other way)
 
 
 !    function to reverse the digits of num in base n.
@@ -29,7 +29,7 @@
       inum = iquot
       if(inum.gt.0) goto 11
 
-      revers = rev
+      revers_f = rev
 
 !    (Use when passing the other way)
 !    Timing Stuff ====================================================================================================

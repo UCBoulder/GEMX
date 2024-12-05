@@ -2,6 +2,7 @@ module gemx_com
 !common data used for gem
       use mpi
       USE pputil
+      use iso_c_binding
 implicit none
 
 INTERFACE
@@ -14,9 +15,16 @@ INTERFACE
   real(8) function en3(s)
       real(8) :: s
   end function en3
+
+
+subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+end subroutine new_gemx_com_c
 END INTERFACE
 
-integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg
+
+integer, bind(c) :: imx,jmx,kmx,mmx
+
+integer :: nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm
@@ -30,15 +38,17 @@ integer,dimension(0:10006):: rand_table
 
 INTEGER,dimension(:),allocatable :: mm,tmm,lr
 REAL(8),dimension(:),allocatable :: mims,q
-INTEGER :: timestep,iseed,iez
+INTEGER :: timestep,iez
+integer, bind(c) ::iseed
 
 real(8),dimension(:),allocatable :: time
-REAL(8) :: dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr
+REAL(8), bind(c) :: dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr
 REAL(8) :: etaohm
 REAL(8) :: lx,lz
 INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision
 REAL(8) :: cut,amp,tor,amie,emass,qel,rneu
-INTEGER :: iput,iget,idg,ision,isham,peritr,iadi
+INTEGER :: iput,iget,ision,isham,peritr,iadi
+integer, bind(c) :: idg
 real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, l_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
 
 
@@ -98,8 +108,8 @@ REAL(8),DIMENSION(:,:),allocatable :: efle,pfle
 REAL(8),DIMENSION(:,:),allocatable :: pfl,efl
 
 integer,parameter :: Master=0
-integer :: numprocs
-INTEGER :: MyId,Last,cnt,ierr
+integer, bind(c) :: numprocs
+INTEGER, bind(c) :: Last,MyId, cnt , ierr
 INTEGER :: GRID_COMM,TUBE_COMM, PETSC_COMM
 INTEGER :: GCLR,TCLR,GLST,TLST
 INTEGER :: stat(MPI_STATUS_SIZE)
@@ -115,6 +125,10 @@ parameter(outdir='./out/')
 !integer :: mod
 !real(8) :: amod
 save
+
+!pointer declarations
+type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, z2_ptr, mims_ptr, u2_ptr, mu_ptr, w2_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
+type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr
 
 contains
 subroutine new_gemx_com()
@@ -173,7 +187,37 @@ ALLOCATE( nos(nsmx,0:nmx))
 ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
          pfl(nsmx+1,0:nmx),efl(nsmx,0:nmx))
 
+ 
+   !1D Arrays
+         !Integer Arrays
+   tmm_ptr = c_loc(tmm(1))
+   mm_ptr = c_loc(mm(1))
+         !Real/Double Arrays
+   zeta2_ptr = c_loc(zeta2(1))
+   x2_ptr = c_loc(x2(1))
+   z2_ptr = c_loc(z2(1))
+   mims_ptr = c_loc(mims(1))
+   u2_ptr = c_loc(u2(1))
+   mu_ptr = c_loc(mu(1))
+   w2_ptr = c_loc(w2(1))
+   x3_ptr = c_loc(x3(1))
+   zeta3_ptr = c_loc(zeta3(1))
+   z3_ptr = c_loc(z3(1))
+   u3_ptr = c_loc(u3(1))
+   w3_ptr = c_loc(w3(1))
 
+   !2D Arrays
+   ileft_ptr = c_loc(ileft(0,0))
+   xbackw_ptr = c_loc(xbackw(0,0))
+   zbackw_ptr = c_loc(zbackw(0,0))
+   jleft_ptr = c_loc(jleft(0,0))
+   iright_ptr = c_loc(iright(0,0))
+   xforw_ptr = c_loc(xforw(0,0))
+   zforw_ptr = c_loc(zforw(0,0))
+   jright_ptr = c_loc(jright(0,0))
+   !3D Arrays
+   
+      call new_gemx_com_c();
 end subroutine new_gemx_com
 
 end module gemx_com

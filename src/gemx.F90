@@ -1,29 +1,47 @@
-      program gemx
+program gemx
 #include <petsc/finclude/petscksp.h>
       use gemx_com
       use equil
+      use iso_c_binding
 
       use petsc
       use petscdmda
       use petscksp
-      use iso_c_binding
 !      use para_com
 
 
       implicit none
 
       interface
-      !    subroutine revers_c(num, n, revers) bind(c, name = 'revers_c_')
-      !       use iso_c_binding
-      !       integer (c_int) :: num, n
-      !       real (c_double) :: revers
-      !    end subroutine revers_c
+      function revers_c(num, n) bind(c, name = 'revers_c_')
+         use iso_c_binding
+         integer (c_int) :: num, n
+         real (c_double) revers_c
+      end function revers_c
 
-         subroutine parperp_c(vpar, vperp2, m, cnt, MyId) bind(c, name = 'parperp_c_')
-            use iso_c_binding
-            integer (c_int) :: m, pi, cnt, MyId
-            real (c_double) :: vpar, vperp2
-         end subroutine parperp_c
+      function ran2_c(idum) bind(c, name = 'ran2_c_')
+         use iso_c_binding
+         integer (c_int) :: idum
+         real (c_double) :: ran2_c
+      end function ran2_c
+      
+      subroutine loadi_c() bind(c, name = 'loadi_c_')
+      end subroutine loadi_c
+
+      subroutine gradu_c(u_c, ux_c, uz_c) bind(c, name = 'gradu_c_')
+         use iso_c_binding
+         real(c_double) :: u_c, ux_c, uz_c
+      end subroutine gradu_c
+
+      subroutine parperp_c() bind(c, name = 'parperp_c_')
+         use iso_c_binding
+      end subroutine parperp_c
+
+      subroutine gradz_c(u_c, uz_c, Rgrid_c) bind(c, name = 'gradz_c_')
+         use iso_c_binding
+         real(c_double) :: u_c, uz_c, Rgrid_c
+      end subroutine gradz_c
+      
       end interface
 
        integer :: status,mid_i,mid_j
@@ -32,6 +50,7 @@
 
        real::random
        real :: tmp
+       real :: retVal
        PetscInt is,js,iw,jw,idx,n_in_porcs
        PetscInt one,three,vec_start,vec_end
        PetscErrorCode petsc_ierr
@@ -44,6 +63,7 @@
        VecScatter   ctx
        external ComputeRHS,ComputeMatrix,ComputeInitialGuess
 
+       
 
 
 !       call init
@@ -90,7 +110,7 @@
      
 
 
-       if(iget.eq.0)call loadi
+       if(iget.eq.0)call loadi_c
        call integ(2)
 
                if(myid==0)then
@@ -197,7 +217,7 @@
                close(11)
             end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-
+         
  if (ifield_solver .eq. 1) then         
                  ncurr = 1                      
  end if
@@ -205,7 +225,7 @@
   start_total_tm = MPI_WTIME()
   do  timestep=ncurr,nm
      do i=0,10006
-          if (ran2(iseed)-0.5>0) then
+          if (ran2_c(iseed)-0.5>0) then
              rand_table(i)=1
           else
              rand_table(i)=-1
@@ -638,6 +658,8 @@ total_tm = total_tm + end_total_tm - start_total_tm
       REAL(8) :: gn0ip,gn0ep,gt0ip,gt0ep,capnxp,capnzp
       REAL(8) :: wx0,wx1,wz0,wz1,b
 
+      real :: ran2_c
+
       IU=cmplx(0.,1.)
       pi=4.0*atan(1.0)
       pi2 = pi*2.
@@ -668,10 +690,16 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) dbg
       close(115)
+
+      !Allow time for attaching in debug mode.
+      do while (dbg.eq.1)
+         call sleep(1)
+      end do
       
       nsm=1
       
       call new_gemx_com()
+
       ns = 1
       tmm(ns)=mmx!ntracer
 !      mm(ns)=int(ntracer/numprocs)
@@ -762,10 +790,14 @@ total_tm = total_tm + end_total_tm - start_total_tm
 !            gnuobx(i1,k1) = dnuobdtp*fp/radiusp*grcgtp
          end do
       end do
+      
+      
+      
 
 
       iseed = -(1777+myid*13)
-      idum = ran2(iseed)
+      !idum = ran2(iseed)
+      idum = ran2_c(iseed)
       phi = 0.
       apar = 0.
       dene = 0.
@@ -775,9 +807,9 @@ total_tm = total_tm + end_total_tm - start_total_tm
       do i = 0,imx
          do j = 0,jmx
             do k = 0,kmx
-               phi(i,j,k) = amp*(ran2(idum)-0.5)*ifluid*1e-8  !amp*sin(nzcrt*xg(i)*pi/lx) !
-               dene(i,j,k) = amp*(ran2(idum)-0.5)*ifluid *1e-8
-               apar(i,j,k) = amp*(ran2(idum)-0.5)*ifluid *1e-10 
+               phi(i,j,k) = amp*(ran2_c(idum)-0.5)*ifluid*1e-8  !amp*sin(nzcrt*xg(i)*pi/lx) !
+               dene(i,j,k) = amp*(ran2_c(idum)-0.5)*ifluid *1e-8
+               apar(i,j,k) = amp*(ran2_c(idum)-0.5)*ifluid *1e-10 
             end do
          end do
       end do
@@ -805,19 +837,22 @@ total_tm = total_tm + end_total_tm - start_total_tm
       real(8) :: tmp(0:imx,0:jmx,0:1),uoverb(0:imx,0:jmx,0:1)
       real(8) :: v(0:imx-1),dum,dum1
 
-      call gradu(phi(:,:,:),ux,uy)
+      !call gradu(phi(:,:,:),ux,uy)
+      call gradu_c(c_loc(phi(:,:,:)), c_loc(ux(0,0,0)), c_loc(uy(0,0,0)))
       ex(:,:,:) = -ux(:,:,:)
       ez(:,:,:) = -uy(:,:,:)
 
       delbx = 0.
       delby = 0.
       if(ifluid.eq.1)then
-         call gradu(apar(:,:,:),ux,uy)
+         !call gradu(apar(:,:,:),ux,uy)
+         call gradu_c(c_loc(apar(:,:,:)), c_loc(ux(0,0,0)), c_loc(uy(0,0,0)))
          delbx(:,:,:) = uy(:,:,:)
          delby(:,:,:) = -ux(:,:,:)
       end if
 
-      call gradu(tmp(:,:,:),ux,uy)
+      !call gradu(tmp(:,:,:),ux,uy)
+      call gradu_c(c_loc(tmp(:,:,:)), c_loc(ux(0,0,0)), c_loc(uy(0,0,0)))
       dnedx(:,:,:) = ux(:,:,:)
       dnedy(:,:,:) = uy(:,:,:)
       do i = 0,imx
@@ -827,7 +862,8 @@ total_tm = total_tm + end_total_tm - start_total_tm
             end do
          end do
       end do
-      call gradu(uoverb(:,:,:),ux,uy)
+      !call gradu(uoverb(:,:,:),ux,uy)
+      call gradu_c(c_loc(uoverb(:,:,:)), c_loc(ux(0,0,0)), c_loc(uy(0,0,0)))
       dupadx(:,:,:) = ux(:,:,:)
       dupady(:,:,:) = uy(:,:,:)
 
@@ -944,20 +980,19 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !        Normal distribution random no. generator, stand. dev. = 1.
 !        Version 2 does it Willy's way...
 
-         subroutine parperp(vpar,vperp2,m,pi,cnt,MyId)
-         !REAL(8) :: myStart, myEnd !timing stuff
+         subroutine parperp(vpar,vperp2,m,cnt,MyId)
 
-         REAL(8) :: vpar,vperp2,r1,r2,pi,t !removed t from here, please put back eventually :)
+         REAL(8) :: vpar,vperp2,r1,r2,t,pi
          INTEGER :: m,iflag,cnt,MyId
          REAL(8) :: c0,c1,c2
          REAL(8) :: d1,d2,d3
+         real :: revers_c
          data c0,c1,c2/2.515517,0.802853,0.010328/
          data d1,d2,d3/1.432788,0.189269,0.001308/
 
-         !call cpu_time(myStart)
 
-         call revers_f(m+MyId*cnt,7,r1) 
-         call revers_f(m+MyId*cnt,11,r2)
+         r1 = revers_c(m+MyId*cnt,7)
+         r2 = revers_c(m+MyId*cnt,11)
 
 
 !.....quiet start---see denavit pf '71(?) & abramowitz hand book
@@ -971,7 +1006,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          iflag=-1
   110    continue
          if(r1.ge.1.e-6) then
-           t=sqrt(dlog(1.0/(r1*r1)))
+           t=sqrt(log(1.0/(r1*r1)))
          else
            t=5.0
            write(*,*)'parperp2 warning  m= ',m
@@ -981,9 +1016,6 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          vpar=vpar*iflag
 
           vperp2=-2.0*dlog(r2)
-          !more timing stuff
-         ! call cpu_time(myEnd)
-         ! write(*,*) (myEnd-myStart)
 
         return
         end
@@ -1025,7 +1057,8 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
             function  gradparz(matrix)
               real,dimension(0:imx,0:jmx,0:kmx)::matrix,gradparz
-              call gradz(matrix,gradparz)
+              !call gradz(matrix,gradparz)
+              call gradz_c(matrix,gradparz, Rgrid)
               do k=0,kmx
                  do i=0,imx
                     do j=0,jmx
@@ -1160,7 +1193,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          CONTAINS
            function  gradparz(matrix)
            real,dimension(0:imx,0:jmx,0:kmx)::matrix,gradparz
-           call gradz(matrix,gradparz)
+           call gradz_c(matrix,gradparz, Rgrid)
 
               do k=0,kmx
                  do i=0,imx
@@ -1328,8 +1361,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       REAL(8) :: avgv,myavgv,avgw,myavgw
       real(8) :: dumx,dumy,dumz,jacp,rand(4)
       REAL(8) :: wx0,wx1,wz0,wz1,avex=0
-      !Vars for timing
-      REAL(8) :: myStart, myEnd
+      real :: ran2_c
 
       cnt=int(tmm(1)/numprocs)
       cnt=mmx
@@ -1340,10 +1372,6 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       myavgw = 0.
 
       m=1
-      !Timing info
-      
-      call cpu_time(myStart)
-
       do while(m<=mm(1))
 !     load a slab of ions...
 
@@ -1351,9 +1379,10 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !         dumy=zdim*(ran2(iseed)+0.01)*0.9
 
          !revers(MyId*cnt+j,2) !ran2(iseed)
-         dumx=2*dxeq+(xdim-4*dxeq)*ran2(iseed)  !revers(MyId*cnt+j,2) !ran2(iseed)
-         dumy=2*dzeq+(zdim-4*dzeq)*ran2(iseed) !revers(MyId*cnt+j,3) !ran2(iseed)
-         dumz=pi2*ran2(iseed) !revers(MyId*cnt+j,5) !ran2(iseed)
+
+         dumx=2*dxeq+(xdim-4*dxeq)*ran2_c(iseed)  !revers(MyId*cnt+j,2) !ran2(iseed)
+         dumy=2*dzeq+(zdim-4*dzeq)*ran2_c(iseed) !revers(MyId*cnt+j,3) !ran2(iseed)
+         dumz=pi2*ran2_c(iseed) !revers(MyId*cnt+j,5) !ran2(iseed)
 
 
 !         dumx=dxeq+(xdim-2*dxeq)*m/((mm(1)))
@@ -1368,7 +1397,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             zeta2(m)=dumz
             x2(m)=dumx
             z2(m)=dumy
-            call parperp_c(vpar,vperp2,m,cnt,MyId) !calling c function here now!
+            call parperp_c(vpar,vperp2,m,cnt,MyId)
 
             x=x2(m)
             i = int(x/dxeq)
@@ -1382,6 +1411,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
             bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) &
                    +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1) 
+                   
             ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
                    +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1) 
 
@@ -1402,9 +1432,6 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             myavgw=myavgw+w2(m)
             m = m+1            
          end do
-         !End Timing Stuff
-         call cpu_time(myEnd)
-         write(*,*) (myEnd-myStart)
 
 !             do i=1,mmx
 !                avex=avex+x2(i)
@@ -1619,7 +1646,7 @@ end subroutine field
       denes = dene
       apars = apar
 
-      call gradz(upar,uz)
+      call gradz_c(upar,uz, Rgrid)
       do k = 0,kmx-1
          do i = 1,imx-1
             do j = 1,jmx-1
@@ -1630,7 +1657,7 @@ end subroutine field
          end do
       end do
 
-      call gradz(phi,uz)
+      call gradz_c(phi,uz, Rgrid)
       do k = 0,kmx-1
          do i = 1,imx-1
             do j = 1,jmx-1
@@ -2279,7 +2306,8 @@ subroutine efieldcalc(phi_input)
             if (k==0) then
                kminus = kmx
                ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,kminus))/(2*Rgrid(i)*(2*pi/(kmx+1)))
-            else if (k==kmx) then
+            end if
+            if (k==kmx) then
                kplus = 0
                ezeta(i,j,k) = -(phi_input(i,j,kplus) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
             else
@@ -2355,12 +2383,14 @@ subroutine boltzsolve(input_phi)
 
    ! Local Variables
    integer :: i, j, k
+   real :: ran2_c
 
    do i=0, imx
       do j=0, jmx
          do k=0, kmx
             if (input_phi(i,j,k) == 0) then
-               phi_k(i,j,k) = 0.005+(ran2(iseed)*0.005)
+
+               phi_k(i,j,k) = 0.005+(ran2_c(iseed)*0.005)
             else
                phi_k(i,j,k) = 1.01*input_phi(i,j,k)
             end if
@@ -2419,9 +2449,3 @@ subroutine boltzsolve(input_phi)
    ! end if
 
 end subroutine
-
-
-    
-    
-           
-       
