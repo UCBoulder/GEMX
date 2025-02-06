@@ -483,3 +483,56 @@ void efieldcalc_c_(double *Rgrid, double *Zgrid, double *phi_input){ //Working
       }
    }
 }
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Growth Rate Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+void growthdiag_c_(double *input_phi){ //Working
+   //Input is phi_c in every case
+   Array3D<double> input_phi_c;
+   input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx);
+   //Local variables
+   int store, k, gi, peak;
+   double phiavgsq, weightinput, phiavggi;
+
+   phiavgsq = 0;
+   /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+   peak     = 45; //Manually set contour number of peak temperature gradient
+   /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+   phiavggi = 0.0;
+   store    = 0;
+
+   for(gi = 21759; gi < 22540; ++gi){ //offset by one for gindex ptr indexing starting at 0 -Dom
+      if(gindex_ptr[gi] == peak){
+         for(k = 0; k <= kmx; ++k){
+            weightinput = (weight00_ptr[gi]*input_phi_c(iarray_ptr[gi], jarray_ptr[gi],k)*input_phi_c(iarray_ptr[gi], jarray_ptr[gi],k) + 
+                           weight10_ptr[gi]*input_phi_c(iarray_ptr[gi]+1, jarray_ptr[gi],k)*input_phi_c(iarray_ptr[gi]+1, jarray_ptr[gi],k) + 
+                           weight01_ptr[gi]*input_phi_c(iarray_ptr[gi], jarray_ptr[gi]+1,k)*input_phi_c(iarray_ptr[gi], jarray_ptr[gi]+1,k) + 
+                           weight11_ptr[gi]*input_phi_c(iarray_ptr[gi]+1, jarray_ptr[gi]+1,k)*input_phi_c(iarray_ptr[gi]+1, jarray_ptr[gi]+1,k));
+         }
+         phiavggi = phiavggi + (weightinput*jacobian_ptr[gi])/(deno_ptr[gi]*(kmx+1));
+
+         if(priv_ptr[gi] == 0){
+            store = gi;
+         }
+      }
+
+      if(phiavggi != 0){
+         if(gindex_ptr[gi] != peak){
+            phiavggi = phiavggi - (weightinput*jacobian_ptr[gi-1])/(deno_ptr[gi-1]*(kmx+1));
+            break;
+         }
+      }
+   }
+
+   if(store != 0){
+      phiavgsq = phiavggi;
+   }
+
+   ofstream myFile("testphiavgsq", ios::app);
+   if(myFile.is_open()){
+      myFile << "            " << timestep << "    "; //looks weird, just making it look identical to the old test files
+      myFile << setprecision(16) << phiavgsq << endl;
+   }else{
+      cerr << "Error opening testphiavgsq" << endl;
+   }
+   myFile.close();
+}

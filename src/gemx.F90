@@ -522,8 +522,8 @@ program gemx
    !call efieldcalc(phi)
    call efieldcalc_c(Rgrid, Zgrid, phi)
    if (i3D == 1) then
-      call growthdiag(phi)
-      !call growthdiag_c(phi)
+      !call growthdiag(phi)
+      call growthdiag_c(phi)
    end if
 
 
