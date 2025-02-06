@@ -454,3 +454,32 @@ void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
       }
    }
 }
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+void efieldcalc_c_(double *Rgrid, double *Zgrid, double *phi_input){ //Working
+   //Input is phi array - labeled phi_c by extern
+   //3D phi for calculation of E field
+   Array3D<double> input_phi_c;
+   input_phi_c.CreateArray3D(phi_input, imx, jmx, kmx);
+   //local vars
+   int i, j, k, kminus, kplus;
+
+   for(k = 0; k <= kmx; ++k){
+      for(i = 2; i < imx; ++i){
+         for(j = 2; j < jmx; ++j){
+            ex_c(i,j,k) = -(input_phi_c(i+1,j,k) - input_phi_c(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0])); //TODO - TAKE A LOOK AGAIN AT RGRID AND ZGRID NOW
+            ez_c(i,j,k) = -(input_phi_c(i,j+1,k) - input_phi_c(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
+            if(k == 0){
+               kminus = kmx;
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,kminus))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+            }
+            if(k == kmx){
+               kplus = 0;
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,kplus) - input_phi_c(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+            }else{
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+            }
+         }
+      }
+   }
+}
