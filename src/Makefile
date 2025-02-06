@@ -87,14 +87,17 @@ fcnt.o: fcnt.F90
 	$(F90) -c $(OPT) fcnt.F90
 
 #C++ compilation.
+gemx_externs.o: gemx_externs.cpp
+	$(CPP) -c $(OPT_C) gemx_externs.cpp
+	
 fcnt_c.o: fcnt_c.cpp
 	$(CPP) -c $(OPT_C) fcnt_c.cpp
 
+# ionPush_c.o: ionPush_c.cpp
+# 	$(CPP) -c $(OPT_C) ionPush_c.cpp
+
 gemx_c.o: gemx_c.cpp 
 	$(CPP) -c $(OPT_C) gemx_c.cpp
-
-gemx_com_c.o: gemx_com_c.cpp
-	$(CPP) -c $(OPT_C) gemx_com_c.cpp
 
 #Check for git diffs in the src directory
 check_diff:

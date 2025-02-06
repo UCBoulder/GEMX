@@ -19,6 +19,16 @@ public:
       return data_[j * x_ + i];  // Column-major order
    }
 
+   int getX(){
+      return x_;
+   }
+   int getY(){
+      return y_;
+   }
+
+   void ClearArray2D(){
+
+   }
 private:
    T* data_ = nullptr;
    std::size_t x_ = 0;
@@ -48,4 +58,32 @@ private:
    std::size_t x_ = 0;
    std::size_t y_ = 0;
    std::size_t z_ = 0;
+};
+
+// 4D array class with column-major order
+template<typename T>
+class Array4D {
+   public:
+   Array4D(){}
+
+   void CreateArray4D(const T* const data, const std::size_t x, const std::size_t y, const std::size_t z, const std::size_t q){
+      data_ = data_ = const_cast<T*>(data);
+      x_ = x;
+      y_ = y;
+      z_ = z;
+      q_ = q;
+   }
+
+   // Column-major access
+   inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
+      //return data_[i + x_ * (j + y_ * (k + z_ * l))];  // Column-major order
+      return data_[((l * z_ + k) * y_ + j) * x_ + i];
+   }
+      
+   private:
+   T* data_ = nullptr;
+   std::size_t x_ = 0;
+   std::size_t y_ = 0;
+   std::size_t z_ = 0;
+   std::size_t q_ = 0; 
 };
