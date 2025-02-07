@@ -536,3 +536,84 @@ void growthdiag_c_(double *input_phi){ //Working
    }
    myFile.close();
 }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann-Poisson Electron Solver!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+void BoltzSolve_c_(double *input_phi, int i3D, double *c2_over_vA2, double *OPPphi, double *OPPphik){ //Working
+   //3D input phi array
+   //Local Variables
+   int i, j, k;
+   
+   Array3D<double> input_phi_c;
+   input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx); //guesswork-ish right now
+
+   Array2D<double> c2_over_vA2_c;
+   c2_over_vA2_c.CreateArray2D(c2_over_vA2, nx, nz);
+
+   Array3D<double> OPPphi_c;
+   OPPphi_c.CreateArray3D(OPPphi, imx, jmx, kmx);
+
+   Array3D<double> OPPphik_c;
+   OPPphik_c.CreateArray3D(OPPphik, imx, jmx, kmx);
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         for(k = 0; k <= kmx; ++k){
+            if(input_phi_c(i,j,k) == 0){
+               phi_k_c(i,j,k) = 0.005+(ran2_c_(iseed)*0.005);
+            }else{
+               phi_k_c(i,j,k) = 1.01*input_phi_c(i,j,k);
+            }
+         }
+      }
+   }
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         for(k = 0; k <= kmx; ++k){
+            dphidr_c(i,j,k)   = c2_over_vA2_c(i,j)*(input_phi_c(i+1,j,k)-input_phi_c(i-1,j,k))/(2*dx);
+            dphi_kdr_c(i,j,k) = c2_over_vA2_c(i,j)*(phi_k_c(i+1,j,k)-phi_k_c(i-1,j,k))/(2*dx);
+
+            dphidz_c(i,j,k)   = c2_over_vA2_c(i,j)*(input_phi_c(i,j+1,k)-input_phi_c(i,j-1,k))/(2*dz);
+            dphi_kdz_c(i,j,k) = c2_over_vA2_c(i,j)*(phi_k_c(i,j+1,k)-phi_k_c(i,j-1,k))/(2*dz);
+         }
+      }
+   }
+
+    for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         for(k = 0; k <= kmx; ++k){
+            d2phidr2_c(i,j,k)      = (dphidr_c(i+1,j,k)-dphidr_c(i-1,j,k))/(2*dx);
+            d2phi_kdr2_c(i,j,k)    = (dphi_kdr_c(i+1,j,k)-dphi_kdr_c(i-1,j,k))/(2*dx);
+
+            d2phidz2_c(i,j,k)      = (dphidz_c(i,j+1,k)-dphidz_c(i,j-1,k))/(2*dz);
+            d2phi_kdz2_c(i,j,k)    = (dphi_kdz_c(i,j+1,k)-dphi_kdz_c(i,j-1,k))/(2*dz);
+            
+            OPPphi_c(i,j,k)  = (d2phidr2_c(i,j,k)+d2phidz2_c(i,j,k));
+            OPPphik_c(i,j,k) = (d2phi_kdr2_c(i,j,k)+d2phi_kdz2_c(i,j,k));
+   
+            l_hand_c(i,j,k) = (OPPphik_c(i,j,k)-OPPphi_c(i,j,k))/(phi_k_c(i,j,k)-input_phi_c(i,j,k)) - (xn0e_c(i,j)*mu0*e*e/t0e_c(i,j)*exp(input_phi_c(i,j,k)*e/t0e_c(i,j)));
+
+            if(i3D == 0){
+               r_hand_c(i,j,k) = (OPPphi_c(i,j,k)+q_ptr[0]*mu0*den2d2_c(i,j)-e*mu0*xn0e_c(i,j)*exp((e/t0e_c(i,j))*(input_phi_c(i,j,k)))); //q_ptr set in gem_com externs check in on this
+            }else{
+               r_hand_c(i,j,k) = (OPPphi_c(i,j,k)+q_ptr[0]*mu0*den_c(1,i,j,k)-e*mu0*xn0e_c(i,j)*exp((e/t0e_c(i,j))*(input_phi_c(i,j,k)))); //den is a 4D array
+            }
+
+            input_phi_c(i,j,k) = phi_k_c(i,j,k) - (r_hand_c(i,j,k)/l_hand_c(i,j,k));
+            // input_phi(i,j,k) = OPPphik(i,j,k)
+
+            if(mask_c(i,j) < 0.99){
+               for(k=0; k <= kmx; k++){
+                  input_phi_c(i,j,k) = 0; //TODO - DOUBLE CHECK THIS IS WHAT WE NEED TO DO
+               }
+            }
+         }
+      }
+   }
+   // if (timestep == 1) then
+   //    open(unit=11, file = 'testboltzmann',status='unknown',action='write')
+   //    do j=0, jmx
+   //    write(11,*) input_phi(:,j,0)
+   //   end do
+   //    close(11)
+   // end if
+}

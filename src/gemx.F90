@@ -293,8 +293,8 @@ program gemx
             !phiavg=0
             call fluxavg_c(i3D, phi, phiavg)
                if (eBoltzmann == 1) then
-                  call boltzsolve(phi)
-                  !call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
+                  !call boltzsolve(phi)
+                  call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
                else
 
 
@@ -324,8 +324,8 @@ program gemx
          !call fluxavg(phi,phiavg)
          call fluxavg_c(i3D, phi, phiavg)
          if (eBoltzmann == 1) then
-            call boltzsolve(phi)
-            !call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
+            !call boltzsolve(phi)
+            call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
          else
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
@@ -458,8 +458,8 @@ program gemx
             !call fluxavg(phi,phiavg)
             call fluxavg_c(i3D, phi, phiavg)
             if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-               !call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
+               !call boltzsolve(phi)
+               call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
             else      
                      
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
@@ -489,8 +489,8 @@ program gemx
             !call fluxavg(phi,phiavg)
             call fluxavg_c(i3D, phi, phiavg)
             if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-               !call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
+               !call boltzsolve(phi)
+               call boltzsolve_c(phi, i3D, c2_over_vA2, OPPphi, OPPphik)
             else
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
