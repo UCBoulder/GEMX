@@ -206,8 +206,8 @@ program gemx
            
            phiavg=0 !Calder Edit
 
-           call get_jpar(apar)
-           !call get_jpar_c(apar, Rgrid)
+           !call get_jpar(apar)
+           call get_jpar_c(apar, Rgrid)
            call get_ne(0)
 
            if(i3d==0)then
@@ -381,8 +381,8 @@ program gemx
 
          call get_apar(-1)
          !call  smooth(apars,2)
-           call get_jpar(apars)
-           !call get_jpar_c(apars, Rgrid)
+           !call get_jpar(apars)
+           call get_jpar_c(apars, Rgrid)
            !call smooth(jpar,3)
            call get_ne(-1)
 
@@ -547,8 +547,8 @@ program gemx
 
     call get_apar(1)
 !    call smooth(apar,2)
-      call get_jpar(apar)
-      !call get_jpar_c(apar, Rgrid)
+      !call get_jpar(apar)
+      call get_jpar_c(apar, Rgrid)
 !      call smooth(jpar,3)
       call get_ne(1)
 

@@ -65,6 +65,26 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt, const
    vperp2 = -2.0*log(r2); 
    return;
 }
+
+void get_jpar_c_(double* MatrixIn, double* Rgrid){ //Working
+   int i, j, k;
+
+   Array3D<double> matrix;
+   matrix.CreateArray3D(MatrixIn, imx, jmx, kmx);
+
+   for(k = 0; k <= kmx; ++k){
+      for(i = 2; i <= imx; ++i){
+         for(j = 2; j <= jmx; ++j){
+            if(mask3_c(i,j)>=2.99){ 
+               jpar_c(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)     
+                                 -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)  
+                                 -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*Rgrid[i]/xu))  
+                                 -q_ptr[0]*mu0*upar_c(i,j,k);
+            }
+         }
+      }
+   }
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 double ran2_c_(int& idum){ //Working
