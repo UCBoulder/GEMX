@@ -145,8 +145,8 @@ program gemx
 
 
        if(iget.eq.0)call loadi_c
-       call integ(2)
-       !call integ_c(2, i3D)
+       !call integ(2)
+       call integ_c(1, i3D)
 
                if(myid==0)then
                 open(unit=11, file = 'testden',status='unknown',action='write')
@@ -213,8 +213,8 @@ program gemx
            if(i3d==0)then
               apar=0
               dene=0
-              call integ(2)
-              !call integ_c(2, i3d)
+              !call integ(2)
+              call integ_c(1, i3d)
            end if
            
 
@@ -419,15 +419,15 @@ program gemx
 
 
                if(ision==1)call ppush(timestep)
-               if(ifluid==1)call integ(1)
-               !if(ifluid==1)call integ_c(1, i3d)
+               !if(ifluid==1)call integ(1)
+               if(ifluid==1)call integ_c(0, i3d)
                
 
           else
              if(ision==1)call ppush(timestep)
              !             if(ifluid==1)call pintef
-             if(ifluid==1)call integ(1)
-             !if(ifluid==1)call integ_c(1,i3d)
+             !if(ifluid==1)call integ(1)
+             if(ifluid==1)call integ_c(0,i3d)
 
 !             if(myid==0)then
 !                open(unit=11, file = 'testden',status='unknown',action='write')
@@ -576,13 +576,13 @@ program gemx
 
        if(ision==1)call cpush(timestep)
         !        if(ifluid==1)call cintef(timestep)
-       if(ifluid==1)call integ(2)
-       !if(ifluid==1)call integ_c(2, i3D)
+       !if(ifluid==1)call integ(2)
+       if(ifluid==1)call integ_c(1, i3D)
     else
         if(ision==1)call cpush(timestep)
         !        if(ifluid==1)call cintef(timestep)
-        if(ifluid==1)call integ(2)
-        !if(ifluid==1)call integ_c(2,i3D)
+        !if(ifluid==1)call integ(2)
+        if(ifluid==1)call integ_c(1,i3D)
         !        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
      end if
      

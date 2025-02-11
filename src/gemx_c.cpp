@@ -362,6 +362,163 @@ void gradz_c_(double* u, double* uz, double* Rgrid_c){
    return;
 }
 
+void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS, BUT DOES WORK FOR THE MACROSCOPIC RESULTS.
+   int i, j, k, ip, m, itemp;
+   double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex;
+
+   int start_integ_tm = MPI_Wtime();
+   itemp = 2;
+   //set all items in den to 0
+   for(int f = 0; f <= imx; ++f){
+      for (int g = 0; g <= jmx; ++g){
+         for(int h = 0; h <= kmx; ++h)
+            den_c(iflag,f,g,h) = 0;
+      }
+   }
+   //upar = 0; //set all values of upar to 0
+   for(int e = 0; e <= imx; ++e){ //temporary testing
+      for(int f = 0; f <= jmx; ++f){
+         for (int g = 0; g <= kmx; ++g){
+            upar_c(e, f, g) = 0;
+         }
+      }
+   }
+   //$acc parallel loop gang vector
+   for(m = 0; m <= mm_ptr[0]; ++m){
+
+      x = x3_ptr[m];
+      i = int(x/dxeq);
+      wx0 = (i+1)-x/dxeq;
+      wx1 = 1-wx0;
+
+      R_major_over_R=xctr/(xctr-xdim/2+i*dx);
+      R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
+
+      z = z3_ptr[m];
+      j = int(z/dzeq);
+      wy0 = (j+1)-z/dzeq;
+      wy1 = 1-wy0;
+      
+      zeta= fmod(zeta3_ptr[m], 2*M_PI); // fmod is a modulus function that can use doubles
+      k=int(zeta/dzeta);
+      wzeta0=(k+1)-zeta/dzeta;
+      wzeta1=1-wzeta0;
+
+      //$acc atomic update 
+      den_c(iflag,i,j,k)=den_c(iflag,i,j,k)+w3_ptr[m]*wx0*wy0*wzeta0*R_major_over_R;
+      //$acc atomic update
+      den_c(iflag,i+1,j,k)=den_c(iflag,i+1,j,k)+w3_ptr[m]*wx1*wy0*wzeta0*R_major_over_R1;
+      //$acc atomic update
+      den_c(iflag,i,j+1,k)=den_c(iflag,i,j+1,k)+w3_ptr[m]*wx0*wy1*wzeta0*R_major_over_R;
+      //$acc atomic update
+      den_c(iflag,i+1,j+1,k)=den_c(iflag,i+1,j+1,k)+w3_ptr[m]*wx1*wy1*wzeta0*R_major_over_R1;
+      //$acc atomic update 
+      upar_c(i,j,k)=upar_c(i,j,k)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta0*R_major_over_R;
+      //$acc atomic update
+      upar_c(i+1,j,k)=upar_c(i+1,j,k)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta0*R_major_over_R1;
+      //$acc atomic update
+      upar_c(i,j+1,k)=upar_c(i,j+1,k)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta0*R_major_over_R;
+      //$acc atomic update
+      upar_c(i+1,j+1,k)=upar_c(i+1,j+1,k)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta0*R_major_over_R1;
+
+      if(k != kmx){
+         //$acc atomic update
+         den_c(iflag,i,j,k+1)=den_c(iflag,i,j,k+1)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
+         //$acc atomic update
+         den_c(iflag,i+1,j,k+1)=den_c(iflag,i+1,j,k+1)+w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         den_c(iflag,i,j+1,k+1)=den_c(iflag,i,j+1,k+1)+w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
+         //$acc atomic update
+         den_c(iflag,i+1,j+1,k+1)=den_c(iflag,i+1,j+1,k+1)+w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         upar_c(i,j,k+1)=upar_c(i,j,k+1)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
+         //$acc atomic update
+         upar_c(i+1,j,k+1)=upar_c(i+1,j,k+1)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         upar_c(i,j+1,k+1)=upar_c(i,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
+         //$acc atomic update
+         upar_c(i+1,j+1,k+1)=upar_c(i+1,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
+   }else{
+         //$acc atomic update
+         den_c(iflag,i,j,0)=den_c(iflag,i,j,0)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
+         //$acc atomic update
+         den_c(iflag,i+1,j,0)=den_c(iflag,i+1,j,0)+w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         den_c(iflag,i,j+1,0)=den_c(iflag,i,j+1,0)+w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
+         //$acc atomic update
+         den_c(iflag,i+1,j+1,0)=den_c(iflag,i+1,j+1,0)+w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         upar_c(i,j,0)=upar_c(i,j,0)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
+         //$acc atomic update
+         upar_c(i+1,j,0)=upar_c(i+1,j,0)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         //$acc atomic update
+         upar_c(i,j+1,0)=upar_c(i,j+1,0)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
+         //$acc atomic update
+         upar_c(i+1,j+1,0)=upar_c(i+1,j+1,0)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
+      }
+   }
+   //$acc wait
+   
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         for(k = 0; k <= kmx; ++k){
+            ierr = MPI_Allreduce(MPI_IN_PLACE, &den_c(iflag,i,j,k), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            ierr = MPI_Allreduce(MPI_IN_PLACE, &upar_c(i,j,k), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+         }
+      }
+   }
+
+   for(int i = 0 ; i <= imx; ++i){
+      for(int j = 0; j <= jmx; ++j){
+         for(int k = 0; k <= kmx; ++k){
+            den_c(1,i,j,k) = den_c(iflag, i, j, k);
+         }
+      }
+   }
+
+   for(int i = 0; i <= imx; ++i){
+      for(int j = 0; j <= jmx; ++j){
+         den2d2_c(i,j) = 0;
+      }
+   }
+   
+   for(int i = 0 ; i <= imx; ++i){
+      for(int j = 0; j <= jmx; ++j){
+         for(int k = 0; k <= kmx; ++k){
+            den2d2_c(i,j)=den2d2_c(i,j)+den_c(iflag,i,j,k);
+            if (i3D==0 && k != 0) upar_c(i,j,0)=upar_c(i,j,0)+upar_c(i,j,k);
+         }
+      }
+   }
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         den2d2_c(i,j) = den2d2_c(i,j)/(kmx+1);
+         if(i3D == 0){
+            upar_c(i,j,0) = upar_c(i,j,0)/(kmx+1);
+            for(k = 1; k <= kmx; ++k){
+               upar_c(i,j,k) = upar_c(i,j,0);
+            }
+         }
+      }
+   }
+
+   if(iflag==1){
+      for(i = 0; i <= imx; ++i){
+         for(j = 0; j <= jmx; ++j){
+            dden2d_c(i,j)=den2d2_c(i,j)-den2d1_c(i,j);
+            den2d1_c(i,j)=den2d2_c(i,j);
+            for(k = 0 ; k <= kmx; ++k){
+               //den_pre=den_c(2,i,j,k); 
+            }
+         }
+      }
+   }
+
+   int end_integ_tm = MPI_Wtime();
+   int integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
+}
+
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
 
@@ -557,7 +714,7 @@ void growthdiag_c_(double *input_phi){ //Working
    myFile.close();
 }
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann-Poisson Electron Solver!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void BoltzSolve_c_(double *input_phi, int i3D, double *c2_over_vA2, double *OPPphi, double *OPPphik){ //Working
+void BoltzSolve_c_(double *input_phi, int& i3D, double *c2_over_vA2, double *OPPphi, double *OPPphik){ //Working
    //3D input phi array
    //Local Variables
    int i, j, k;
