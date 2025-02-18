@@ -8,15 +8,14 @@
 #include "MultiArrays.hpp"
 
 extern int numprocs;
-extern int Last, MyId, cnt , ierr;
+extern int Last, myid, cnt , ierr;
 extern int mmx;
 extern int iseed;
-extern int MyId;
 extern int imx;
 extern int jmx;
 extern int kmx;
 extern int idg;
-extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision;
+extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3d,icollision;
 extern int timestep, iez;
 extern int cut,amp,tor,amie,emass,qel,rneu;
 extern int nonlin,nonline,iflut,ifluid,ipara;
@@ -36,10 +35,13 @@ extern double bu,tu,nu,xu,frequ,vu,eru;
 extern double vcut;
 extern double starttm,lasttm,tottm;
 extern double start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm;
+extern double total_tm, integ_tm, ppush_tm, cpush_tm;
+
 
 //1D arrays
 extern int *tmm_ptr;
 extern int *mm_ptr;
+extern int *rand_table_ptr;
 extern double *zeta2_ptr;
 extern double *x2_ptr;
 extern double *z2_ptr;
@@ -53,7 +55,7 @@ extern double *u3_ptr;
 extern double *w3_ptr;
 extern double *zeta3_ptr;
 extern double *q_ptr;
-extern double *lr_ptr;
+extern int *lr_ptr;
 extern double *jac_ptr;
 
 //2D Arrays
@@ -130,11 +132,11 @@ extern Array3D<double> d2phidz2_c;
 extern double *d2phi_kdz2_ptr;
 extern Array3D<double> d2phi_kdz2_c;
 
-// extern double *OPPphi_ptr; //Both of these pointers don't work
-// extern Array3D<double> OPPphi_c;
+extern double *oppphi_ptr; 
+extern Array3D<double> OPPphi_c;
 
-// extern double *OPPphik_ptr;
-// extern Array3D<double> OPPphik_c;
+extern double *oppphik_ptr;
+extern Array3D<double> OPPphik_c;
 
 extern double *l_hand_ptr;
 extern Array3D<double> l_hand_c;
@@ -159,6 +161,15 @@ extern Array3D<double> rho_c;
 
 extern double *dene_ptr;
 extern Array3D<double> dene_c;
+
+extern double *delbx_ptr;
+extern Array3D<double> delbx_c;
+
+extern double *delby_ptr;
+extern Array3D<double> delby_c;
+
+extern double *delbz_ptr;
+extern Array3D<double> delbz_c;
 
 //4D arrays
 extern double *den_ptr;

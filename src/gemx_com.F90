@@ -17,8 +17,8 @@ INTERFACE
   end function en3
 
 
-subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
-end subroutine new_gemx_com_c
+! subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+! end subroutine new_gemx_com_c
 END INTERFACE
 
 
@@ -30,7 +30,7 @@ integer,dimension(0:10006):: rand_table
 	 REAL(8) :: endtm,begtm,pstm
 	 REAL(8), bind(c) :: starttm,lasttm,tottm
          REAL(8), bind(c) :: start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm
-         REAL(8) :: total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0
+         REAL(8), bind(c) :: total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0
 !          imx,jmx,kmx = max no. of grid pts in x,y,z
 !          mmx         = max no. of particles
 !          nmx         = max. no. of time steps
@@ -127,11 +127,12 @@ parameter(outdir='./out/')
 save
 
 !pointer declarations
-type(c_ptr), bind(c) :: OPPphi_ptr
+type(c_ptr), bind(c) :: oppphi_ptr, oppphik_ptr
 type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, z2_ptr, mims_ptr, u2_ptr, mu_ptr, w2_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
 type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr, lr_ptr, jac_ptr, rho_ptr, dene_ptr
 type(c_ptr), bind(c) :: phi_ptr, ex_ptr, ez_ptr, ezeta_ptr, phi_k_ptr, dphidr_ptr, dphi_kdr_ptr, dphidz_ptr, dphi_kdz_ptr, d2phidr2_ptr, d2phi_kdr2_ptr, d2phidz2_ptr
-type(c_ptr), bind(c) :: d2phi_kdz2_ptr, OPPphik_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
+type(c_ptr), bind(c) :: d2phi_kdz2_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
+type(c_ptr), bind(c) :: rand_table_ptr, delbx_ptr, delby_ptr, delbz_ptr
 
 contains
 subroutine new_gemx_com()
@@ -208,6 +209,7 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    q_ptr = c_loc(q(1))
    lr_ptr = c_loc(lr(1))
    jac_ptr = c_loc(jac(0))
+   rand_table_ptr = c_loc(rand_table(0))
    !2D Arrays
    ileft_ptr = c_loc(ileft(0,0))
    xbackw_ptr = c_loc(xbackw(0,0))
@@ -234,8 +236,8 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    d2phi_kdr2_ptr = c_loc(d2phi_kdr2(0,0,0))
    d2phidz2_ptr = c_loc(d2phidz2(0,0,0))
    d2phi_kdz2_ptr = c_loc(d2phi_kdz2(0,0,0))
-   OPPphi_ptr = c_loc(OPPphi(0,0,0))
-   OPPphik_ptr = c_loc(OPPphik(0,0,0))
+   oppphi_ptr = c_loc(OPPphi(0,0,0))
+   oppphik_ptr = c_loc(OPPphik(0,0,0))
    l_hand_ptr = c_loc(l_hand(0,0,0))
    r_hand_ptr = c_loc(r_hand(0,0,0))
    upar_ptr = c_loc(upar(0,0,0))
@@ -244,10 +246,13 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    jpar_ptr = c_loc(jpar(0,0,0))
    rho_ptr = c_loc(rho(0,0,0))
    dene_ptr = c_loc(dene(0,0,0))
+   delbx_ptr = c_loc(delbx(0,0,0))
+   delby_ptr = c_loc(delby(0,0,0))
+   delbz_ptr = c_loc(delbz(0,0,0))
    !4D Arrays
    den_ptr = c_loc(den(1,0,0,0)) !first index uses 1 based index, the rest are like the rest of the 3D Arrays
    
-      call new_gemx_com_c();
+      !call new_gemx_com_c()
 end subroutine new_gemx_com
 
 end module gemx_com

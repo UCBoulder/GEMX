@@ -21,7 +21,7 @@ using namespace std;
    // printf("%.10f\n",diff);
 
 
-void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt, const int& MyId){ //Working
+void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){ 
    double r1 = 0.0;
    double r2 = 0.0;
    double t = 0.0;
@@ -37,8 +37,8 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt, const
    int iflag = 1;
 
 
-   r1 = revers_c_(m+MyId*cnt, 7); //sets values for r1 and r2 (random numbers)
-   r2 = revers_c_(m+MyId*cnt, 11); 
+   r1 = revers_c_(m+myid*cnt, 7); //sets values for r1 and r2 (random numbers)
+   r2 = revers_c_(m+myid*cnt, 11); 
 
    //.....quiet start---see denavit pf '71(?) & abramowitz hand book
    //.....fibonacci start---see denavit comm. pla. phy. & con. fus. '81
@@ -66,7 +66,7 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt, const
    return;
 }
 
-void get_jpar_c_(double* MatrixIn, double* Rgrid){ //Working
+void get_jpar_c_(double* MatrixIn){
    int i, j, k;
 
    Array3D<double> matrix;
@@ -78,7 +78,7 @@ void get_jpar_c_(double* MatrixIn, double* Rgrid){ //Working
             if(mask3_c(i,j)>=2.99){ 
                jpar_c(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)     
                                  -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)  
-                                 -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*Rgrid[i]/xu))  
+                                 -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*rgrid_ptr[i]/xu))  
                                  -q_ptr[0]*mu0*upar_c(i,j,k);
             }
          }
@@ -87,7 +87,7 @@ void get_jpar_c_(double* MatrixIn, double* Rgrid){ //Working
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-double ran2_c_(int& idum){ //Working
+double ran2_c_(int& idum){ 
    const int IM1 = 2147483563;
    const int IM2 = 2147483399;
    const int IMM1 = IM1-1;
@@ -153,8 +153,7 @@ double ran2_c_(int& idum){ //Working
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void loadi_c_(){ //Working
-   int MyId = 0; //TODO - Ok for now - when running on multiple MPI processes Mpi must be global
+void loadi_c_(){ 
    int i = 0; 
    int j = 0;
    int k = 0;
@@ -207,7 +206,7 @@ void loadi_c_(){ //Working
       x2_ptr[m] = dumx;
       z2_ptr[m] = dumy;
 
-      parperp_c_(vpar, vperp2, m+1, cnt, MyId);
+      parperp_c_(vpar, vperp2, m+1, cnt);
 
       x = x2_ptr[m];
       i = static_cast<int>(x/dxeq);
@@ -238,7 +237,7 @@ void loadi_c_(){ //Working
    //avex=avex+x2(i)
    //end do
    //write(*,*)avex/mmx
-   if(MyId==0){ 
+   if(myid==0){ 
       ofstream myFile;
       string fileName = "testdepo_posi"; 
       myFile.open(fileName, ios::app);
@@ -318,7 +317,7 @@ void gradu_c_(double* u, double* ux, double* uz){
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void gradz_c_(double* u, double* uz, double* Rgrid_c){
+void gradz_c_(double* u, double* uz){
    int kleft, kright;
    double wx0, wx1, wz0, wz1, uleft, uright;
 
@@ -355,19 +354,18 @@ void gradz_c_(double* u, double* uz, double* Rgrid_c){
                       +wx0*wz1*u_(iright_c(i,j),jright_c(i,j)+1,kright) 
                       +wx1*wz1*u_(iright_c(i,j)+1,jright_c(i,j)+1,kright);
 
-               uz_(i,j,k)=(uright-uleft)/(2.*b0_c(i,j)/b0zeta_c(i,j)*dzeta*(Rgrid_c[i])/xu);
+               uz_(i,j,k)=(uright-uleft)/(2.*b0_c(i,j)/b0zeta_c(i,j)*dzeta*(rgrid_ptr[i])/xu);
          }
       }
    }
    return;
 }
 
-void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS, BUT DOES WORK FOR THE MACROSCOPIC RESULTS.
-   int i, j, k, ip, m, itemp;
-   double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex;
+void integ_c_(int &iflag){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS, BUT DOES WORK FOR THE MACROSCOPIC RESULTS.
+   int i, j, k, m;
+   double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1;
 
    int start_integ_tm = MPI_Wtime();
-   itemp = 2;
    //set all items in den to 0
    for(int f = 0; f <= imx; ++f){
       for (int g = 0; g <= jmx; ++g){
@@ -383,7 +381,7 @@ void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINA
          }
       }
    }
-   //$acc parallel loop gang vector
+   #pragma acc parallel loop gang vector
    for(m = 0; m <= mm_ptr[0]; ++m){
 
       x = x3_ptr[m];
@@ -404,60 +402,60 @@ void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINA
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      //$acc atomic update 
+      #pragma acc atomic update 
       den_c(iflag,i,j,k)=den_c(iflag,i,j,k)+w3_ptr[m]*wx0*wy0*wzeta0*R_major_over_R;
-      //$acc atomic update
+      #pragma acc atomic update
       den_c(iflag,i+1,j,k)=den_c(iflag,i+1,j,k)+w3_ptr[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      //$acc atomic update
+      #pragma acc atomic update
       den_c(iflag,i,j+1,k)=den_c(iflag,i,j+1,k)+w3_ptr[m]*wx0*wy1*wzeta0*R_major_over_R;
-      //$acc atomic update
+      #pragma acc atomic update
       den_c(iflag,i+1,j+1,k)=den_c(iflag,i+1,j+1,k)+w3_ptr[m]*wx1*wy1*wzeta0*R_major_over_R1;
-      //$acc atomic update 
+      #pragma acc atomic update 
       upar_c(i,j,k)=upar_c(i,j,k)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta0*R_major_over_R;
-      //$acc atomic update
+      #pragma acc atomic update
       upar_c(i+1,j,k)=upar_c(i+1,j,k)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      //$acc atomic update
+      #pragma acc atomic update
       upar_c(i,j+1,k)=upar_c(i,j+1,k)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta0*R_major_over_R;
-      //$acc atomic update
+      #pragma acc atomic update
       upar_c(i+1,j+1,k)=upar_c(i+1,j+1,k)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       if(k != kmx){
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i,j,k+1)=den_c(iflag,i,j,k+1)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i+1,j,k+1)=den_c(iflag,i+1,j,k+1)+w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i,j+1,k+1)=den_c(iflag,i,j+1,k+1)+w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i+1,j+1,k+1)=den_c(iflag,i+1,j+1,k+1)+w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i,j,k+1)=upar_c(i,j,k+1)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i+1,j,k+1)=upar_c(i+1,j,k+1)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i,j+1,k+1)=upar_c(i,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i+1,j+1,k+1)=upar_c(i+1,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
    }else{
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i,j,0)=den_c(iflag,i,j,0)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i+1,j,0)=den_c(iflag,i+1,j,0)+w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i,j+1,0)=den_c(iflag,i,j+1,0)+w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          den_c(iflag,i+1,j+1,0)=den_c(iflag,i+1,j+1,0)+w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i,j,0)=upar_c(i,j,0)+u3_ptr[m]*w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i+1,j,0)=upar_c(i+1,j,0)+u3_ptr[m]*w3_ptr[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i,j+1,0)=upar_c(i,j+1,0)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
-         //$acc atomic update
+         #pragma acc atomic update
          upar_c(i+1,j+1,0)=upar_c(i+1,j+1,0)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
-   //$acc wait
+   #pragma acc wait
    
    for(i = 0; i <= imx; ++i){
       for(j = 0; j <= jmx; ++j){
@@ -486,7 +484,7 @@ void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINA
       for(int j = 0; j <= jmx; ++j){
          for(int k = 0; k <= kmx; ++k){
             den2d2_c(i,j)=den2d2_c(i,j)+den_c(iflag,i,j,k);
-            if (i3D==0 && k != 0) upar_c(i,j,0)=upar_c(i,j,0)+upar_c(i,j,k);
+            if (i3d==0 && k != 0) upar_c(i,j,0)=upar_c(i,j,0)+upar_c(i,j,k);
          }
       }
    }
@@ -494,7 +492,7 @@ void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINA
    for(i = 0; i <= imx; ++i){
       for(j = 0; j <= jmx; ++j){
          den2d2_c(i,j) = den2d2_c(i,j)/(kmx+1);
-         if(i3D == 0){
+         if(i3d == 0){
             upar_c(i,j,0) = upar_c(i,j,0)/(kmx+1);
             for(k = 1; k <= kmx; ++k){
                upar_c(i,j,k) = upar_c(i,j,0);
@@ -516,14 +514,11 @@ void integ_c_(int &iflag, int &i3D){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINA
    }
 
    int end_integ_tm = MPI_Wtime();
-   int integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
+   integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
-
-    //TODO READ FROM GEMXIN FILE - i3D SET THERE
-
+void fluxavg_c_(double *phi_in, double *phiavg_in){
    //Input is 3D array to be flux averaged 
    //input is phi in all cases, passed as externed 3D array as of now
    //Output is 2D interpolated array
@@ -559,7 +554,7 @@ void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
                            weight01_ptr[gi]*phi_c(iarray_ptr[gi], jarray_ptr[gi]+1, 0) + 
                            weight11_ptr[gi]*phi_c(iarray_ptr[gi]+1, jarray_ptr[gi]+1, 0));
 
-            if(i3D == 0){
+            if(i3d == 0){
                phiavggi = phiavggi + (weightinput*jacobian_ptr[gi])/deno_ptr[gi]; 
             }else{
                for(k = 1; k <= kmx; ++k){
@@ -579,7 +574,7 @@ void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
          //Remove redundancy from closed loop integration process
          if(phiavggi != 0){
             if(gindex_ptr[gi] != line-1){
-               if(i3D == 0){
+               if(i3d == 0){
                   phiavggi = phiavggi - (weightinput*jacobian_ptr[gi-1])/deno_ptr[gi-1]; 
                }else{
                   phiavggi = phiavggi - (weightinput*jacobian_ptr[gi-1])/(deno_ptr[gi-1]*(kmx+1));               
@@ -633,7 +628,7 @@ void fluxavg_c_(int &i3D, double *phi_in, double *phiavg_in){ //Working
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void efieldcalc_c_(double *Rgrid, double *Zgrid, double *phi_input){ //Working
+void efieldcalc_c_(double *phi_input){ 
    //Input is phi array - labeled phi_c by extern
    //3D phi for calculation of E field
    Array3D<double> input_phi_c;
@@ -644,17 +639,17 @@ void efieldcalc_c_(double *Rgrid, double *Zgrid, double *phi_input){ //Working
    for(k = 0; k <= kmx; ++k){
       for(i = 2; i < imx; ++i){
          for(j = 2; j < jmx; ++j){
-            ex_c(i,j,k) = -(input_phi_c(i+1,j,k) - input_phi_c(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0])); //TODO - TAKE A LOOK AGAIN AT RGRID AND ZGRID NOW
-            ez_c(i,j,k) = -(input_phi_c(i,j+1,k) - input_phi_c(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
+            ex_c(i,j,k) = -(input_phi_c(i+1,j,k) - input_phi_c(i-1,j,k))/(2*(rgrid_ptr[1]-rgrid_ptr[0]));
+            ez_c(i,j,k) = -(input_phi_c(i,j+1,k) - input_phi_c(i,j-1,k))/(2*(zgrid_ptr[1]-zgrid_ptr[0]));
             if(k == 0){
                kminus = kmx;
-               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,kminus))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,kminus))/(2*rgrid_ptr[i]*(2*M_PI/(kmx+1)));
             }
             if(k == kmx){
                kplus = 0;
-               ezeta_c(i,j,k) = -(input_phi_c(i,j,kplus) - input_phi_c(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,kplus) - input_phi_c(i,j,k-1))/(2*rgrid_ptr[i]*(2*M_PI/(kmx+1)));
             }else{
-               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta_c(i,j,k) = -(input_phi_c(i,j,k+1) - input_phi_c(i,j,k-1))/(2*rgrid_ptr[i]*(2*M_PI/(kmx+1)));
             }
          }
       }
@@ -662,7 +657,7 @@ void efieldcalc_c_(double *Rgrid, double *Zgrid, double *phi_input){ //Working
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Growth Rate Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void growthdiag_c_(double *input_phi){ //Working
+void growthdiag_c_(double *input_phi){
    //Input is phi_c in every case
    Array3D<double> input_phi_c;
    input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx);
@@ -714,7 +709,7 @@ void growthdiag_c_(double *input_phi){ //Working
    myFile.close();
 }
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann-Poisson Electron Solver!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void BoltzSolve_c_(double *input_phi, int& i3D, double *c2_over_vA2, double *OPPphi, double *OPPphik){ //Working
+void BoltzSolve_c_(double *input_phi){ 
    //3D input phi array
    //Local Variables
    int i, j, k;
@@ -722,14 +717,8 @@ void BoltzSolve_c_(double *input_phi, int& i3D, double *c2_over_vA2, double *OPP
    Array3D<double> input_phi_c;
    input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx); //guesswork-ish right now
 
-   Array2D<double> c2_over_vA2_c;
-   c2_over_vA2_c.CreateArray2D(c2_over_vA2, nx, nz);
-
-   Array3D<double> OPPphi_c;
-   OPPphi_c.CreateArray3D(OPPphi, imx, jmx, kmx);
-
-   Array3D<double> OPPphik_c;
-   OPPphik_c.CreateArray3D(OPPphik, imx, jmx, kmx);
+   // Array2D<double> c2_over_vA2_c;
+   // c2_over_vA2_c.CreateArray2D(c2_over_vA2, nx, nz);
 
    for(i = 0; i <= imx; ++i){
       for(j = 0; j <= jmx; ++j){
@@ -769,7 +758,7 @@ void BoltzSolve_c_(double *input_phi, int& i3D, double *c2_over_vA2, double *OPP
    
             l_hand_c(i,j,k) = (OPPphik_c(i,j,k)-OPPphi_c(i,j,k))/(phi_k_c(i,j,k)-input_phi_c(i,j,k)) - (xn0e_c(i,j)*mu0*e*e/t0e_c(i,j)*exp(input_phi_c(i,j,k)*e/t0e_c(i,j)));
 
-            if(i3D == 0){
+            if(i3d == 0){
                r_hand_c(i,j,k) = (OPPphi_c(i,j,k)+q_ptr[0]*mu0*den2d2_c(i,j)-e*mu0*xn0e_c(i,j)*exp((e/t0e_c(i,j))*(input_phi_c(i,j,k)))); //q_ptr set in gem_com externs check in on this
             }else{
                r_hand_c(i,j,k) = (OPPphi_c(i,j,k)+q_ptr[0]*mu0*den_c(1,i,j,k)-e*mu0*xn0e_c(i,j)*exp((e/t0e_c(i,j))*(input_phi_c(i,j,k)))); //den is a 4D array

@@ -6,7 +6,7 @@ BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
 
 SRCS := $(wildcard *.F90)
-INCS_C := $(wildcard *.hpp,*.h)
+INCS_C := $(wildcard *.hpp *.h) 
 INCS_C += -I$(MPIPATH)/include
 SRCS_C := $(wildcard *.cpp) #C++ sources
 OBJS := $(SRCS:.F90=.o)
@@ -89,15 +89,15 @@ fcnt.o: fcnt.F90
 #C++ compilation.
 gemx_externs.o: gemx_externs.cpp
 	$(CPP) -c $(OPT_C) gemx_externs.cpp
-	
+
+ionPush_c.o: ionPush_c.cpp 
+	$(CPP) -c $(OPT_C) ionPush_c.cpp
+
+gemx_c.o: gemx_c.cpp
+	$(CPP) -c $(OPT_C) gemx_c.cpp
+
 fcnt_c.o: fcnt_c.cpp
 	$(CPP) -c $(OPT_C) fcnt_c.cpp
-
-# ionPush_c.o: ionPush_c.cpp
-# 	$(CPP) -c $(OPT_C) ionPush_c.cpp
-
-gemx_c.o: gemx_c.cpp 
-	$(CPP) -c $(OPT_C) gemx_c.cpp
 
 #Check for git diffs in the src directory
 check_diff:
@@ -117,3 +117,4 @@ install:
 	cp -f gemx $(BINDIR)
 	cp -f gemx.in $(BINDIR)
 	cp -f $(JOBDIR)/$(JOB) $(BINDIR)
+	

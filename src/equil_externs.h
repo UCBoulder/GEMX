@@ -41,8 +41,8 @@ extern int *iarray_ptr;
 extern int *jarray_ptr;
 extern int *priv_ptr;
 
-//extern double *Rgrid_ptr;
-//extern double *Zgrid_ptr;
+extern double *rgrid_ptr;
+extern double *zgrid_ptr;
 
 //2D arrays
 extern double *b0_ptr;
@@ -93,8 +93,8 @@ extern Array2D<double> mask3_c;
 extern double *mask4_ptr;
 extern Array2D<double> mask4_c;
 
-// extern double *c2_over_vA2_ptr; //Currently Broken, not sure why
-// extern Array2D<double> c2_over_vA2_c;
+extern double *c2_over_va2_ptr; 
+extern Array2D<double> c2_over_vA2_c;
 
 extern double *xn0e_ptr;
 extern Array2D<double> xn0e_c;
@@ -102,6 +102,26 @@ extern Array2D<double> xn0e_c;
 extern double *t0e_ptr;
 extern Array2D<double> t0e_c;
 
+extern double *dbdx_ptr;
+extern Array2D<double> dbdx_c;
+
+extern double *dbdz_ptr;
+extern Array2D<double> dbdz_c; 
+
+extern double *b0x_ptr;
+extern Array2D<double> b0x_c; 
+
+extern double *b0z_ptr;
+extern Array2D<double> b0z_c; 
+
+extern double *captix_ptr;
+extern Array2D<double> captix_c;
+
+extern double *captiz_ptr;
+extern Array2D<double> captiz_c;
+//3D arrays
+extern double *curlb_ptr;
+extern Array3D<double> curlb_c;
 extern "C"
 {
     void new_gemx_com_c_();

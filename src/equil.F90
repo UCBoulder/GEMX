@@ -2,8 +2,8 @@ MODULE equil
    use iso_c_binding
    IMPLICIT NONE
    INTERFACE
-   subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
-   end subroutine new_gemx_com_c
+   ! subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+   ! end subroutine new_gemx_com_c
    
    END INTERFACE
       
@@ -51,10 +51,10 @@ MODULE equil
    ! ============================================================================================================================
    !pointers Dominic is externing to C++
    type(c_ptr), bind(c) :: t0i_ptr, xn0i_ptr, b0_ptr, b0zeta_ptr
-   !type(c_ptr), bind(c) :: Rgrid_ptr, Zgrid_ptr !Acting strange
+   type(c_ptr), bind(c) :: rgrid_ptr, zgrid_ptr 
    type(c_ptr), bind(c) :: phiavg_ptr, weight00_ptr, weight10_ptr, weight01_ptr, weight11_ptr, jacobian_ptr, deno_ptr, gindex_ptr, iarray_ptr, jarray_ptr, priv_ptr, psitab_ptr
    type(c_ptr), bind(c) :: t0s_ptr,xn0s_ptr,capts_ptr,capns_ptr,vpars_ptr,vparsp_ptr,psi_p_ptr,mask_ptr,mask2_ptr,mask3_ptr,mask4_ptr
-   type(c_ptr), bind(c) :: c2_over_vA2_ptr, xn0e_ptr, t0e_ptr
+   type(c_ptr), bind(c) :: c2_over_va2_ptr, xn0e_ptr, t0e_ptr, curlb_ptr, dbdx_ptr, dbdz_ptr, b0x_ptr, b0z_ptr, captix_ptr, captiz_ptr
 
    ! ============================================================================================================================       
 
@@ -454,8 +454,8 @@ contains
   jarray_ptr = c_loc(jarray(1))
   priv_ptr = c_loc(priv(1))
   psitab_ptr = c_loc(psitab(1))
-  !Rgrid_ptr = c_loc(Rgrid(0)) !These pointers aren't being read in C, not sure why. 
-  !Zgrid_ptr = c_loc(Zgrid(0)) !Passing pointer to first element via argument for now
+  rgrid_ptr = c_loc(Rgrid(0)) !These pointers aren't being read in C, not sure why. 
+  zgrid_ptr = c_loc(Zgrid(0)) !Passing pointer to first element via argument for now
   !2D pointers
   t0i_ptr = c_loc(t0i(0,0))
   xn0i_ptr = c_loc(xn0i(0,0))
@@ -473,11 +473,18 @@ contains
   mask2_ptr = c_loc(mask2(0,0))
   mask3_ptr = c_loc(mask3(0,0))
   mask4_ptr = c_loc(mask4(0,0))
-  c2_over_vA2_ptr = c_loc(c2_over_vA2(0,0))
+  c2_over_va2_ptr = c_loc(c2_over_vA2(0,0))
   xn0e_ptr = c_loc(xn0e(0,0))
   t0e_ptr = c_loc(t0e(0,0))
+  dbdx_ptr = c_loc(dbdx(0,0))
+  dbdz_ptr = c_loc(dbdz(0,0))
+  b0x_ptr = c_loc(b0x(0,0))
+  b0z_ptr = c_loc(b0z(0,0))
+  captix_ptr = c_loc(captix(0,0))
+  captiz_ptr = c_loc(captiz(0,0))
   !3D pointers
-  call new_gemx_com_c();   
+  curlb_ptr = c_loc(curlb(0,0,1))
+  !call new_gemx_com_c()   
   end subroutine new_equil
 
             
