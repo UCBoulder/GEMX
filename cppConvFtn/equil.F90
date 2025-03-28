@@ -2,16 +2,16 @@ MODULE equil
    use iso_c_binding
    IMPLICIT NONE
    INTERFACE
-   ! subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
-   ! end subroutine new_gemx_com_c
+   subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+   end subroutine new_gemx_com_c
    
    END INTERFACE
       
 
       real :: mimp=2,chgi=1
       real :: beta,rmaj0,a,q0,r0,q0p,q0abs,shat0
-      real, bind(c) :: dR,dth,mu0,e,proton
-      integer, bind(c) :: nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n
+      real :: dR,dth,mu0,e,proton
+      integer :: nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n
       real :: psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647
 
 !     GEM-X
@@ -29,7 +29,7 @@ MODULE equil
                                       vpari,vparip, &
                                       zeff,nue0,phinc,phincp,&
                                       er,upari, Rgrid, Zgrid
-      real, dimension(:,:),allocatable :: t0s,xn0s,capts,capns,vpars,vparsp,psi_p,mask,mask2,mask3,mask4
+      real,dimension(:,:),allocatable :: t0s,xn0s,capts,capns,vpars,vparsp,psi_p,mask,mask2,mask3,mask4
       real, bind(c):: bu,tu,nu,xu,frequ,vu,eru
 
 !     for including bstar effects
@@ -43,18 +43,15 @@ MODULE equil
       
       
 !     for phi average Calder Edit
-      integer, bind(c) :: num_lines, line
-      real, dimension(:,:),allocatable :: phiavg
+      integer :: num_lines, line
+      real,dimension(:,:),allocatable :: phiavg
       real,dimension(:),allocatable :: psitab,weight00,weight10,weight01,weight11,jacobian,deno !Calder Edits
       integer, dimension(:), allocatable :: gindex,iarray,jarray,priv
 
    ! ============================================================================================================================
-   !pointers Dominic is externing to C++
+   !pointers I am externing to C++
    type(c_ptr), bind(c) :: t0i_ptr, xn0i_ptr, b0_ptr, b0zeta_ptr
-   type(c_ptr), bind(c) :: rgrid_ptr, zgrid_ptr 
-   type(c_ptr), bind(c) :: phiavg_ptr, weight00_ptr, weight10_ptr, weight01_ptr, weight11_ptr, jacobian_ptr, deno_ptr, gindex_ptr, iarray_ptr, jarray_ptr, priv_ptr, psitab_ptr
-   type(c_ptr), bind(c) :: t0s_ptr,xn0s_ptr,capts_ptr,capns_ptr,vpars_ptr,vparsp_ptr,psi_p_ptr,mask_ptr,mask2_ptr,mask3_ptr,mask4_ptr
-   type(c_ptr), bind(c) :: c2_over_va2_ptr, xn0e_ptr, t0e_ptr, curlb_ptr, dbdx_ptr, dbdz_ptr, b0x_ptr, b0z_ptr, captix_ptr, captiz_ptr, capnix_ptr, capniz_ptr
+   type(c_ptr), bind(c) :: Rgrid_ptr
 
    ! ============================================================================================================================       
 
@@ -442,51 +439,15 @@ contains
  !     write(11,*) dR
  !     close(11)
 
-  !1D pointes
-  weight00_ptr = c_loc(weight00(1))
-  weight10_ptr = c_loc(weight10(1))
-  weight01_ptr = c_loc(weight01(1))
-  weight11_ptr = c_loc(weight11(1))
-  jacobian_ptr = c_loc(jacobian(1))
-  deno_ptr = c_loc(deno(1))
-  gindex_ptr = c_loc(gindex(1))
-  iarray_ptr = c_loc(iarray(1))
-  jarray_ptr = c_loc(jarray(1))
-  priv_ptr = c_loc(priv(1))
-  psitab_ptr = c_loc(psitab(1))
-  rgrid_ptr = c_loc(Rgrid(0)) !These pointers aren't being read in C, not sure why. 
-  zgrid_ptr = c_loc(Zgrid(0)) !Passing pointer to first element via argument for now
-  !2D pointers
+
+  !Rgrid_ptr = c_loc(Rgrid(0))
+
   t0i_ptr = c_loc(t0i(0,0))
   xn0i_ptr = c_loc(xn0i(0,0))
   b0_ptr = c_loc(b0(0,0)) 
   b0zeta_ptr = c_loc(b0zeta(0,0))
-  phiavg_ptr = c_loc(phiavg(0,0))
-  t0s_ptr = c_loc(t0s(1,0))
-  xn0s_ptr = c_loc(xn0s(1,0))
-  capts_ptr = c_loc(capts(1,0))
-  capns_ptr = c_loc(capns(1,0))
-  vpars_ptr = c_loc(vpars(1,0))
-  vparsp_ptr = c_loc(vparsp(1,0))
-  psi_p_ptr = c_loc(psi_p(0,0))
-  mask_ptr = c_loc(mask(0,0))
-  mask2_ptr = c_loc(mask2(0,0))
-  mask3_ptr = c_loc(mask3(0,0))
-  mask4_ptr = c_loc(mask4(0,0))
-  c2_over_va2_ptr = c_loc(c2_over_vA2(0,0))
-  xn0e_ptr = c_loc(xn0e(0,0))
-  t0e_ptr = c_loc(t0e(0,0))
-  dbdx_ptr = c_loc(dbdx(0,0))
-  dbdz_ptr = c_loc(dbdz(0,0))
-  b0x_ptr = c_loc(b0x(0,0))
-  b0z_ptr = c_loc(b0z(0,0))
-  captix_ptr = c_loc(captix(0,0))
-  captiz_ptr = c_loc(captiz(0,0))
-  capnix_ptr = c_loc(capnix(0,0))
-  capniz_ptr = c_loc(capniz(0,0))
-  !3D pointers
-  curlb_ptr = c_loc(curlb(0,0,1))
-  !call new_gemx_com_c()   
+  
+  call new_gemx_com_c();   
   end subroutine new_equil
 
             

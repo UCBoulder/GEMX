@@ -17,7 +17,6 @@ extern int kmx;
 extern int idg;
 extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3d,icollision;
 extern int timestep, iez;
-extern int cut,amp,tor,amie,emass,qel,rneu;
 extern int nonlin,nonline,iflut,ifluid,ipara;
 extern int iput,iget,ision,isham,peritr,iadi;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
@@ -36,6 +35,7 @@ extern double vcut;
 extern double starttm,lasttm,tottm;
 extern double start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm;
 extern double total_tm, integ_tm, ppush_tm, cpush_tm;
+extern double cut,amp,tor,amie,emass,qel,rneu;
 
 
 //1D arrays

@@ -17,20 +17,20 @@ INTERFACE
   end function en3
 
 
-! subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
-! end subroutine new_gemx_com_c
+subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
+end subroutine new_gemx_com_c
 END INTERFACE
 
 
 integer, bind(c) :: imx,jmx,kmx,mmx
 
-integer, bind(c) :: nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg
+integer :: nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm
-	 REAL(8), bind(c) :: starttm,lasttm,tottm
-         REAL(8), bind(c) :: start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm
-         REAL(8), bind(c) :: total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0
+	 REAL(8) :: starttm,lasttm,tottm
+         REAL(8) :: start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm
+         REAL(8) :: total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0
 !          imx,jmx,kmx = max no. of grid pts in x,y,z
 !          mmx         = max no. of particles
 !          nmx         = max. no. of time steps
@@ -38,22 +38,22 @@ integer,dimension(0:10006):: rand_table
 
 INTEGER,dimension(:),allocatable :: mm,tmm,lr
 REAL(8),dimension(:),allocatable :: mims,q
-INTEGER, bind(c) :: timestep,iez
+INTEGER :: timestep,iez
 integer, bind(c) ::iseed
 
 real(8),dimension(:),allocatable :: time
 REAL(8), bind(c) :: dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr
 REAL(8) :: etaohm
-REAL(8), bind(c) :: lx,lz
-INTEGER, bind(c) :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision
-REAL(8), bind(c) :: cut,amp,tor,amie,emass,qel,rneu
-INTEGER, bind(c) :: iput,iget,ision,isham,peritr,iadi
+REAL(8) :: lx,lz
+INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision
+REAL(8) :: cut,amp,tor,amie,emass,qel,rneu
+INTEGER :: iput,iget,ision,isham,peritr,iadi
 integer, bind(c) :: idg
 real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, l_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
 
 
-REAL(8), bind(c) :: vcut
-integer, bind(c) :: nonlin,nonline,iflut,ifluid,ipara
+REAL(8) :: vcut
+integer :: nonlin,nonline,iflut,ifluid,ipara
 COMPLEX(8) :: IU
 
 REAL(8),DIMENSION(:,:,:,:),allocatable :: den
@@ -110,7 +110,7 @@ REAL(8),DIMENSION(:,:),allocatable :: pfl,efl
 integer,parameter :: Master=0
 integer, bind(c) :: numprocs
 INTEGER, bind(c) :: Last,MyId, cnt , ierr
-INTEGER, bind(c) :: GRID_COMM,TUBE_COMM, PETSC_COMM
+INTEGER :: GRID_COMM,TUBE_COMM, PETSC_COMM
 INTEGER :: GCLR,TCLR,GLST,TLST
 INTEGER :: stat(MPI_STATUS_SIZE)
 INTEGER :: lngbr,rngbr,idprv,idnxt
@@ -127,12 +127,8 @@ parameter(outdir='./out/')
 save
 
 !pointer declarations
-type(c_ptr), bind(c) :: oppphi_ptr, oppphik_ptr
-type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, mims_ptr, u2_ptr, mu_ptr, w2_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
-type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr, lr_ptr, jac_ptr, rho_ptr, dene_ptr
-type(c_ptr), bind(c) :: phi_ptr, ex_ptr, ez_ptr, ezeta_ptr, phi_k_ptr, dphidr_ptr, dphi_kdr_ptr, dphidz_ptr, dphi_kdz_ptr, d2phidr2_ptr, d2phi_kdr2_ptr, d2phidz2_ptr
-type(c_ptr), bind(c) :: d2phi_kdz2_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
-type(c_ptr), bind(c) :: rand_table_ptr, delbx_ptr, delby_ptr, delbz_ptr
+type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, z2_ptr, mims_ptr, u2_ptr, mu_ptr, w2_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
+type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr
 
 contains
 subroutine new_gemx_com()
@@ -191,9 +187,12 @@ ALLOCATE( nos(nsmx,0:nmx))
 ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
          pfl(nsmx+1,0:nmx),efl(nsmx,0:nmx))
 
+ 
    !1D Arrays
+         !Integer Arrays
    tmm_ptr = c_loc(tmm(1))
    mm_ptr = c_loc(mm(1))
+         !Real/Double Arrays
    zeta2_ptr = c_loc(zeta2(1))
    x2_ptr = c_loc(x2(1))
    z2_ptr = c_loc(z2(1))
@@ -206,10 +205,7 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    z3_ptr = c_loc(z3(1))
    u3_ptr = c_loc(u3(1))
    w3_ptr = c_loc(w3(1))
-   q_ptr = c_loc(q(1))
-   lr_ptr = c_loc(lr(1))
-   jac_ptr = c_loc(jac(0))
-   rand_table_ptr = c_loc(rand_table(0))
+
    !2D Arrays
    ileft_ptr = c_loc(ileft(0,0))
    xbackw_ptr = c_loc(xbackw(0,0))
@@ -219,40 +215,9 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    xforw_ptr = c_loc(xforw(0,0))
    zforw_ptr = c_loc(zforw(0,0))
    jright_ptr = c_loc(jright(0,0))
-   den2d2_ptr = c_loc(den2d2(0,0))
-   dden2d_ptr = c_loc(dden2d(0,0))
-   den2d1_ptr = c_loc(den2d1(0,0))
    !3D Arrays
-   phi_ptr = c_loc(phi(0,0,0))
-   ex_ptr = c_loc(ex(0,0,0))
-   ez_ptr = c_loc(ez(0,0,0))
-   ezeta_ptr = c_loc(ezeta(0,0,0))
-   phi_k_ptr = c_loc(phi_k(0,0,0))
-   dphidr_ptr = c_loc(dphidr(0,0,0))
-   dphi_kdr_ptr = c_loc(dphi_kdr(0,0,0))
-   dphidz_ptr = c_loc(dphidz(0,0,0))
-   dphi_kdz_ptr = c_loc(dphi_kdz(0,0,0))
-   d2phidr2_ptr = c_loc(d2phidr2(0,0,0))
-   d2phi_kdr2_ptr = c_loc(d2phi_kdr2(0,0,0))
-   d2phidz2_ptr = c_loc(d2phidz2(0,0,0))
-   d2phi_kdz2_ptr = c_loc(d2phi_kdz2(0,0,0))
-   oppphi_ptr = c_loc(OPPphi(0,0,0))
-   oppphik_ptr = c_loc(OPPphik(0,0,0))
-   l_hand_ptr = c_loc(l_hand(0,0,0))
-   r_hand_ptr = c_loc(r_hand(0,0,0))
-   upar_ptr = c_loc(upar(0,0,0))
-   apars_ptr = c_loc(apars(0,0,0))
-   apar_ptr = c_loc(apar(0,0,0))
-   jpar_ptr = c_loc(jpar(0,0,0))
-   rho_ptr = c_loc(rho(0,0,0))
-   dene_ptr = c_loc(dene(0,0,0))
-   delbx_ptr = c_loc(delbx(0,0,0))
-   delby_ptr = c_loc(delby(0,0,0))
-   delbz_ptr = c_loc(delbz(0,0,0))
-   !4D Arrays
-   den_ptr = c_loc(den(1,0,0,0)) !first index uses 1 based index, the rest are like the rest of the 3D Arrays
    
-      !call new_gemx_com_c()
+      call new_gemx_com_c();
 end subroutine new_gemx_com
 
 end module gemx_com

@@ -11,15 +11,7 @@
 #include <fstream>
 #include <iomanip>
 
-
 using namespace std;
-
-//const auto start = std::chrono::high_resolution_clock::now(); //timing stuff
-//timing stuff
-   // const auto end = std::chrono::high_resolution_clock::now();
-   // const std::chrono::duration<double> diff = end - start;
-   // printf("%.10f\n",diff);
-
 
 void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){ 
    double r1 = 0.0;
@@ -173,7 +165,7 @@ void loadi_c_(){
    // double avgw = 0;
    double myavgw = 0;
    
-   double dumx, dumy, dumz, jacp;
+   double dumx, dumy, dumz, jacp; 
    double wx0, wx1, wz0, wz1;
 
    const long double pi2 = M_PI*2;
@@ -287,7 +279,7 @@ void gradu_c_(double* u, double* ux, double* uz){
    int ju = 0;
    int jl = 0;
    double ul = 0;
-   //const auto start = std::chrono::high_resolution_clock::now(); //timing stuff
+   
    for(int j = 0; j < jmx; ++j){
       ju = j+1;
       jl = j-1;
@@ -360,9 +352,11 @@ void gradz_c_(double* u, double* uz){
    }
    return;
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void integ_c_(int &iflag){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS, BUT DOES WORK FOR THE MACROSCOPIC RESULTS.
-   int i, j, k, m;
+void integ_c_(int &iflag){
+   int i, j, k;
    double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1;
 
    int start_integ_tm = MPI_Wtime();
@@ -381,8 +375,9 @@ void integ_c_(int &iflag){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS,
          }
       }
    }
+
    #pragma acc parallel loop gang vector
-   for(m = 0; m <= mm_ptr[0]; ++m){
+   for(int m = 0; m <= mm_ptr[0]; ++m){
 
       x = x3_ptr[m];
       i = int(x/dxeq);
@@ -397,7 +392,7 @@ void integ_c_(int &iflag){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS,
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
-      zeta= fmod(zeta3_ptr[m], 2*M_PI); // fmod is a modulus function that can use doubles
+      zeta= fmod(zeta3_ptr[m], 2*M_PI);
       k=int(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
@@ -457,14 +452,10 @@ void integ_c_(int &iflag){ //CURRENTLY CAUSES SOMEWHAT CHANGES TO FINAL RESULTS,
    }
    #pragma acc wait
    
-   for(i = 0; i <= imx; ++i){
-      for(j = 0; j <= jmx; ++j){
-         for(k = 0; k <= kmx; ++k){
-            ierr = MPI_Allreduce(MPI_IN_PLACE, &den_c(iflag,i,j,k), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            ierr = MPI_Allreduce(MPI_IN_PLACE, &upar_c(i,j,k), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-         }
-      }
-   }
+  
+   ierr = MPI_Allreduce(MPI_IN_PLACE, &den_c(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   ierr = MPI_Allreduce(MPI_IN_PLACE, &upar_c(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        
 
    for(int i = 0 ; i <= imx; ++i){
       for(int j = 0; j <= jmx; ++j){
@@ -532,9 +523,9 @@ void fluxavg_c_(double *phi_in, double *phiavg_in){
    double weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1;
 
    Array3D<double> phi_c;
-   phi_c.CreateArray3D(phi_in, imx, jmx, kmx);
+   phi_c.CreateArray3D(phi_in, imx+1, jmx+1, kmx+1);
    Array2D<double> phiavg_c;
-   phiavg_c.CreateArray2D(phiavg_ptr, nx, nz);
+   phiavg_c.CreateArray2D(phiavg_ptr, nx+1, nz+1);
 
    //set all arrays to zero here.
    std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
@@ -632,7 +623,7 @@ void efieldcalc_c_(double *phi_input){
    //Input is phi array - labeled phi_c by extern
    //3D phi for calculation of E field
    Array3D<double> input_phi_c;
-   input_phi_c.CreateArray3D(phi_input, imx, jmx, kmx);
+   input_phi_c.CreateArray3D(phi_input, imx+1, jmx+1, kmx+1);
    //local vars
    int i, j, k, kminus, kplus;
 
@@ -660,7 +651,7 @@ void efieldcalc_c_(double *phi_input){
 void growthdiag_c_(double *input_phi){
    //Input is phi_c in every case
    Array3D<double> input_phi_c;
-   input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx);
+   input_phi_c.CreateArray3D(input_phi, imx+1, jmx+1, kmx+1);
    //Local variables
    int store, k, gi, peak;
    double phiavgsq, weightinput, phiavggi;
@@ -715,7 +706,7 @@ void BoltzSolve_c_(double *input_phi){
    int i, j, k;
    
    Array3D<double> input_phi_c;
-   input_phi_c.CreateArray3D(input_phi, imx, jmx, kmx); //guesswork-ish right now
+   input_phi_c.CreateArray3D(input_phi, imx+1, jmx+1, kmx+1); //guesswork-ish right now
 
    // Array2D<double> c2_over_vA2_c;
    // c2_over_vA2_c.CreateArray2D(c2_over_vA2, nx, nz);

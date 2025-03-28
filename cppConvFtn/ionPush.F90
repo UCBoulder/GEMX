@@ -65,7 +65,6 @@
                  +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1) 
          kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1) &
                  +wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1) 
-                 
          kapnxp = wx0*wz0*capnix(i,k)+wx0*wz1*capnix(i,k+1) &
                  +wx1*wz0*capnix(i+1,k)+wx1*wz1*capnix(i+1,k+1) 
 

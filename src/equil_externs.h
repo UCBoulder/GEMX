@@ -119,6 +119,13 @@ extern Array2D<double> captix_c;
 
 extern double *captiz_ptr;
 extern Array2D<double> captiz_c;
+
+extern double *capnix_ptr;
+extern Array2D<double> capnix_c;
+
+extern double *capniz_ptr;
+extern Array2D<double> capniz_c;
+
 //3D arrays
 extern double *curlb_ptr;
 extern Array3D<double> curlb_c;

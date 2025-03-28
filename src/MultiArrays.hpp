@@ -10,8 +10,8 @@ public:
 
    void CreateArray2D(const T* const data, const std::size_t x, const std::size_t y){
       data_ = const_cast<T*>(data);
-      x_ = x+1; //for fortran arrays starting at 0, edge cases need to be included for max value. if array starts at 1,1 need to subtract one from index
-      y_ = y+1;
+      x_ = x; //for fortran arrays starting at 0, edge cases need to be included for max value. if array starts at 1,1 need to subtract one from index
+      y_ = y;
    }
 
    // Column-major access
@@ -43,9 +43,9 @@ public:
 
    void CreateArray3D(const T* const data, const std::size_t x, const std::size_t y, const std::size_t z){
       data_ = const_cast<T*>(data);
-      x_ = x+1;
-      y_ = y+1;
-      z_ = z+1;
+      x_ = x; //GETTING RID OF +1 IN CONSTRUCTOR - LEAVING MESSAGE TO MAKE SURE I REMMEMEMBER THIS
+      y_ = y;
+      z_ = z;
    }
 
    // Column-major access

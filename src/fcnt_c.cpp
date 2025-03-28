@@ -1,6 +1,4 @@
 #include "fcnt.hpp"
-
-#include <chrono>
 #include <iostream>
 
 double revers_c_(const int& num, const int& n){
@@ -19,4 +17,3 @@ double revers_c_(const int& num, const int& n){
    }
    return rev; 
 }
-
