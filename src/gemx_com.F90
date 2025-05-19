@@ -93,7 +93,7 @@ REAL(8),DIMENSION(:),allocatable :: w2,w3
 !              Various diagnostic arrays and scalars
 !    plotting constants
 
-INTEGER :: nplot,xnplt
+INTEGER, bind(c) :: nplot,xnplt
 
 !    energy diagnostic arrays
 
@@ -132,7 +132,7 @@ type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, mims_ptr, u2
 type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr, lr_ptr, jac_ptr, rho_ptr, dene_ptr
 type(c_ptr), bind(c) :: phi_ptr, ex_ptr, ez_ptr, ezeta_ptr, phi_k_ptr, dphidr_ptr, dphi_kdr_ptr, dphidz_ptr, dphi_kdz_ptr, d2phidr2_ptr, d2phi_kdr2_ptr, d2phidz2_ptr
 type(c_ptr), bind(c) :: d2phi_kdz2_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
-type(c_ptr), bind(c) :: rand_table_ptr, delbx_ptr, delby_ptr, delbz_ptr
+type(c_ptr), bind(c) :: rand_table_ptr, delbx_ptr, delby_ptr, delbz_ptr, phis_ptr, denes_ptr, upars_ptr, gn0e_ptr, gbtor_ptr, bmag_ptr, xg_ptr, gcpnex_ptr, gcpnez_ptr
 
 contains
 subroutine new_gemx_com()
@@ -210,6 +210,7 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    lr_ptr = c_loc(lr(1))
    jac_ptr = c_loc(jac(0))
    rand_table_ptr = c_loc(rand_table(0))
+   xg_ptr = c_loc(xg(0))
    !2D Arrays
    ileft_ptr = c_loc(ileft(0,0))
    xbackw_ptr = c_loc(xbackw(0,0))
@@ -222,6 +223,11 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    den2d2_ptr = c_loc(den2d2(0,0))
    dden2d_ptr = c_loc(dden2d(0,0))
    den2d1_ptr = c_loc(den2d1(0,0))
+   gn0e_ptr = c_loc(gn0e(0,0))
+   bmag_ptr = c_loc(bmag(0,0))
+   gbtor_ptr = c_loc(gbtor(0,0))
+   gcpnex_ptr = c_loc(gcpnex(0,0))
+   gcpnez_ptr = c_loc(gcpnez(0,0))
    !3D Arrays
    phi_ptr = c_loc(phi(0,0,0))
    ex_ptr = c_loc(ex(0,0,0))
@@ -249,6 +255,9 @@ ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
    delbx_ptr = c_loc(delbx(0,0,0))
    delby_ptr = c_loc(delby(0,0,0))
    delbz_ptr = c_loc(delbz(0,0,0))
+   phis_ptr = c_loc(phis(0,0,0))
+   denes_ptr = c_loc(denes(0,0,0))
+   upars_ptr = c_loc(upars(0,0,0))
    !4D Arrays
    den_ptr = c_loc(den(1,0,0,0)) !first index uses 1 based index, the rest are like the rest of the 3D Arrays
    

@@ -1,6 +1,7 @@
 #include "gemx_c.hpp"
 #include "gemx_com_externs.h"
 #include "equil_externs.h"
+#include "MultiArrays.hpp"
 //#include "pputil_c.hpp" //WIP
 #include "fcnt.hpp"
 #include "mpi.h"
@@ -10,7 +11,6 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-
 using namespace std;
 
 void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){ 
@@ -62,11 +62,11 @@ void get_jpar_c_(double* MatrixIn){
    int i, j, k;
 
    Array3D<double> matrix;
-   matrix.CreateArray3D(MatrixIn, imx, jmx, kmx);
+   matrix.CreateArray3D(MatrixIn, imx+1, jmx+1, kmx+1);
 
-   for(k = 0; k <= kmx; ++k){
-      for(i = 2; i <= imx; ++i){
-         for(j = 2; j <= jmx; ++j){
+   for(k = 0; k <= kmx; ++k){     
+      for(i = 2; i <= imx-2; ++i){
+         for(j = 2; j <= jmx-2; ++j){
             if(mask3_c(i,j)>=2.99){ 
                jpar_c(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)     
                                  -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)  
@@ -77,8 +77,7 @@ void get_jpar_c_(double* MatrixIn){
       }
    }
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 double ran2_c_(int& idum){ 
    const int IM1 = 2147483563;
    const int IM2 = 2147483399;
@@ -143,8 +142,7 @@ double ran2_c_(int& idum){
    }
    return retVal;
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void loadi_c_(){ 
    int i = 0; 
    int j = 0;
@@ -165,24 +163,22 @@ void loadi_c_(){
    // double avgw = 0;
    double myavgw = 0;
    
-   double dumx, dumy, dumz, jacp; 
+   double dumx, dumy, dumz, jacp; //jacp used in initialize, not sure if value is supposed to be updated here since jacp not passed to function - currently does nothing
    double wx0, wx1, wz0, wz1;
 
    const long double pi2 = M_PI*2;
 
    cnt = static_cast<int>(tmm_ptr[0]/numprocs);
    cnt = mmx; 
-
- //needed I think in order to properly index through the arrays. Most 1D arrays in fortran start at 1 instead of 0, offsetting everything by 1
    while(m < mm_ptr[0]){
    //load a slab of ions...
 
       //dumx=xdim*(ran2(iseed)+0.01)*0.9
       //dumy=zdim*(ran2(iseed)+0.01)*0.9
       //revers(MyId*cnt+j,2) !ran2(iseed)
-      dumx=2*dxeq+(xdim-4*dxeq)*ran2_c_(iseed); 
-      dumy=2*dzeq+(zdim-4*dzeq)*ran2_c_(iseed);
-      dumz=pi2*ran2_c_(iseed);   
+      dumx=2*dxeq+(xdim-4*dxeq)*ran2_c_(iseed); //!revers(MyId*cnt+j,2) !ran2(iseed)
+      dumy=2*dzeq+(zdim-4*dzeq)*ran2_c_(iseed); //!revers(MyId*cnt+j,3) !ran2(iseed)
+      dumz=pi2*ran2_c_(iseed); //revers(MyId*cnt+j,5) !ran2(iseed)
 
       //dumx=dxeq+(xdim-2*dxeq)*m/((mm(1)))
 
@@ -203,7 +199,7 @@ void loadi_c_(){
       x = x2_ptr[m];
       i = static_cast<int>(x/dxeq);
       wx0 = ((i+1)*dxeq-x)/dxeq;
-      wx1 = 1.0 - wx0;
+      wx1 = 1 - wx0;
 
       z = z2_ptr[m];
       k = static_cast<int>(z/dzeq);
@@ -219,7 +215,7 @@ void loadi_c_(){
 //    LINEAR: perturb w(m) to get linear growth...
 //       w2(m)=2.*amp*ran2(iseed)
       w2_ptr[m] = (wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
-               +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
+               +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
 //    w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
 
       myavgw += w2_ptr[m];
@@ -265,16 +261,15 @@ void loadi_c_(){
 
    return;
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void gradu_c_(double* u, double* ux, double* uz){
    Array3D<double> u_;
    Array3D<double> ux_;
    Array3D<double> uz_;
 
-   u_.CreateArray3D(u, imx, jmx, kmx); 
-   ux_.CreateArray3D(ux, imx, jmx, kmx);
-   uz_.CreateArray3D(uz, imx, jmx, kmx);
+   u_.CreateArray3D(u, imx+1, jmx+1, 1); //Stefan Update says 1?
+   ux_.CreateArray3D(ux, imx+1, jmx+1, kmx+1);
+   uz_.CreateArray3D(uz, imx+1, jmx+1, kmx+1);
 
    int ju = 0;
    int jl = 0;
@@ -284,41 +279,33 @@ void gradu_c_(double* u, double* ux, double* uz){
       ju = j+1;
       jl = j-1;
       if(j == 0) jl = jmx-1;
-      for (int i = 0; i < imx; ++i){
+      for (int i = 0; i <= imx-1; ++i){ 
          for (int k = 0; k <= kmx; ++k){
-            uz_(i,j,k) = (u_(i,ju,k)-u_(i,jl,k))/(2.*dz);
+            uz_(i,j,k) = (u_(i,ju,k)-u_(i,jl,k))/(2*dz);
          }
       }  
    }
 
-   for(int i = 1; i < imx; ++i){
-      for(int j = 0; j < jmx; ++j){
+   for(int i = 1; i <= imx-1; ++i){
+      for(int j = 0; j <= jmx-1; ++j){
          for(int k = 0; k <= kmx; ++k){
-            ux_(i,j,k) = (u_(i+1,ju,k)-u_(i-1,j,k))/(2.*dx);
+            ux_(i,j,k) = (u_(i+1,ju,k)-u_(i-1,j,k))/(2*dx);
          }
       }
    }
 
-   for(int j = 0; j < jmx; ++j){
+   for(int j = 0; j <= jmx-1; ++j){
       for(int k = 0; k <= kmx; ++k){
          ul = u_(imx-1, j, k);
-         ux_(0,j,k) = (u_(1,j,k)-ul)/(2.*dx);
+         ux_(0,j,k) = (u_(1,j,k)-ul)/(2*dx);
       }
    }
    return;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void gradz_c_(double* u, double* uz){
+
+void gradz_c_(Array3D<double> &u, Array3D<double> &uz){
    int kleft, kright;
    double wx0, wx1, wz0, wz1, uleft, uright;
-
-   Array3D<double> u_;
-   Array3D<double> uz_;
-
-   u_.CreateArray3D(u, imx, jmx, kmx);
-   uz_.CreateArray3D(uz, imx, jmx, kmx);
-   //Rgrid is a 1D pointer declared in equil. I tried externing it to C but it wasn't working. For now, I'm passing a pointer to the first element via arguments
 
    for(int k = 0; k <= kmx; ++k)
    {
@@ -326,61 +313,87 @@ void gradz_c_(double* u, double* uz){
       if(k==0) kleft = kmx;
       kright = k+1;
       if(k==kmx) kright = 0;
-      for(int i = 1; i < imx; ++i){
-         for(int j = 1; j < jmx; ++j)
-         {
+      for(int i = 1; i <= imx; ++i){
+         for(int j = 1; j <= jmx; ++j){
             wx0 = ((ileft_c(i,j)+1)*dx-xbackw_c(i,j))/dx;
-               wx1 = 1.0-wx0;
-               wz0 = ((jleft_c(i,j)+1)*dz-zbackw_c(i,j))/dz;
-               wz1 = 1.0-wz0;
-               uleft = wx0*wz0*u_(ileft_c(i,j),jleft_c(i,j),kleft) 
-                      +wx1*wz0*u_(ileft_c(i,j)+1,jleft_c(i,j),kleft) 
-                      +wx0*wz1*u_(ileft_c(i,j),jleft_c(i,j)+1,kleft) 
-                      +wx1*wz1*u_(ileft_c(i,j)+1,jleft_c(i,j)+1,kleft);
-               wx0 = ((iright_c(i,j)+1)*dx-xforw_c(i,j))/dx;
-               wx1 = 1.0-wx0;
-               wz0 = ((jright_c(i,j)+1)*dz-zforw_c(i,j))/dz;
-               wz1 = 1.0-wz0;
-               uright = wx0*wz0*u_(iright_c(i,j),jright_c(i,j),kright) 
-                      +wx1*wz0*u_(iright_c(i,j)+1,jright_c(i,j),kright) 
-                      +wx0*wz1*u_(iright_c(i,j),jright_c(i,j)+1,kright) 
-                      +wx1*wz1*u_(iright_c(i,j)+1,jright_c(i,j)+1,kright);
-
-               uz_(i,j,k)=(uright-uleft)/(2.*b0_c(i,j)/b0zeta_c(i,j)*dzeta*(rgrid_ptr[i])/xu);
+            wx1 = 1-wx0;
+            wz0 = ((jleft_c(i,j)+1)*dz-zbackw_c(i,j))/dz;
+            wz1 = 1-wz0;
+            uleft = wx0*wz0*u(ileft_c(i,j),jleft_c(i,j),kleft) 
+                  +wx1*wz0*u(ileft_c(i,j)+1,jleft_c(i,j),kleft) 
+                  +wx0*wz1*u(ileft_c(i,j),jleft_c(i,j)+1,kleft) 
+                  +wx1*wz1*u(ileft_c(i,j)+1,jleft_c(i,j)+1,kleft);
+            wx0 = ((iright_c(i,j)+1)*dx-xforw_c(i,j))/dx;
+            wx1 = 1-wx0;
+            wz0 = ((jright_c(i,j)+1)*dz-zforw_c(i,j))/dz;
+            wz1 = 1-wz0;
+            uright = wx0*wz0*u(iright_c(i,j),jright_c(i,j),kright) 
+                  +wx1*wz0*u(iright_c(i,j)+1,jright_c(i,j),kright) 
+                  +wx0*wz1*u(iright_c(i,j),jright_c(i,j)+1,kright) 
+                  +wx1*wz1*u(iright_c(i,j)+1,jright_c(i,j)+1,kright);
+            uz(i,j,k)=(uright-uleft)/(2*b0_c(i,j)/b0zeta_c(i,j)*dzeta*(rgrid_ptr[i])/xu);
          }
       }
    }
-   return;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void integ_c_(int &iflag){
+void smooth_c_(double *matrix, int &mk){
+   double *temp = new double[(imx+1) * (jmx+1) * (kmx+1)];
+
+   Array3D<double> temp_c;
+   Array3D<double> matrix_c;
+   matrix_c.CreateArray3D(matrix, imx+1, jmx+1, kmx+1);
+   temp_c.CreateArray3D(temp, imx+1, jmx+1, kmx+1);
+   
+   if(mk == 3){
+      for(int k = 0; k <= kmx; ++k){
+         for(int i = 2; i <= imx-2; ++i){
+            for(int j = 2; j <= jmx-2; ++j){
+               if(!(mask3_c(i,j) < 2.99)){
+                  temp_c(i,j,k) = (matrix_c(i,j,k)+matrix_c(i+1,j,k)+matrix_c(i,j+1,k)+matrix_c(i-1,j,k)+matrix_c(i,j-1,k))*0.2;
+               } 
+            }
+         }
+      }
+   } else if (mk == 2) {
+      for(int k = 0; k <= kmx; ++k){
+         for(int i = 2; i <= imx-2; ++i){
+            for(int j = 2; j <= jmx; ++j){
+               if(!(masktwo_c(i,j)<1.99)){
+                  temp_c(i,j,k) =(matrix_c(i,j,k)+matrix_c(i+1,j,k)+matrix_c(i,j+1,k)+matrix_c(i-1,j,k)+matrix_c(i,j-1,k))*0.2;
+               }  
+            }
+         }
+      }
+   } 
+   matrix_c = temp_c;
+       
+   if(temp){
+       delete[] temp;
+       temp = nullptr;
+   } else {
+      printf("Warning - temp pointer in smooth_c was not allocated or could not be freed");
+   }
+}
+
+void integ_c_(int &iflag) {
    int i, j, k;
    double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1;
-
    int start_integ_tm = MPI_Wtime();
-   //set all items in den to 0
-   for(int f = 0; f <= imx; ++f){
-      for (int g = 0; g <= jmx; ++g){
-         for(int h = 0; h <= kmx; ++h)
-            den_c(iflag,f,g,h) = 0;
-      }
-   }
-   //upar = 0; //set all values of upar to 0
-   for(int e = 0; e <= imx; ++e){ //temporary testing
-      for(int f = 0; f <= jmx; ++f){
-         for (int g = 0; g <= kmx; ++g){
-            upar_c(e, f, g) = 0;
+   for(int i = 0; i <= imx; ++i) {
+      for (int j = 0; j <= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            den_c(iflag,i,j,k) = 0;
          }
       }
    }
+   upar_c.Clear(); 
 
    #pragma acc parallel loop gang vector
-   for(int m = 0; m <= mm_ptr[0]; ++m){
+   for(int m = 0; m < mm_ptr[0]; ++m) {
 
       x = x3_ptr[m];
-      i = int(x/dxeq);
+      i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
 
@@ -388,12 +401,12 @@ void integ_c_(int &iflag){
       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
 
       z = z3_ptr[m];
-      j = int(z/dzeq);
+      j = static_cast<int>(z/dzeq);
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
-      zeta= fmod(zeta3_ptr[m], 2*M_PI);
-      k=int(zeta/dzeta);
+      zeta= fmod(zeta3_ptr[m], pi2);
+      k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
@@ -414,7 +427,7 @@ void integ_c_(int &iflag){
       #pragma acc atomic update
       upar_c(i+1,j+1,k)=upar_c(i+1,j+1,k)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
-      if(k != kmx){
+      if(k != kmx) {
          #pragma acc atomic update
          den_c(iflag,i,j,k+1)=den_c(iflag,i,j,k+1)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
          #pragma acc atomic update
@@ -431,7 +444,7 @@ void integ_c_(int &iflag){
          upar_c(i,j+1,k+1)=upar_c(i,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx0*wy1*wzeta1*R_major_over_R;
          #pragma acc atomic update
          upar_c(i+1,j+1,k+1)=upar_c(i+1,j+1,k+1)+u3_ptr[m]*w3_ptr[m]*wx1*wy1*wzeta1*R_major_over_R1;
-   }else{
+   } else {
          #pragma acc atomic update
          den_c(iflag,i,j,0)=den_c(iflag,i,j,0)+w3_ptr[m]*wx0*wy0*wzeta1*R_major_over_R;
          #pragma acc atomic update
@@ -457,49 +470,49 @@ void integ_c_(int &iflag){
    ierr = MPI_Allreduce(MPI_IN_PLACE, &upar_c(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
 
-   for(int i = 0 ; i <= imx; ++i){
-      for(int j = 0; j <= jmx; ++j){
-         for(int k = 0; k <= kmx; ++k){
+   for(int i = 0 ; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
             den_c(1,i,j,k) = den_c(iflag, i, j, k);
          }
       }
    }
 
-   for(int i = 0; i <= imx; ++i){
-      for(int j = 0; j <= jmx; ++j){
+   for(int i = 0; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
          den2d2_c(i,j) = 0;
       }
    }
    
-   for(int i = 0 ; i <= imx; ++i){
-      for(int j = 0; j <= jmx; ++j){
-         for(int k = 0; k <= kmx; ++k){
+   for(int i = 0 ; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
             den2d2_c(i,j)=den2d2_c(i,j)+den_c(iflag,i,j,k);
-            if (i3d==0 && k != 0) upar_c(i,j,0)=upar_c(i,j,0)+upar_c(i,j,k);
+            if (i3d==0 && k != 0) upar_c(i,j,0) += upar_c(i,j,k);
          }
       }
    }
 
-   for(i = 0; i <= imx; ++i){
-      for(j = 0; j <= jmx; ++j){
+   for(i = 0; i <= imx; ++i) {
+      for(j = 0; j <= jmx; ++j) {
          den2d2_c(i,j) = den2d2_c(i,j)/(kmx+1);
-         if(i3d == 0){
+         if(i3d == 0) {
             upar_c(i,j,0) = upar_c(i,j,0)/(kmx+1);
-            for(k = 1; k <= kmx; ++k){
+            for(k = 1; k <= kmx; ++k) {
                upar_c(i,j,k) = upar_c(i,j,0);
             }
          }
       }
    }
 
-   if(iflag==1){
-      for(i = 0; i <= imx; ++i){
-         for(j = 0; j <= jmx; ++j){
-            dden2d_c(i,j)=den2d2_c(i,j)-den2d1_c(i,j);
+   if(iflag==2) {
+      for(i = 0; i <= imx; ++i) {
+         for(j = 0; j <= jmx; ++j) {
+            dden2d_c(i,j)-=den2d1_c(i,j);
             den2d1_c(i,j)=den2d2_c(i,j);
-            for(k = 0 ; k <= kmx; ++k){
-               //den_pre=den_c(2,i,j,k); 
-            }
+            // for(k = 0 ; k <= kmx; ++k){
+            //    //den_pre=den_c(2,i,j,k); 
+            // }
          }
       }
    }
@@ -508,17 +521,204 @@ void integ_c_(int &iflag){
    integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
 }
 
+void get_apar_c_(const int &flagnumber) {
+    double* gradPar_ptr = new double[(imx+1) * (jmx+1) * (kmx+1)];
+    Array3D<double> gradPar;
+    gradPar.CreateArray3D(gradPar_ptr, imx+1, jmx+1, kmx+1);
+    gradpar_c_(phi_c, gradPar); 
+
+   if(flagnumber == -1) {
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            for(int k = 0; k <= kmx; ++k){
+               apars_c(i,j,k) = apar_c(i,j,k)-0.5*dt*(gradPar(i,j,k));  
+            }
+         }
+      }
+   } else {
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            for(int k = 0; k <= kmx; ++k){
+               apar_c(i,j,k) = apar_c(i,j,k)-0.5*dt*(gradPar(i,j,k));
+            }
+         }
+      }
+   }
+   if(gradPar_ptr) {
+      delete[] gradPar_ptr;
+      gradPar_ptr = NULL;
+   }
+}
+
+void get_ne_c_(int &flagnumber){
+   double* gradPar_ptr = new double[(imx+1) * (jmx+1) * (kmx+1)];
+   Array3D<double> gradPar;
+   gradPar.CreateArray3D(gradPar_ptr, imx+1, jmx+1, kmx+1);
+   gradpar_c_(jpar_c, gradPar);
+
+   if(flagnumber == -1) {
+      for(int i = 0; i <= imx; ++i) {
+         for(int j = 0; j <= jmx; ++j) {
+            for(int k = 0; k <= kmx; ++k) {
+               denes_c(i,j,k) = dene_c(i,j,k)+0.5*dt*(gradPar(i,j,k));  
+            }
+         }
+      }
+   } else if(flagnumber == 1) {
+      for(int i = 0; i <= imx; ++i) {
+         for(int j = 0; j <= jmx; ++j) {
+            for(int k = 0; k <= kmx; ++k) {
+               dene_c(i,j,k) = dene_c(i,j,k)+dt*(gradPar(i,j,k));
+            }
+         }
+      }
+   } else if(flagnumber == 0) {
+      for(int i = 2; i <= imx-2; ++i) {
+         for(int j = 2; j <= jmx-2; ++j) {
+            for(int k = 0; k <= kmx; ++k) {
+               if(mask4_c(i,j) == 4){
+                  dene_c(i,j,k)=jpar_c(i,j,k)*sqrt(c2_over_vA2_c(i,j));
+               }
+            }
+         }
+      }
+   }
+   if(i3d == 0){
+      for(int k = 1; k <= kmx; ++k) {
+         if (flagnumber ==-1 ){
+            for(int i = 0; i <= imx; ++i) {
+               for(int j = 0; j <= jmx; ++j) {
+                  denes_c(i,j,0) = denes_c(i,j,0)+denes_c(i,j,k);
+               }
+            }
+         } else {
+            for(int i = 0; i <= imx; ++i) {
+               for(int j = 0; j <= jmx; ++j) {
+                  dene_c(i,j,0) = dene_c(i,j,0)+dene_c(i,j,k);
+               }
+            }
+         }
+      }
+      if(flagnumber == -1){
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j) {
+               for(int k = 0; k <= kmx; ++k) {
+                  denes_c(i,j,k) = denes_c(i,j,k)/(kmx+1);
+               }
+            }
+         }
+      } else {
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j) {
+               for(int k = 0; k <= kmx; ++k) {
+                  dene_c(i,j,k) = dene_c(i,j,k)/(kmx+1);
+               }
+            }
+         }
+      }
+   }
+
+   if(gradPar_ptr) {
+      delete[] gradPar_ptr;
+      gradPar_ptr = NULL;
+   }
+}
+
+void gradparz_c_(double *matrix){ //need const values for args, using const int later will work, issue with extern atm  
+   double *gradparz = new double[(imx+1) * (jmx+1) * (kmx+1)];
+   Array3D<double> gradparz_c;
+   Array3D<double> matrix_c;
+   gradparz_c.CreateArray3D(gradparz, imx+1, jmx+1, kmx+1);
+   matrix_c.CreateArray3D(matrix, imx+1, jmx+1, kmx+1);
+   gradz_c_(matrix_c, gradparz_c);
+   for(int k = 0; k <= kmx; ++k){
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            gradparz_c(i,j,k) = 0.5*gradparz_c(i,j,k)*masktwo_c(i,j);
+         }
+      }
+   }
+}
+
+void gradpar_c_(Array3D<double> &matrix_c, Array3D<double> &gradpar){ 
+
+   for(int k = 1; k <= kmx-1; ++k){
+      for(int i = 2; i <= imx-2; ++i){
+         for(int j = 2; j <= jmx-2; ++j){
+            if (!(masktwo_c(i,j)<1.99)){
+               gradpar(i,j,k) = (b0x_c(i,j)/b0_c(i,j)*(matrix_c(i+1,j,k)-matrix_c(i-1,j,k))*0.5/dx  
+               +b0z_c(i,j)/b0_c(i,j)*(matrix_c(i,j+1,k)-matrix_c(i,j-1,k))*0.5/dz                
+               +b0zeta_c(i,j)/b0_c(i,j)*(matrix_c(i,j,k+1)-matrix_c(i,j,k-1))/((rgrid_ptr[i]/xu)*2*dzeta));
+            }
+         }
+      }
+   }
+
+   for(int i = 2; i <= imx-2; ++i){
+      for(int j = 2; j <= jmx-2; ++j){
+         gradpar(i,j,0) = (b0x_c(i,j)/b0_c(i,j)*(matrix_c(i+1,j,0)-matrix_c(i-1,j,0))*0.5/dx  
+               +b0z_c(i,j)/b0_c(i,j)*(matrix_c(i,j+1,0)-matrix_c(i,j-1,0))*0.5/dz                
+               +b0zeta_c(i,j)/b0_c(i,j)*(matrix_c(i,j,1)-matrix_c(i,j,kmx))/((rgrid_ptr[i]/xu)*2*dzeta));
+      }
+   }
+
+   for(int i = 2; i <= imx-2; ++i){
+      for(int j = 2; j <= jmx-2; ++j){
+         gradpar(i,j,kmx) = (b0x_c(i,j)/b0_c(i,j)*(matrix_c(i+1,j,kmx)-matrix_c(i-1,j,kmx))*0.5/dx  
+               +b0z_c(i,j)/b0_c(i,j)*(matrix_c(i,j+1,kmx)-matrix_c(i,j-1,kmx))*0.5/dz                
+               +b0zeta_c(i,j)/b0_c(i,j)*(matrix_c(i,j,0)-matrix_c(i,j,kmx-1))/((rgrid_ptr[i]/xu)*2*dzeta));
+      }
+   }
+}
+
+void pintef_c_(){
+   int i,j,k;
+   double ddedt;
+   double *uz = new double[(imx+1) * (jmx+1) * (kmx+1)];
+   Array3D<double> uz_c;
+   uz_c.CreateArray3D(uz, imx+1, jmx+1, kmx+1);
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+         for(k = 0; k <= kmx; ++k){
+            phis_c(i,j,k) = phi_c(i,j,k);
+            denes_c(i,j,k) = dene_c(i,j,k);
+            apars_c(i,j,k) = apar_c(i,j,k);
+         }
+      }
+   }
+
+   gradz_c_(upar_c, uz_c); 
+   for(k = 0; k <= kmx; ++k){
+      for(i = 1; i <= imx; ++i){
+         for(j = 1; j <= jmx; ++j){
+            ddedt = -uz_c(i,j,k)*gn0e_c(i,j)*gbtor_c(i,j)/((xctr-xdim/2+xg_ptr[i])*bmag_c(i,j))
+            +gn0e_c(i,j)*(gcpnex_c(i,j)*ez_c(i,j,k)-gcpnez_c(i,j)*ez_c(i,j,k))/bmag_c(i,j);
+            dene_c(i,j,k) = denes_c(i,j,k)+0.5*dt*ddedt;
+         }
+      }
+   }
+
+   gradz_c_(phi_c, uz_c);
+   for(k = 0; k <= kmx; ++k){
+      for(i = 1; i <= imx; ++i){
+         for(j = 1; j <= jmx; ++j){
+            ddedt = -uz_c(i,j,k)*gbtor_c(i,j)/((xctr-xdim/2+xg_ptr[i])*bmag_c(i,j));
+            apar_c(i,j,k) = apars_c(i,j,k)+0.5*dt*(ddedt+ezeta_c(i,j,k));
+         }
+      }
+   }
+
+}
+
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void fluxavg_c_(double *phi_in, double *phiavg_in){
-   //Input is 3D array to be flux averaged 
-   //input is phi in all cases, passed as externed 3D array as of now
-   //Output is 2D interpolated array
-   //Output is phiavg in all cases, passed as extrned 2D array as of now
+   //Currently only good for 2D case
 
    //Local Variables
-   double phiavg1d[102];//index 0 - 101
-   double psi1d[102];
-   double phiavg1d_private[102];
+   double phiavg1d[102] = {0};
+   double psi1d[102] = {0};
+   double phiavg1d_private[102] = {0};
    int gi = 0, xix, yjy, miw, psi_zero, store, k; 
    double weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1;
 
@@ -528,57 +728,57 @@ void fluxavg_c_(double *phi_in, double *phiavg_in){
    phiavg_c.CreateArray2D(phiavg_ptr, nx+1, nz+1);
 
    //set all arrays to zero here.
-   std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
-   std::fill(std::begin(psi1d), std::end(psi1d), 0);
-   std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0);
+   //std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
+   //std::fill(std::begin(psi1d), std::end(psi1d), 0);
+   //std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0);
 
    psi_zero = 1;
 
    //Computation
-   for(int line = 1; line <= 101; ++line){
+   for (int line = 1; line <= 101; ++line) {
       phiavggi = 0;
       store = 0;
-      for(gi = 0; gi < num_lines; ++gi){
-         if(gindex_ptr[gi] == line-1){
+      for(gi = 0; gi < num_lines; ++gi) {
+         if(gindex_ptr[gi] == line-1) {
             weightinput = (weight00_ptr[gi]*phi_c(iarray_ptr[gi], jarray_ptr[gi], 0) + 
                            weight10_ptr[gi]*phi_c(iarray_ptr[gi]+1, jarray_ptr[gi], 0) + 
                            weight01_ptr[gi]*phi_c(iarray_ptr[gi], jarray_ptr[gi]+1, 0) + 
                            weight11_ptr[gi]*phi_c(iarray_ptr[gi]+1, jarray_ptr[gi]+1, 0));
 
-            if(i3d == 0){
-               phiavggi = phiavggi + (weightinput*jacobian_ptr[gi])/deno_ptr[gi]; 
-            }else{
-               for(k = 1; k <= kmx; ++k){
+            if(i3d == 0) {
+               phiavggi += (weightinput*jacobian_ptr[gi])/deno_ptr[gi]; 
+            } else {
+               for(k = 1; k <= kmx; ++k) {
                   weightinput3D = (weight00_ptr[gi]*phi_c(iarray_ptr[gi], jarray_ptr[gi],k) + 
                            weight10_ptr[gi]*phi_c(iarray_ptr[gi]+1, jarray_ptr[gi],k) + 
                            weight01_ptr[gi]*phi_c(iarray_ptr[gi], jarray_ptr[gi]+1,k) + 
                            weight11_ptr[gi]*phi_c(iarray_ptr[gi]+1, jarray_ptr[gi]+1,k));
                }
-               weightinput = weightinput3D + weightinput;
-               phiavggi = phiavggi +(weightinput*jacobian_ptr[gi])/(deno_ptr[gi]*(kmx+1)); 
+               weightinput += weightinput3D;
+               phiavggi += (weightinput*jacobian_ptr[gi])/(deno_ptr[gi]*(kmx+1)); 
             }
 
-            if(priv_ptr[gi] == 0){
+            if(priv_ptr[gi] == 0) {
                store = gi;
             }
          }
          //Remove redundancy from closed loop integration process
-         if(phiavggi != 0){
-            if(gindex_ptr[gi] != line-1){
+         if(phiavggi != 0) {
+            if(gindex_ptr[gi] != line-1) {
                if(i3d == 0){
-                  phiavggi = phiavggi - (weightinput*jacobian_ptr[gi-1])/deno_ptr[gi-1]; 
+                  phiavggi -= (weightinput*jacobian_ptr[gi-1])/deno_ptr[gi-1]; 
                }else{
-                  phiavggi = phiavggi - (weightinput*jacobian_ptr[gi-1])/(deno_ptr[gi-1]*(kmx+1));               
+                  phiavggi -= (weightinput*jacobian_ptr[gi-1])/(deno_ptr[gi-1]*(kmx+1));               
                }
                break;
             }
          }
       }
-      if(store != 0){
+      if(store != 0) {
             phiavg1d[line] = phiavggi;
             psi1d[psi_zero] = psitab_ptr[store];
             psi_zero += 1;
-         }else{
+         } else {
             phiavg1d_private[line] = phiavggi; 
          }
    }
@@ -599,18 +799,18 @@ void fluxavg_c_(double *phi_in, double *phiavg_in){
    // Initialize output to zero
 
    //INTERPOLATION
-   for(xix = 0; xix <= nx; ++xix){
-      for(yjy = 0; yjy <= nz; ++yjy){
+   for(xix = 0; xix <= nx; ++xix) {
+      for(yjy = 0; yjy <= nz; ++yjy) {
          psival = psi_p_c(xix, yjy);
-         if(mask_c(xix,yjy) < 0.99){ 
+         if(mask_c(xix,yjy) < 0.99) { 
             phiavg_c(xix,yjy) = 0;
-         }else{
+         } else {
             miw  = int(psival/(psi1d[2]-psi1d[1]));
             wmx0 = ((miw+1)*(psi1d[2]-psi1d[1])-psival)/(psi1d[2]-psi1d[1]);
             wmx1 = 1-wmx0;
-            if (yjy < 75 && xix < 150 && psival > 0.29 && psival < 0.31){ //Private region under X-point
+            if (yjy < 75 && xix < 150 && psival > 0.29 && psival < 0.31) { //Private region under X-point
                phiavg_c(xix,yjy) = wmx0*phiavg1d_private[miw] + wmx1*phiavg1d_private[miw+1];
-            }else{
+            } else {
                phiavg_c(xix,yjy) = wmx0*phiavg1d[miw] + wmx1*phiavg1d[miw+1]; 
             }
          }
@@ -628,8 +828,8 @@ void efieldcalc_c_(double *phi_input){
    int i, j, k, kminus, kplus;
 
    for(k = 0; k <= kmx; ++k){
-      for(i = 2; i < imx; ++i){
-         for(j = 2; j < jmx; ++j){
+      for(i = 2; i <= imx-1; ++i){
+         for(j = 2; j <= jmx-1; ++j){
             ex_c(i,j,k) = -(input_phi_c(i+1,j,k) - input_phi_c(i-1,j,k))/(2*(rgrid_ptr[1]-rgrid_ptr[0]));
             ez_c(i,j,k) = -(input_phi_c(i,j+1,k) - input_phi_c(i,j-1,k))/(2*(zgrid_ptr[1]-zgrid_ptr[0]));
             if(k == 0){
@@ -706,7 +906,7 @@ void BoltzSolve_c_(double *input_phi){
    int i, j, k;
    
    Array3D<double> input_phi_c;
-   input_phi_c.CreateArray3D(input_phi, imx+1, jmx+1, kmx+1); //guesswork-ish right now
+   input_phi_c.CreateArray3D(input_phi, imx+1, jmx+1, kmx+1); 
 
    // Array2D<double> c2_over_vA2_c;
    // c2_over_vA2_c.CreateArray2D(c2_over_vA2, nx, nz);
@@ -759,9 +959,7 @@ void BoltzSolve_c_(double *input_phi){
             // input_phi(i,j,k) = OPPphik(i,j,k)
 
             if(mask_c(i,j) < 0.99){
-               for(k=0; k <= kmx; k++){
-                  input_phi_c(i,j,k) = 0; //TODO - DOUBLE CHECK THIS IS WHAT WE NEED TO DO
-               }
+                  input_phi_c.Clear(); //TODO - DOUBLE CHECK THIS IS WHAT WE NEED TO DO
             }
          }
       }

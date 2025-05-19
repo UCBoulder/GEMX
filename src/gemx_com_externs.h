@@ -1,6 +1,4 @@
-#ifndef GEM_COM_EXTERNS
-#define GEM_COM_EXTERNS
-
+#pragma once
 
 #include <complex>
 #include <cmath>
@@ -11,9 +9,9 @@ extern int numprocs;
 extern int Last, myid, cnt , ierr;
 extern int mmx;
 extern int iseed;
-extern int imx;
-extern int jmx;
-extern int kmx;
+extern const int imx;
+extern const int jmx;
+extern const int kmx;
 extern int idg;
 extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3d,icollision;
 extern int timestep, iez;
@@ -21,6 +19,7 @@ extern int nonlin,nonline,iflut,ifluid,ipara;
 extern int iput,iget,ision,isham,peritr,iadi;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int lx,lz;
+extern int nplot,xnplt;
 //extern MPI_Comm GRID_COMM,TUBE_COMM, PETSC_COMM;
 
 extern double dx;
@@ -57,6 +56,7 @@ extern double *zeta3_ptr;
 extern double *q_ptr;
 extern int *lr_ptr;
 extern double *jac_ptr;
+extern double *xg_ptr;
 
 //2D Arrays
 extern double *ileft_ptr;
@@ -91,6 +91,21 @@ extern Array2D<double> dden2d_c;
 
 extern double *den2d1_ptr;
 extern Array2D<double> den2d1_c;
+
+extern double *gn0e_ptr;
+extern Array2D<double> gn0e_c;
+
+extern double *gbtor_ptr;
+extern Array2D<double> gbtor_c;
+
+extern double *bmag_ptr;
+extern Array2D<double> bmag_c;
+
+extern double *gcpnex_ptr;
+extern Array2D<double> gcpnex_c;
+
+extern double *gcpnez_ptr;
+extern Array2D<double> gcpnez_c;
 
 //3D arrays
 extern double *phi_ptr;
@@ -171,6 +186,15 @@ extern Array3D<double> delby_c;
 extern double *delbz_ptr;
 extern Array3D<double> delbz_c;
 
+extern double *phis_ptr;
+extern Array3D<double> phis_c;
+
+extern double *denes_ptr;
+extern Array3D<double> denes_c;
+
+extern double *upars_ptr;
+extern Array3D<double> upars_c;
+
 //4D arrays
 extern double *den_ptr;
 extern Array4D<double> den_c;
@@ -184,5 +208,3 @@ extern "C"
 void Allocate2dPointerArrays_gemx_com();
 void Allocate3dPointerArrays_gemx_com();
 void Allocate4dPointerArrays_gemx_com();
-
-#endif  //GEM_COM_EXTERNS

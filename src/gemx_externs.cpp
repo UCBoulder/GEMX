@@ -23,7 +23,7 @@ Array2D<double> vpars_c;
 Array2D<double> vparsp_c;
 Array2D<double> psi_p_c;
 Array2D<double> mask_c;
-Array2D<double> mask2_c;
+Array2D<double> masktwo_c;
 Array2D<double> mask3_c;
 Array2D<double> mask4_c;
 Array2D<double> c2_over_vA2_c;
@@ -40,6 +40,11 @@ Array2D<double> captix_c;
 Array2D<double> captiz_c;
 Array2D<double> capnix_c;
 Array2D<double> capniz_c;
+Array2D<double> gn0e_c;
+Array2D<double> gbtor_c;
+Array2D<double> bmag_c;
+Array2D<double> gcpnex_c;
+Array2D<double> gcpnez_c;
 
 //3D pointer too be used in C
 Array3D<double> phi_c;
@@ -69,6 +74,9 @@ Array3D<double> curlb_c;
 Array3D<double> delbx_c;
 Array3D<double> delby_c;
 Array3D<double> delbz_c;
+Array3D<double> phis_c;
+Array3D<double> denes_c;
+Array3D<double> upars_c;
 
 //4D Arrays
 Array4D<double> den_c;
@@ -102,7 +110,7 @@ void Allocate2dPointerArrays_gemx_com(){
     vparsp_c.CreateArray2D(vparsp_ptr,5,nr+1);
     psi_p_c.CreateArray2D(psi_p_ptr, nx+1, nz+1);
     mask_c.CreateArray2D(mask_ptr, nx+1, nz+1);
-    mask2_c.CreateArray2D(mask2_ptr, nx+1, nz+1);
+    masktwo_c.CreateArray2D(masktwo_ptr, nx+1, nz+1);
     mask3_c.CreateArray2D(mask3_ptr, nx+1, nz+1);
     mask4_c.CreateArray2D(mask4_ptr, nx+1, nz+1);
     //phiavg_c.CreateArray2D(phiavg_ptr, nx, nz); //All instances currently being passed to function
@@ -120,10 +128,15 @@ void Allocate2dPointerArrays_gemx_com(){
     captiz_c.CreateArray2D(captiz_ptr, nx+1, nz+1);
     capnix_c.CreateArray2D(capnix_ptr, nx+1, nz+1);
     capniz_c.CreateArray2D(capniz_ptr, nx+1, nz+1);
+    gn0e_c.CreateArray2D(gn0e_ptr, imx+1, jmx+1);
+    gbtor_c.CreateArray2D(gbtor_ptr, imx+1, jmx+1);
+    bmag_c.CreateArray2D(bmag_ptr, imx+1, jmx+1);
+    gcpnex_c.CreateArray2D(gcpnex_ptr, imx+1, jmx+1);
+    gcpnez_c.CreateArray2D(gcpnez_ptr, imx+1, jmx+1);
 }
 
 void Allocate3dPointerArrays_gemx_com(){
-    //phi_c.CreateArray3D(phi_ptr, imx, jmx, kmx); //All instances currently being passed to function
+    phi_c.CreateArray3D(phi_ptr, imx, jmx, kmx); //All instances currently being passed to function
     ex_c.CreateArray3D(ex_ptr, imx+1, jmx+1, kmx+1);
     ez_c.CreateArray3D(ez_ptr, imx+1, jmx+1, kmx+1);
     ezeta_c.CreateArray3D(ezeta_ptr, imx+1, jmx+1, kmx+1);
@@ -150,6 +163,9 @@ void Allocate3dPointerArrays_gemx_com(){
     delbx_c.CreateArray3D(delbx_ptr, imx+1, jmx+1, kmx+1);
     delby_c.CreateArray3D(delby_ptr, imx+1, jmx+1, kmx+1);
     delbz_c.CreateArray3D(delbz_ptr, imx+1, jmx+1, kmx+1);
+    phis_c.CreateArray3D(phis_ptr, imx+1, jmx+1, kmx+1);
+    denes_c.CreateArray3D(denes_ptr, imx+1, jmx+1, kmx+1);
+    upars_c.CreateArray3D(upars_ptr, imx+1, jmx+1, kmx+1);
 }
 
 void Allocate4dPointerArrays_gemx_com(){

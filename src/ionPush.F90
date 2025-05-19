@@ -14,6 +14,8 @@
       REAL(8) :: xt,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap,vcurlbdotE,dbdzetap=0
       REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),Bstar3(3)
+      !Dom timing
+      REAL(8) :: myStart, myEnd
 !      real(8),dimension(3)::curlbp,Bstar3
       start_ppush_tm = MPI_WTIME()
 
@@ -24,6 +26,8 @@
 
        
 !$acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table)
+       
+      call cpu_time(myStart)
       do m=1,mm(1)
          x=x2(m)
          i = int(x/dxeq)
@@ -269,6 +273,9 @@
 
    enddo
 !!   !$acc wait
+   !Dom timing
+   call cpu_time(myEnd)
+   !write(*,*) (myEnd-myStart)
 
       end_ppush_tm = MPI_WTIME()
       ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm
@@ -294,6 +301,7 @@
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0
       REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),Bstar3(3)
 !      real(8),dimension(3)::curlbp,Bstar3
+
       start_cpush_tm = MPI_WTIME()
       nudi0 = 1/sqrt(2.0)*18.4*e**1.5*4.7140d-8*1.d-6
 !      write(*,*)t0i(200,201)

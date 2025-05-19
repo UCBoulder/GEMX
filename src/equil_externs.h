@@ -1,5 +1,4 @@
-#ifndef EQUIL_EXTERNS
-#define EQUIL_EXTERNS
+#pragma once
 
 #include <complex>
 #include <cmath>
@@ -25,6 +24,7 @@ extern double frequ;
 extern double vu;
 extern double eru;
 extern double dR,dth,mu0,e,proton;
+extern double pi,pi2,r,th,s;
 
 
 //1D arrays
@@ -84,8 +84,8 @@ extern Array2D<double> psi_p_c;
 extern double *mask_ptr;
 extern Array2D<double> mask_c;
 
-extern double *mask2_ptr;
-extern Array2D<double> mask2_c;
+extern double *masktwo_ptr;
+extern Array2D<double> masktwo_c;
 
 extern double *mask3_ptr;
 extern Array2D<double> mask3_c;
@@ -133,5 +133,3 @@ extern "C"
 {
     void new_gemx_com_c_();
 }
-
-#endif //EQUIL_EXTERNS

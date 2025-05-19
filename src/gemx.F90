@@ -31,11 +31,6 @@ program gemx
          use iso_c_binding
       end subroutine parperp_c
 
-      subroutine gradz_c(u_c, uz_c) bind(c, name = 'gradz_c_')
-         use iso_c_binding
-         real(c_double) :: u_c(0:imx,0:jmx,0:kmx), uz_c(0:imx,0:jmx,0:kmx)
-      end subroutine gradz_c
-
       subroutine fluxavg_c(phi_in, phiavg_in) bind(c, name = 'fluxavg_c_')
          use iso_c_binding
          real(c_double) :: phi_in(0:imx, 0:jmx, 0:kmx), phiavg_in(0:nx, 0:nz)
@@ -67,6 +62,16 @@ program gemx
          real(c_double) :: matrix(0:imx, 0:jmx, 0:kmx)
       end subroutine get_jpar_c
 
+      subroutine get_apar_c(flagnumber) bind(c, name = 'get_apar_c_')
+         use iso_c_binding
+         integer(c_int) :: flagnumber
+      end subroutine get_apar_c
+
+      subroutine get_ne_c(flagnumber) bind(c, name = 'get_ne_c_')
+         use iso_c_binding
+         integer(c_int) :: flagnumber
+      end subroutine get_ne_c
+      
       subroutine integ_c(iflag) bind(c, name = 'integ_c_')
          use iso_c_binding
          integer(c_int) iflag
@@ -86,6 +91,20 @@ program gemx
          use iso_c_binding
          integer(c_int) n
       end subroutine cpush_c
+
+      subroutine pintef_c() bind(c, name = 'pintef_c_')
+         use iso_c_binding
+      end subroutine pintef_c
+
+      subroutine gradpar_c(matrix) bind(c, name = 'gradpar_c_')
+         use iso_c_binding
+         real(c_double) :: matrix(0:imx, 0:jmx, 0:kmx)
+      end subroutine gradpar_c
+
+      subroutine outd_c(timestep) bind(c, name = 'outd_c_')
+         use iso_c_binding
+         integer(c_int) :: timestep
+      end subroutine outd_c
 
       subroutine new_gemx_com_c() bind(c, name='new_gemx_com_c_')
       end subroutine new_gemx_com_c
@@ -152,11 +171,10 @@ program gemx
 
 !  include "Initialize_petsc.h"
      
-
       call new_gemx_com_c()
        if(iget.eq.0)call loadi_c
-       !call integ(2)
-       call integ_c(1)
+       call integ(2)
+       !call integ_c(2)
 
                if(myid==0)then
                 open(unit=11, file = 'testden',status='unknown',action='write')
@@ -218,13 +236,13 @@ program gemx
 
            !call get_jpar(apar)
            call get_jpar_c(apar)
-           call get_ne(0)
+           call get_ne_c(0)
 
            if(i3d==0)then
               apar=0
               dene=0
-              !call integ(2)
-              call integ_c(1)
+              call integ(2)
+              !call integ_c(2)
            end if
            
 
@@ -303,8 +321,8 @@ program gemx
             !phiavg=0
             call fluxavg_c(phi, phiavg)
                if (eBoltzmann == 1) then
-                  !call boltzsolve(phi)
-                  call boltzsolve_c(phi)
+                  call boltzsolve(phi)
+                  !call boltzsolve_c(phi)
                else
 
 
@@ -388,13 +406,13 @@ program gemx
  !              close(11)
       
          
-
+ 
          call get_apar(-1)
-         !call  smooth(apars,2)
+         !call smooth(apars,2)
            !call get_jpar(apars)
-           call get_jpar_c(apars)
-           !call smooth(jpar,3)
-           call get_ne(-1)
+           call get_jpar(apars)
+           !call smooth(jpar,3)      !testing
+           call get_ne_c(-1)
 
 !           if(myid==0)then
 !               open(unit=11, file = 'testapars',status='unknown',action='write')
@@ -428,18 +446,16 @@ program gemx
  !              end if
 
 
-               !if(ision==1)call ppush(timestep)
                if(ision==1)call ppush_c(timestep)
-               !if(ifluid==1)call integ(1)
-               if(ifluid==1)call integ_c(0)
+               if(ifluid==1)call integ(1)
+               !if(ifluid==1)call integ_c(1)
                
 
           else
-             !if(ision==1)call ppush(timestep)
              if(ision==1)call ppush_c(timestep)
-             !             if(ifluid==1)call pintef
-             !if(ifluid==1)call integ(1)
-             if(ifluid==1)call integ_c(0)
+                        !  if(ifluid==1)call pintef
+             if(ifluid==1)call integ(1)
+             !if(ifluid==1)call integ_c(1)
 
 !             if(myid==0)then
 !                open(unit=11, file = 'testden',status='unknown',action='write')
@@ -557,12 +573,12 @@ program gemx
                   
      
 
-    call get_apar(1)
-!    call smooth(apar,2)
+    call get_apar_c(1)
+    !call smooth_c(apar,2)   !testing
       !call get_jpar(apar)
       call get_jpar_c(apar)
-!      call smooth(jpar,3)
-      call get_ne(1)
+      !call smooth(jpar,3)   !testing
+      call get_ne_c(1)
 
 
       if(MyId==0 .and. mod(timestep,10)==0)then
@@ -589,14 +605,14 @@ program gemx
        !if(ision==1)call cpush(timestep)
        if(ision==1)call cpush_c(timestep)
         !        if(ifluid==1)call cintef(timestep)
-       !if(ifluid==1)call integ(2)
-       if(ifluid==1)call integ_c(1)
+       if(ifluid==1)call integ(2)
+       !if(ifluid==1)call integ_c(2)
     else
         !if(ision==1)call cpush(timestep)
         if(ision==1)call cpush_c(timestep)
         !        if(ifluid==1)call cintef(timestep)
-        !if(ifluid==1)call integ(2)
-        if(ifluid==1)call integ_c(1)
+        if(ifluid==1)call integ(2)
+        !if(ifluid==1)call integ_c(2)
         !        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
      end if
      
@@ -621,7 +637,7 @@ program gemx
 
     
 
-     call outd(timestep)
+     call outd_c(timestep)
 
          if(MyId==0 .and. ifield_solver==1 .and. mod(timestep,10)==0) then    
                open(unit=11, file = 'testapar',status='unknown',action='write')
@@ -1262,7 +1278,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          CONTAINS
            function  gradparz(matrix)
            real,dimension(0:imx,0:jmx,0:kmx)::matrix,gradparz
-           call gradz_c(matrix,gradparz)
+           call gradz(matrix,gradparz)
 
               do k=0,kmx
                  do i=0,imx
@@ -1725,7 +1741,7 @@ end subroutine field
       denes = dene
       apars = apar
 
-      call gradz_c(upar,uz)
+      call gradz(upar,uz)
       do k = 0,kmx-1
          do i = 1,imx-1
             do j = 1,jmx-1
@@ -1736,7 +1752,7 @@ end subroutine field
          end do
       end do
 
-      call gradz_c(phi,uz)
+      call gradz(phi,uz)
       do k = 0,kmx-1
          do i = 1,imx-1
             do j = 1,jmx-1

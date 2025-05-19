@@ -49,11 +49,10 @@ MODULE equil
       integer, dimension(:), allocatable :: gindex,iarray,jarray,priv
 
    ! ============================================================================================================================
-   !pointers Dominic is externing to C++
    type(c_ptr), bind(c) :: t0i_ptr, xn0i_ptr, b0_ptr, b0zeta_ptr
    type(c_ptr), bind(c) :: rgrid_ptr, zgrid_ptr 
    type(c_ptr), bind(c) :: phiavg_ptr, weight00_ptr, weight10_ptr, weight01_ptr, weight11_ptr, jacobian_ptr, deno_ptr, gindex_ptr, iarray_ptr, jarray_ptr, priv_ptr, psitab_ptr
-   type(c_ptr), bind(c) :: t0s_ptr,xn0s_ptr,capts_ptr,capns_ptr,vpars_ptr,vparsp_ptr,psi_p_ptr,mask_ptr,mask2_ptr,mask3_ptr,mask4_ptr
+   type(c_ptr), bind(c) :: t0s_ptr,xn0s_ptr,capts_ptr,capns_ptr,vpars_ptr,vparsp_ptr,psi_p_ptr,mask_ptr,masktwo_ptr,mask3_ptr,mask4_ptr
    type(c_ptr), bind(c) :: c2_over_va2_ptr, xn0e_ptr, t0e_ptr, curlb_ptr, dbdx_ptr, dbdz_ptr, b0x_ptr, b0z_ptr, captix_ptr, captiz_ptr, capnix_ptr, capniz_ptr
 
    ! ============================================================================================================================       
@@ -62,7 +61,7 @@ contains
       subroutine new_equil()
       use gemx_com,only: myid
       implicit none
-      real(8) :: pi,pi2,r,th,s
+      real(8), bind(c) :: pi,pi2,r,th,s
 
       integer :: i,j,k,m,i1,j1,j2
       real(8) :: dum,x,tempn
@@ -91,7 +90,7 @@ contains
                capnix(0:nx,0:nz),capnex(0:nx,0:nz),captix(0:nx,0:nz),captex(0:nx,0:nz), &
                capniz(0:nx,0:nz),capnez(0:nx,0:nz),captiz(0:nx,0:nz),captez(0:nx,0:nz))      
 
-      allocate(curlb(0:nx,0:nz,3))
+      allocate(curlb(0:nx,0:nz,3)) !potential weirdness. 3rd index 1-based
       
       allocate(Rgrid(0:nx),Zgrid(0:nz),bdcrvb(0:nx,0:nz))
       allocate(psi_p(0:nx,0:nz),mask(0:nx,0:nz),c2_over_vA2(0:nx,0:nz),mask2(0:nx,0:nz),mask3(0:nx,0:nz),mask4(0:nx,0:nz))
@@ -470,7 +469,7 @@ contains
   vparsp_ptr = c_loc(vparsp(1,0))
   psi_p_ptr = c_loc(psi_p(0,0))
   mask_ptr = c_loc(mask(0,0))
-  mask2_ptr = c_loc(mask2(0,0))
+  masktwo_ptr = c_loc(mask2(0,0))
   mask3_ptr = c_loc(mask3(0,0))
   mask4_ptr = c_loc(mask4(0,0))
   c2_over_va2_ptr = c_loc(c2_over_vA2(0,0))

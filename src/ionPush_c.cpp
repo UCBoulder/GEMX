@@ -5,15 +5,16 @@
 
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 using namespace std;
 
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //       Ion pre-push
 //
-void ppush_c_(int &n){
+void ppush_c_(const int &n){ //all warnings from this function are vars used in commented code
     double exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp;
-    double wx0,wx1,wy0,wy1,wz0,wz1,dum1;
+    double wx0,wx1,wy0,wy1,wz0,wz1,dum1; 
     int m,i,j,k,l,k_plus_1;
     double rhog,vfac,kapxp,kapzp,vpar,kaptxp,kapnxp,kaptzp,kapnzp,xnp;
     double b,enerb,ter,z,zeta,bstar;
@@ -24,11 +25,11 @@ void ppush_c_(int &n){
     //real(8),dimension(3)::curlbp,Bstar3
     start_ppush_tm = MPI_Wtime();
 
-    nudi0 = 1/sqrt(2)*18.4*pow(e,1.5)*(4.7140*pow(10,-8))*(1*pow(10,-6));
+    nudi0 = 1/sqrt(2)*18.4*pow(e,1.5)*(4.7140*e-8)*(1e-6);
     //write(*,*)t0i(200,201);
     T_center = t0i_c(imx/2, jmx/2);
 
-    #pragma acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table_ptr)
+    #pragma acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table_ptr) //Until rand table in C++, leaving as pointer to array
     for(m = 0; m < mm_ptr[0]; ++m){
         x = x2_ptr[m];
         i = static_cast<int>(x/dxeq);
@@ -82,7 +83,7 @@ void ppush_c_(int &n){
          xnp = wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
                  +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1); 
 
-         b=1-tor+tor*bfldp;
+         b=1.-tor+tor*bfldp;
 
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -145,11 +146,11 @@ void ppush_c_(int &n){
             k=int(zeta/dzeta);
 
 
-            wx0=float(i+1)-xt/dx;
+            wx0=(i+1)-xt/dx;
             wx1=1-wx0;
-            wy0=float(j+1)-zt/dz;
+            wy0=(j+1)-zt/dz;
             wy1=1-wy0;
-            wz0=float(k+1)-zeta/dzeta;
+            wz0=(k+1)-zeta/dzeta;
             wz1=1-wz0;
 
                 k_plus_1=k+1;
@@ -271,30 +272,31 @@ void ppush_c_(int &n){
 
 //!-------------- End of subroutine ppush --------------------------------
 
-void cpush_c_(int &n){
-        double exp1,ezp,ezetap,delbxp,delbzp,nudi0,nudi=0,ni_temp,energy,rrr,T_center,energy0;
-        double wx0,wx1,wy0,wy1,wz0,wz1,dum,vxdum,vzdum,dum1,vzetadum;
-        int m,i,j,k,l,k_plus_1=0,p_m;
-        double rhog,vfac,kapxp,kapzp,vpar,pidum,kaptxp,kapnxp,kaptzp,kapnzp,xnp,bdcurlbp;
-        double b,th,r,enerb,qr,ter,x,z,zeta;
-        double xt,xs,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0,vcurlbdotE;
+void cpush_c_(const int &n){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
+        double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,T_center;                          //nudi=0,energy,rrr,energy0
+        double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum
+        int m,i,j,k,l,k_plus_1=0;                                                             //p_m,
+        double rhog,vfac,kapxp,kapzp,vpar,kaptxp,kapnxp,kaptzp,kapnzp,xnp;                    //pidum,bdcurlbp
+        double b,enerb,ter,x,z,zeta;                                                          //th,r,qr
+        double xt,zt,xdot,zdot,zetadot,pzdot,edot;                                            //xs,xdt,ydt,pzd0,vp0,vcurlbdotE
         double dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0;
         double rhox[4], rhoy[4], curlbp[3], Bstar3[3];
 
         //real(8),dimension(3)::curlbp,Bstar3
         start_cpush_tm = MPI_Wtime();
-        nudi0 = 1/sqrt(2)*18.4*pow(e,1.5)*(4.7140*pow(10,-8))*(1*pow(10,-6));
+        nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
         //write(*,*)t0i(200,201)
         T_center = t0i_c(imx/2,jmx/2);
         //write(*,*)T_center*e
         //write(*,*)nudi0
-//#pragma parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table_ptr)
+
+        #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table_ptr)
         for(m = 0; m < mm_ptr[0]; ++m){
             x=x3_ptr[m];
             i = static_cast<int>(x/dxeq);
             i = min(i,nx-1);
             wx0 = (i+1)-x/dxeq;
-            wx1 = 1-wx0;
+            wx1 = 1.-wx0;
 
             z = z3_ptr[m];
             k = static_cast<int>(z/dzeq);
@@ -341,7 +343,7 @@ void cpush_c_(int &n){
          xnp = wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
                  +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1);
 
-         b=1-tor+tor*bfldp;
+         b=1.-tor+tor*bfldp;
 
          rhog=sqrt(2*b*mu_ptr[m]*mims_ptr[0])/(q_ptr[0]*b)*iflr;
 
@@ -356,11 +358,11 @@ void cpush_c_(int &n){
 //    calculate avg. e-field...
 //    do 1,2,4 point average, where lr is the no. of points...
 
-         exp1=0;
-         ezp=0;
-         ezetap=0;
-         delbxp=0;
-         delbzp=0;
+         exp1=0.;
+         ezp=0.;
+         ezetap=0.;
+         delbxp=0.;
+         delbzp=0.;
         #pragma loop seq
         for(l = 0; l < lr_ptr[0]; ++l){
 //SP            xs=x3(m)+rhox(l) !rwx(1,l)*rhog
@@ -370,18 +372,18 @@ void cpush_c_(int &n){
 //   particle can go out of bounds during gyroavg...
             if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3_ptr[m];
             if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3_ptr[m];
-            zeta= fmod(zeta3_ptr[m], 2*M_PI);
-            i=int(xt/dx);
-            j=int(zt/dz);
-            k=int(zeta/dzeta);
+            zeta= fmod(zeta3_ptr[m], 2*pi);
+            i=static_cast<int>(xt/dx);
+            j=static_cast<int>(zt/dz);
+            k=static_cast<int>(zeta/dzeta);
 
 
-            wx0=float(i+1)-xt/dx;
-            wx1=1-wx0;
-            wy0=float(j+1)-zt/dz;
-            wy1=1-wy0;
-            wz0=float(k+1)-zeta/dzeta;
-            wz1=1-wz0;
+            wx0=(i+1)-xt/dx;
+            wx1=1.-wx0;
+            wy0=(j+1)-zt/dz;
+            wy1=1.-wy0;
+            wz0=(k+1)-zeta/dzeta;
+            wz1=1.-wz0;
 
                 k_plus_1=k+1;
                 if(k==kmx) k_plus_1=0;
@@ -418,13 +420,13 @@ void cpush_c_(int &n){
             + wx0*wy1*wz1*delbz_c(i,j+1, k_plus_1)  
             + wx1*wy1*wz1*delbz_c(i+1,j+1, k_plus_1);
         }
-         exp1 = exp1/4;
-         ezp = ezp/4;
-         ezetap = ezetap/4;
-         delbxp = delbxp/4;
-         delbzp = delbzp/4;
+         exp1 = exp1/4.;
+         ezp = ezp/4.;
+         ezetap = ezetap/4.;
+         delbxp = delbxp/4.;
+         delbzp = delbzp/4.;
        
-         vfac = 0.5*(mims_ptr[0]*pow(u2_ptr[m],2) + 2*mu_ptr[m]*b);
+         vfac = 0.5*(mims_ptr[0]*pow(u2_ptr[m],2) + 2.*mu_ptr[m]*b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
        
@@ -444,7 +446,7 @@ void cpush_c_(int &n){
         //vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
 
 
-         dum1 = 1;
+         dum1 = 1.;
 //         !         vxdum = (ezp/b+vpar/b*delbxp)*dum1
 // !         vxdum =(ezp*bfldzetap-ezetap*bfldzp)/b**2
 // !         xdot = vxdum*nonlin +vpar*bfldxp/b-enerb/bfldp/bfldp*bfldzetap*dbdzp
@@ -490,7 +492,7 @@ void cpush_c_(int &n){
 // !         vxdum = eyp+vpar/b*delbxp
 // !         w3(m)=w2(m) + dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-         zeta3_ptr[m]= fmod(zeta3_ptr[m],2*M_PI);
+         zeta3_ptr[m]= fmod(zeta3_ptr[m],pi2);
 
 
 //         write(*,*)energy, nudi
@@ -519,8 +521,8 @@ if( (x3_ptr[m]>2*dxeq)&&(x3_ptr[m]<lx-2*dxeq)&&(z3_ptr[m]>2*dzeq)&&(z3_ptr[m]<lz
           x3_ptr[m]=x2_ptr[m];
           z3_ptr[m]=z2_ptr[m];
           zeta3_ptr[m]=zeta2_ptr[m];
-          w2_ptr[m]=0;
-          w3_ptr[m]=0;
+          w2_ptr[m]=0.;
+          w3_ptr[m]=0.;
         }
         // if(Myid==0)then
         //   open(935, file='flag_debug',status='unknown',position='append')
