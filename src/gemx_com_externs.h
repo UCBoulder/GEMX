@@ -5,6 +5,13 @@
 
 #include "MultiArrays.hpp"
 
+
+//Array c++ translate
+extern "C"
+{
+    void new_gemx_com_c_();
+}
+
 extern int numprocs;
 extern int Last, myid, cnt , ierr;
 extern int mmx;
@@ -42,6 +49,8 @@ extern int *tmm_ptr;
 extern int *mm_ptr;
 extern int *rand_table_ptr;
 extern double *zeta2_ptr;
+
+//extern double *x2_ptr;
 extern double *x2_ptr;
 extern double *z2_ptr;
 extern double *mims_ptr;
@@ -198,12 +207,6 @@ extern Array3D<double> upars_c;
 //4D arrays
 extern double *den_ptr;
 extern Array4D<double> den_c;
-
-//Array c++ translate
-extern "C"
-{
-    void new_gemx_com_c_();
-}
 
 void Allocate2dPointerArrays_gemx_com();
 void Allocate3dPointerArrays_gemx_com();

@@ -127,8 +127,13 @@ parameter(outdir='./out/')
 save
 
 !pointer declarations
-type(c_ptr), bind(c) :: oppphi_ptr, oppphik_ptr
-type(c_ptr), bind(c) :: tmm_ptr, mm_ptr, zeta2_ptr, x2_ptr, z2_ptr, mims_ptr, u2_ptr, mu_ptr, w2_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
+type(c_ptr), bind(C, name = "x2_ptr") :: x2_ptr
+type(c_ptr), bind(C, name = "z2_ptr") :: z2_ptr
+type(c_ptr), bind(C, name = "u2_ptr") :: u2_ptr
+type(c_ptr), bind(C, name = "w2_ptr") :: w2_ptr
+type(c_ptr), bind(C, name = "mm_ptr") :: mm_ptr
+type(c_ptr), bind(C) :: oppphi_ptr, oppphik_ptr
+type(c_ptr), bind(c) :: tmm_ptr, zeta2_ptr, mims_ptr, mu_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
 type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr, lr_ptr, jac_ptr, rho_ptr, dene_ptr
 type(c_ptr), bind(c) :: phi_ptr, ex_ptr, ez_ptr, ezeta_ptr, phi_k_ptr, dphidr_ptr, dphi_kdr_ptr, dphidz_ptr, dphi_kdz_ptr, d2phidr2_ptr, d2phi_kdr2_ptr, d2phidz2_ptr
 type(c_ptr), bind(c) :: d2phi_kdz2_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
