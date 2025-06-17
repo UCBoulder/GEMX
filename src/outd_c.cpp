@@ -20,7 +20,7 @@ void outd_c_(const int &n) {
 
     outTracer.open("./out/tracer.out", ios::app); 
     for(int m = 0; m < ntracer; ++m) {
-        outTracer << "            " << timestep << "            " << m+1 << "    " << setprecision(16) << (x3_ptr[m])*xu+rgrid_ptr[0] << "        " << (z3_ptr[m])*xu+zgrid_ptr[0] << endl;
+        outTracer << "            " << timestep << "            " << m+1 << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << endl;
     }
     outTracer.close();
 
@@ -32,7 +32,7 @@ void outd_c_(const int &n) {
                     testNe << endl;
                     trace = 0;
                 }
-                testNe << "    " << fixed << setprecision(16) << dene_c(i,j,0) << "         ";
+                testNe << "    " << fixed << setprecision(16) << dene(i,j,0) << "         ";
                 trace++;
             }
         }
@@ -50,7 +50,7 @@ void outd_c_(const int &n) {
                     testPhi << endl;
                     trace = 0;
                 }
-                testPhi << "    " << fixed << setprecision(16) << phi_c(i,j,0) << "         "; 
+                testPhi << "    " << fixed << setprecision(16) << phi(i,j,0) << "         "; 
                 trace++;
             }
         }

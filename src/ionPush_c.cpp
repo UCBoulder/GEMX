@@ -1,6 +1,6 @@
 #include "ionPush_c.h" 
-#include "gemx_com_externs.h"
-#include "equil_externs.h"
+#include "gemx_com_c.h"
+#include "equil_c.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -27,17 +27,17 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
     nudi0 = 1/sqrt(2)*18.4*pow(e,1.5)*(4.7140*e-8)*(1e-6);
     //write(*,*)t0i(200,201);
-    T_center = t0i_c(imx/2, jmx/2);
+    T_center = t0i(imx/2, jmx/2);
 
     #pragma acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table_ptr) //Until rand table in C++, leaving as pointer to array
-    for(m = 0; m < mm_ptr[0]; ++m){
-        x = x2_ptr[m];
+    for(m = 0; m < mm[0]; ++m){
+        x = x2[m];
         i = static_cast<int>(x/dxeq);
         i = min(i,nx-1);
         wx0 = (i+1)-x/dxeq;
         wx1 = 1-wx0;
 
-        z = z2_ptr[m];
+        z = z2[m];
         k = static_cast<int>(z/dzeq);
         k = min(k,nz-1);
         wz0 = (k+1)-z/dzeq;
@@ -49,48 +49,48 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
         for(j = 0; j < 3; ++j){
-            curlbp[j]= wx0*wz0*curlb_c(i,k,j)+wx0*wz1*curlb_c(i,k+1,j) 
-              +wx1*wz0*curlb_c(i+1,k,j)+wx1*wz1*curlb_c(i+1,k+1,j);
+            curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
+              +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
         }
         //write(*,*) curlbp(1)-wx0*wz0*curlb(i,k,1)-wx0*wz1*curlb(i,k+1,1)-wx1*wz0*curlb(i+1,k,1)-wx1*wz1*curlb(i+1,k+1,1),curlbp(2)-wx0*wz0*curlb(i,k,2)-wx0*wz1*curlb(i,k+1,2)-wx1*wz0*curlb(i+1,k,2)-wx1*wz1*curlb(i+1,k+1,2),curlbp(3)-wx0*wz0*curlb(i,k,3)-wx0*wz1*curlb(i,k+1,3)-wx1*wz0*curlb(i+1,k,3)-wx1*wz1*curlb(i+1,k+1,3)
         //         write(*,*)curlbp(1),curlbp(2),curlbp(3)
         // write(*,*)bdcurlbp
-         dbdxp = wx0*wz0*dbdx_c(i,k)+wx0*wz1*dbdx_c(i,k+1) 
-                 +wx1*wz0*dbdx_c(i+1,k)+wx1*wz1*dbdx_c(i+1,k+1); 
-         dbdzp = wx0*wz0*dbdz_c(i,k)+wx0*wz1*dbdz_c(i,k+1) 
-                 +wx1*wz0*dbdz_c(i+1,k)+wx1*wz1*dbdz_c(i+1,k+1);
-         bfldp = wx0*wz0*b0_c(i,k)+wx0*wz1*b0_c(i,k+1) 
-                 +wx1*wz0*b0_c(i+1,k)+wx1*wz1*b0_c(i+1,k+1); 
-         bfldxp = wx0*wz0*b0x_c(i,k)+wx0*wz1*b0x_c(i,k+1) 
-                 +wx1*wz0*b0x_c(i+1,k)+wx1*wz1*b0x_c(i+1,k+1); 
-         bfldzp = wx0*wz0*b0z_c(i,k)+wx0*wz1*b0z_c(i,k+1) 
-                 +wx1*wz0*b0z_c(i+1,k)+wx1*wz1*b0z_c(i+1,k+1); 
-         bfldzetap = wx0*wz0*b0zeta_c(i,k)+wx0*wz1*b0zeta_c(i,k+1) 
-                 +wx1*wz0*b0zeta_c(i+1,k)+wx1*wz1*b0zeta_c(i+1,k+1); 
-         ter = wx0*wz0*t0i_c(i,k)+wx0*wz1*t0i_c(i,k+1) 
-                 +wx1*wz0*t0i_c(i+1,k)+wx1*wz1*t0i_c(i+1,k+1); 
-         kaptxp = wx0*wz0*captix_c(i,k)+wx0*wz1*captix_c(i,k+1) 
-                 +wx1*wz0*captix_c(i+1,k)+wx1*wz1*captix_c(i+1,k+1);
+         dbdxp = wx0*wz0*dbdx(i,k)+wx0*wz1*dbdx(i,k+1) 
+                 +wx1*wz0*dbdx(i+1,k)+wx1*wz1*dbdx(i+1,k+1); 
+         dbdzp = wx0*wz0*dbdz(i,k)+wx0*wz1*dbdz(i,k+1) 
+                 +wx1*wz0*dbdz(i+1,k)+wx1*wz1*dbdz(i+1,k+1);
+         bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
+                 +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
+         bfldxp = wx0*wz0*b0x(i,k)+wx0*wz1*b0x(i,k+1) 
+                 +wx1*wz0*b0x(i+1,k)+wx1*wz1*b0x(i+1,k+1); 
+         bfldzp = wx0*wz0*b0z(i,k)+wx0*wz1*b0z(i,k+1) 
+                 +wx1*wz0*b0z(i+1,k)+wx1*wz1*b0z(i+1,k+1); 
+         bfldzetap = wx0*wz0*b0zeta(i,k)+wx0*wz1*b0zeta(i,k+1) 
+                 +wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1); 
+         ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1); 
+         kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1) 
+                 +wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1);
 
-         kapnxp = wx0*wz0*capnix_c(i,k)+wx0*wz1*capnix_c(i,k+1) 
-                 +wx1*wz0*capnix_c(i+1,k)+wx1*wz1*capnix_c(i+1,k+1); 
+         kapnxp = wx0*wz0*capnix(i,k)+wx0*wz1*capnix(i,k+1) 
+                 +wx1*wz0*capnix(i+1,k)+wx1*wz1*capnix(i+1,k+1); 
 
-         kaptzp = wx0*wz0*captiz_c(i,k)+wx0*wz1*captiz_c(i,k+1) 
-                 +wx1*wz0*captiz_c(i+1,k)+wx1*wz1*captiz_c(i+1,k+1); 
-         kapnzp = wx0*wz0*capniz_c(i,k)+wx0*wz1*capniz_c(i,k+1) 
-                 +wx1*wz0*capniz_c(i+1,k)+wx1*wz1*capniz_c(i+1,k+1); 
+         kaptzp = wx0*wz0*captiz(i,k)+wx0*wz1*captiz(i,k+1) 
+                 +wx1*wz0*captiz(i+1,k)+wx1*wz1*captiz(i+1,k+1); 
+         kapnzp = wx0*wz0*capniz(i,k)+wx0*wz1*capniz(i,k+1) 
+                 +wx1*wz0*capniz(i+1,k)+wx1*wz1*capniz(i+1,k+1); 
 
-         xnp = wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
-                 +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1); 
+         xnp = wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
 
          b=1.-tor+tor*bfldp;
 
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
-        ni_temp= wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
-                 +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1); 
-         energy0 = (mu_ptr[m]*b+0.5*mims_ptr[0]*pow(u3_ptr[m],2));
+        ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
+         energy0 = (mu[m]*b+0.5*mims[0]*pow(u3[m],2));
          energy =  max(energy0,0.1*T_center);
          if(icollision == 1){
             nudi=pow(nudi0*ni_temp/(energy), 1.5); 
@@ -98,17 +98,17 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
             //  p_m = int(2*rrr-1)
          }
          //write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
-         u2_ptr[m]=u2_ptr[m]*(1-nudi*dt)+rand_table_ptr[globle_integer]*sqrt((2*energy0/mims_ptr[0]-pow(u2_ptr[m],2))*nudi*dt);
+         u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-pow(u2[m],2))*nudi*dt);
          globle_integer = (globle_integer+1) % 10007;
          //   write(*,*) rand_table(globle_integer-1), u2(m),u3(m)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
          //    write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
-         mu_ptr[m]= (energy0-0.5*mims_ptr[0]*pow(u2_ptr[m],2))/b;
+         mu[m]= (energy0-0.5*mims[0]*pow(u2[m],2))/b;
 
 /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   */
 
 
 
-        rhog=sqrt(2*b*mu_ptr[m]*mims_ptr[0])/(q_ptr[0]*b)*iflr;
+        rhog=sqrt(2*b*mu[m]*mims[0])/(q[0]*b)*iflr;
 
         rhox[0] = rhog;
         rhoy[0] = 0;
@@ -129,16 +129,16 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
 //  4 pt. avg. done explicitly for vectorization...
 #pragma acc loop seq
-        for(l = 0; l < lr_ptr[0]; ++l){
+        for(l = 0; l < lr[0]; ++l){
 
-            xt=x2_ptr[m]+rhox[l]; //rwx(1,l)*rhog
-            zt=z2_ptr[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog;
+            xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
+            zt=z2[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog;
             //zeta=modulo(zeta2(m),pi2);
      
    //particle can go out of bounds during gyroavg...
-            if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x2_ptr[m];
-            if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z2_ptr[m];
-            zeta=zeta2_ptr[m];
+            if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x2[m];
+            if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z2[m];
+            zeta=zeta2[m];
             //xt=modulo(xs,xdim)
             //zt=modulo(zt,zdim)
             i=int(xt/dx);
@@ -155,38 +155,38 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
                 k_plus_1=k+1;
                 if(k==kmx) k_plus_1=0;
-            exp1=exp1 + wx0*wy0*wz0*ex_c(i,j,k) + wx1*wy0*wz0*ex_c(i+1,j,k) 
-            + wx0*wy1*wz0*ex_c(i,j+1,k) + wx1*wy1*wz0*ex_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ex_c(i,j, k_plus_1) + wx1*wy0*wz1*ex_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ex_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ex_c(i+1,j+1, k_plus_1);
+            exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
+            + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
+            wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
 
-            ezp=ezp + wx0*wy0*wz0*ez_c(i,j,k) + wx1*wy0*wz0*ez_c(i+1,j,k) 
-            + wx0*wy1*wz0*ez_c(i,j+1,k) + wx1*wy1*wz0*ez_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ez_c(i,j, k_plus_1) + wx1*wy0*wz1*ez_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ez_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ez_c(i+1,j+1, k_plus_1);
+            ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
+            + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
+            wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
 
-            ezetap =ezetap + wx0*wy0*wz0*ezeta_c(i,j,k) + wx1*wy0*wz0*ezeta_c(i+1,j,k) 
-            + wx0*wy1*wz0*ezeta_c(i,j+1,k) + wx1*wy1*wz0*ezeta_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ezeta_c(i,j, k_plus_1) + wx1*wy0*wz1*ezeta_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ezeta_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta_c(i+1,j+1, k_plus_1);
+            ezetap =ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
+            + wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
+            wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
 
-            delbxp =delbxp + wx0*wy0*wz0*delbx_c(i,j,k)  
-            + wx1*wy0*wz0*delbx_c(i+1,j,k) 
-            + wx0*wy1*wz0*delbx_c(i,j+1,k) 
-            + wx1*wy1*wz0*delbx_c(i+1,j+1,k) 
-            + wx0*wy0*wz1*delbx_c(i,j, k_plus_1) 
-            + wx1*wy0*wz1*delbx_c(i+1,j, k_plus_1) 
-            + wx0*wy1*wz1*delbx_c(i,j+1, k_plus_1) 
-            + wx1*wy1*wz1*delbx_c(i+1,j+1, k_plus_1);
+            delbxp =delbxp + wx0*wy0*wz0*delbx(i,j,k)  
+            + wx1*wy0*wz0*delbx(i+1,j,k) 
+            + wx0*wy1*wz0*delbx(i,j+1,k) 
+            + wx1*wy1*wz0*delbx(i+1,j+1,k) 
+            + wx0*wy0*wz1*delbx(i,j, k_plus_1) 
+            + wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
+            + wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
+            + wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
 
-            delbzp =delbzp + wx0*wy0*wz0*delbz_c(i,j,k) 
-            + wx1*wy0*wz0*delbz_c(i+1,j,k) 
-            + wx0*wy1*wz0*delbz_c(i,j+1,k) 
-            + wx1*wy1*wz0*delbz_c(i+1,j+1,k)  
-            + wx0*wy0*wz1*delbz_c(i,j, k_plus_1) 
-            + wx1*wy0*wz1*delbz_c(i+1,j, k_plus_1)  
-            + wx0*wy1*wz1*delbz_c(i,j+1, k_plus_1)  
-            + wx1*wy1*wz1*delbz_c(i+1,j+1, k_plus_1);
+            delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
+            + wx1*wy0*wz0*delbz(i+1,j,k) 
+            + wx0*wy1*wz0*delbz(i,j+1,k) 
+            + wx1*wy1*wz0*delbz(i+1,j+1,k)  
+            + wx0*wy0*wz1*delbz(i,j, k_plus_1) 
+            + wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
+            + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
+            + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
         exp1 = exp1/4;
         ezp = ezp/4;
@@ -194,16 +194,16 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
         delbxp = delbxp/4;
         delbzp = delbzp/4;
 
-         vfac = 0.5*(mims_ptr[0]*pow(u2_ptr[m],2) + 2*mu_ptr[m]*b);
+         vfac = 0.5*(mims[0]*pow(u2[m],2) + 2*mu[m]*b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
 
-         vpar = u2_ptr[m];
-         enerb=(mu_ptr[m]+mims_ptr[0]*vpar*vpar/b)/q_ptr[0]*tor;
+         vpar = u2[m];
+         enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
 
-         Bstar3[0]=bfldxp +mims_ptr[0]*vpar*curlbp[0]/q_ptr[0]+delbxp;
-         Bstar3[1]=bfldzp+mims_ptr[0]*vpar*curlbp[1]/q_ptr[0]+delbzp;
-         Bstar3[2]=bfldzetap+mims_ptr[0]*vpar*curlbp[2]/q_ptr[0];
+         Bstar3[0]=bfldxp +mims[0]*vpar*curlbp[0]/q[0]+delbxp;
+         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp;
+         Bstar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
 
 
          //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
@@ -226,9 +226,9 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
 
 //         write(*,*) dbdzetap
-         xdot = (vpar*Bstar3[0]+(mu_ptr[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q_ptr[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-         zdot = (vpar*Bstar3[1]+(mu_ptr[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q_ptr[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-         zetadot = (vpar*Bstar3[2]+(mu_ptr[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q_ptr[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
+         xdot = (vpar*Bstar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
+         zdot = (vpar*Bstar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
+         zetadot = (vpar*Bstar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
 
 
          
@@ -240,15 +240,15 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
           //pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3[0]*(q_ptr[0]*exp1-mu_ptr[m]*dbdxp)+Bstar3[1]*(q_ptr[0]*ezp-mu_ptr[m]*dbdzp)+Bstar3[2]*(q_ptr[0]*ezetap-mu_ptr[m]*dbdzetap))/(mims_ptr[0]*bstar);
+         pzdot = (Bstar3[0]*(q[0]*exp1-mu[m]*dbdxp)+Bstar3[1]*(q[0]*ezp-mu[m]*dbdzp)+Bstar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
           
          
-         edot = q_ptr[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
+         edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
 
-         x3_ptr[m] = x2_ptr[m] + 0.5*dt*xdot;
-         z3_ptr[m] = z2_ptr[m] + 0.5*dt*zdot;
-         zeta3_ptr[m] = zeta2_ptr[m] + 0.5*dt*zetadot;
-         u3_ptr[m] = u2_ptr[m] + 0.5*dt*pzdot;
+         x3[m] = x2[m] + 0.5*dt*xdot;
+         z3[m] = z2[m] + 0.5*dt*zdot;
+         zeta3[m] = zeta2[m] + 0.5*dt*zetadot;
+         u3[m] = u2[m] + 0.5*dt*pzdot;
 
          //dum = 1.0
          //vxdum = (ezp/b+vpar/b*delbxp)*dum1
@@ -256,13 +256,13 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
          //vxdum = eyp+vpar/b*delbxp
          //w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-        if( !((x3_ptr[m]>2*dxeq) && (x3_ptr[m]<lx-2*dxeq) && (z3_ptr[m]>2*dzeq) && (z3_ptr[m]<lz-2*dzeq)) ) 
+        if( !((x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq)) ) 
         {
-          u3_ptr[m]=u2_ptr[m];
-          x3_ptr[m]=x2_ptr[m];
-          z3_ptr[m]=z2_ptr[m];
-          zeta3_ptr[m]=zeta2_ptr[m];
-          w3_ptr[m]=0;
+          u3[m]=u2[m];
+          x3[m]=x2[m];
+          z3[m]=z2[m];
+          zeta3[m]=zeta2[m];
+          w3[m]=0;
         }
     }
     #pragma acc wait
@@ -286,66 +286,66 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
         start_cpush_tm = MPI_Wtime();
         nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
         //write(*,*)t0i(200,201)
-        T_center = t0i_c(imx/2,jmx/2);
+        T_center = t0i(imx/2,jmx/2);
         //write(*,*)T_center*e
         //write(*,*)nudi0
 
         #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table_ptr)
-        for(m = 0; m < mm_ptr[0]; ++m){
-            x=x3_ptr[m];
+        for(m = 0; m < mm[0]; ++m){
+            x=x3[m];
             i = static_cast<int>(x/dxeq);
             i = min(i,nx-1);
             wx0 = (i+1)-x/dxeq;
             wx1 = 1.-wx0;
 
-            z = z3_ptr[m];
+            z = z3[m];
             k = static_cast<int>(z/dzeq);
             k = min(k,nz-1);
             wz0 = (k+1)-z/dzeq;
             wz1 = 1-wz0;
 
-            ni_temp= wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
-                 +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1); 
+            ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
            //write(*,*) xn0i(i,k)
 
 
            // bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
                              //+wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
             for(j = 0; j <= 2; ++j){
-                curlbp[j]= wx0*wz0*curlb_c(i,k,j)+wx0*wz1*curlb_c(i,k+1,j) 
-                +wx1*wz0*curlb_c(i+1,k,j)+wx1*wz1*curlb_c(i+1,k+1,j);
+                curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
+                +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
             }
 
-         dbdxp = wx0*wz0*dbdx_c(i,k)+wx0*wz1*dbdx_c(i,k+1) 
-                 +wx1*wz0*dbdx_c(i+1,k)+wx1*wz1*dbdx_c(i+1,k+1); 
-         dbdzp = wx0*wz0*dbdz_c(i,k)+wx0*wz1*dbdz_c(i,k+1) 
-                 +wx1*wz0*dbdz_c(i+1,k)+wx1*wz1*dbdz_c(i+1,k+1);
-         bfldp = wx0*wz0*b0_c(i,k)+wx0*wz1*b0_c(i,k+1) 
-                 +wx1*wz0*b0_c(i+1,k)+wx1*wz1*b0_c(i+1,k+1); 
-         bfldxp = wx0*wz0*b0x_c(i,k)+wx0*wz1*b0x_c(i,k+1) 
-                 +wx1*wz0*b0x_c(i+1,k)+wx1*wz1*b0x_c(i+1,k+1); 
-         bfldzp = wx0*wz0*b0z_c(i,k)+wx0*wz1*b0z_c(i,k+1) 
-                 +wx1*wz0*b0z_c(i+1,k)+wx1*wz1*b0z_c(i+1,k+1); 
-         bfldzetap = wx0*wz0*b0zeta_c(i,k)+wx0*wz1*b0zeta_c(i,k+1) 
-                 +wx1*wz0*b0zeta_c(i+1,k)+wx1*wz1*b0zeta_c(i+1,k+1);
-         ter = wx0*wz0*t0i_c(i,k)+wx0*wz1*t0i_c(i,k+1) 
-                 +wx1*wz0*t0i_c(i+1,k)+wx1*wz1*t0i_c(i+1,k+1); 
-         kaptxp = wx0*wz0*captix_c(i,k)+wx0*wz1*captix_c(i,k+1) 
-                 +wx1*wz0*captix_c(i+1,k)+wx1*wz1*captix_c(i+1,k+1);
-         kapnxp = wx0*wz0*capnix_c(i,k)+wx0*wz1*capnix_c(i,k+1)
-                 +wx1*wz0*capnix_c(i+1,k)+wx1*wz1*capnix_c(i+1,k+1); 
+         dbdxp = wx0*wz0*dbdx(i,k)+wx0*wz1*dbdx(i,k+1) 
+                 +wx1*wz0*dbdx(i+1,k)+wx1*wz1*dbdx(i+1,k+1); 
+         dbdzp = wx0*wz0*dbdz(i,k)+wx0*wz1*dbdz(i,k+1) 
+                 +wx1*wz0*dbdz(i+1,k)+wx1*wz1*dbdz(i+1,k+1);
+         bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
+                 +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
+         bfldxp = wx0*wz0*b0x(i,k)+wx0*wz1*b0x(i,k+1) 
+                 +wx1*wz0*b0x(i+1,k)+wx1*wz1*b0x(i+1,k+1); 
+         bfldzp = wx0*wz0*b0z(i,k)+wx0*wz1*b0z(i,k+1) 
+                 +wx1*wz0*b0z(i+1,k)+wx1*wz1*b0z(i+1,k+1); 
+         bfldzetap = wx0*wz0*b0zeta(i,k)+wx0*wz1*b0zeta(i,k+1) 
+                 +wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1);
+         ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1); 
+         kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1) 
+                 +wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1);
+         kapnxp = wx0*wz0*capnix(i,k)+wx0*wz1*capnix(i,k+1)
+                 +wx1*wz0*capnix(i+1,k)+wx1*wz1*capnix(i+1,k+1); 
 
-         kaptzp = wx0*wz0*captiz_c(i,k)+wx0*wz1*captiz_c(i,k+1) 
-                 +wx1*wz0*captiz_c(i+1,k)+wx1*wz1*captiz_c(i+1,k+1); 
-         kapnzp = wx0*wz0*capniz_c(i,k)+wx0*wz1*capniz_c(i,k+1) 
-                 +wx1*wz0*capniz_c(i+1,k)+wx1*wz1*capniz_c(i+1,k+1); 
+         kaptzp = wx0*wz0*captiz(i,k)+wx0*wz1*captiz(i,k+1) 
+                 +wx1*wz0*captiz(i+1,k)+wx1*wz1*captiz(i+1,k+1); 
+         kapnzp = wx0*wz0*capniz(i,k)+wx0*wz1*capniz(i,k+1) 
+                 +wx1*wz0*capniz(i+1,k)+wx1*wz1*capniz(i+1,k+1); 
 
-         xnp = wx0*wz0*xn0i_c(i,k)+wx0*wz1*xn0i_c(i,k+1) 
-                 +wx1*wz0*xn0i_c(i+1,k)+wx1*wz1*xn0i_c(i+1,k+1);
+         xnp = wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1);
 
          b=1.-tor+tor*bfldp;
 
-         rhog=sqrt(2*b*mu_ptr[m]*mims_ptr[0])/(q_ptr[0]*b)*iflr;
+         rhog=sqrt(2*b*mu[m]*mims[0])/(q[0]*b)*iflr;
 
          rhox[0] = rhog;
          rhoy[0] = 0;
@@ -364,15 +364,15 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          delbxp=0.;
          delbzp=0.;
         #pragma loop seq
-        for(l = 0; l < lr_ptr[0]; ++l){
+        for(l = 0; l < lr[0]; ++l){
 //SP            xs=x3(m)+rhox(l) !rwx(1,l)*rhog
-            xt=x3_ptr[m]+rhox[l]; //rwx(1,l)*rhog
-            zt=z3_ptr[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog
+            xt=x3[m]+rhox[l]; //rwx(1,l)*rhog
+            zt=z3[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog
 //
 //   particle can go out of bounds during gyroavg...
-            if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3_ptr[m];
-            if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3_ptr[m];
-            zeta= fmod(zeta3_ptr[m], 2*pi);
+            if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
+            if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
+            zeta= fmod(zeta3[m], 2*pi);
             i=static_cast<int>(xt/dx);
             j=static_cast<int>(zt/dz);
             k=static_cast<int>(zeta/dzeta);
@@ -387,38 +387,38 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
                 k_plus_1=k+1;
                 if(k==kmx) k_plus_1=0;
-            exp1=exp1 + wx0*wy0*wz0*ex_c(i,j,k) + wx1*wy0*wz0*ex_c(i+1,j,k) 
-            + wx0*wy1*wz0*ex_c(i,j+1,k) + wx1*wy1*wz0*ex_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ex_c(i,j, k_plus_1) + wx1*wy0*wz1*ex_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ex_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ex_c(i+1,j+1, k_plus_1);
+            exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
+            + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
+            wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
 
-            ezp=ezp + wx0*wy0*wz0*ez_c(i,j,k) + wx1*wy0*wz0*ez_c(i+1,j,k) 
-            + wx0*wy1*wz0*ez_c(i,j+1,k) + wx1*wy1*wz0*ez_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ez_c(i,j, k_plus_1) + wx1*wy0*wz1*ez_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ez_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ez_c(i+1,j+1, k_plus_1);
+            ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
+            + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
+            wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
 
-            ezetap =ezetap + wx0*wy0*wz0*ezeta_c(i,j,k) + wx1*wy0*wz0*ezeta_c(i+1,j,k) 
-            + wx0*wy1*wz0*ezeta_c(i,j+1,k) + wx1*wy1*wz0*ezeta_c(i+1,j+1,k) + 
-            wx0*wy0*wz1*ezeta_c(i,j, k_plus_1) + wx1*wy0*wz1*ezeta_c(i+1,j, k_plus_1) + 
-            wx0*wy1*wz1*ezeta_c(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta_c(i+1,j+1, k_plus_1);
+            ezetap =ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
+            + wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
+            wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
 
-            delbxp =delbxp + wx0*wy0*wz0*delbx_c(i,j,k)  
-            + wx1*wy0*wz0*delbx_c(i+1,j,k) 
-            + wx0*wy1*wz0*delbx_c(i,j+1,k) 
-            + wx1*wy1*wz0*delbx_c(i+1,j+1,k) 
-            + wx0*wy0*wz1*delbx_c(i,j, k_plus_1) 
-            + wx1*wy0*wz1*delbx_c(i+1,j, k_plus_1) 
-            + wx0*wy1*wz1*delbx_c(i,j+1, k_plus_1) 
-            + wx1*wy1*wz1*delbx_c(i+1,j+1, k_plus_1);
+            delbxp =delbxp + wx0*wy0*wz0*delbx(i,j,k)  
+            + wx1*wy0*wz0*delbx(i+1,j,k) 
+            + wx0*wy1*wz0*delbx(i,j+1,k) 
+            + wx1*wy1*wz0*delbx(i+1,j+1,k) 
+            + wx0*wy0*wz1*delbx(i,j, k_plus_1) 
+            + wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
+            + wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
+            + wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
 
-            delbzp =delbzp + wx0*wy0*wz0*delbz_c(i,j,k) 
-            + wx1*wy0*wz0*delbz_c(i+1,j,k) 
-            + wx0*wy1*wz0*delbz_c(i,j+1,k) 
-            + wx1*wy1*wz0*delbz_c(i+1,j+1,k)  
-            + wx0*wy0*wz1*delbz_c(i,j, k_plus_1)  
-            + wx1*wy0*wz1*delbz_c(i+1,j, k_plus_1)  
-            + wx0*wy1*wz1*delbz_c(i,j+1, k_plus_1)  
-            + wx1*wy1*wz1*delbz_c(i+1,j+1, k_plus_1);
+            delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
+            + wx1*wy0*wz0*delbz(i+1,j,k) 
+            + wx0*wy1*wz0*delbz(i,j+1,k) 
+            + wx1*wy1*wz0*delbz(i+1,j+1,k)  
+            + wx0*wy0*wz1*delbz(i,j, k_plus_1)  
+            + wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
+            + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
+            + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
          exp1 = exp1/4.;
          ezp = ezp/4.;
@@ -426,16 +426,16 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          delbxp = delbxp/4.;
          delbzp = delbzp/4.;
        
-         vfac = 0.5*(mims_ptr[0]*pow(u2_ptr[m],2) + 2.*mu_ptr[m]*b);
+         vfac = 0.5*(mims[0]*pow(u2[m],2) + 2.*mu[m]*b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
        
-         vpar = u3_ptr[m];
-         enerb=(mu_ptr[m]+mims_ptr[0]*vpar*vpar/b)/q_ptr[0]*tor;
+         vpar = u3[m];
+         enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
        
-         Bstar3[0]=bfldxp+mims_ptr[0]*vpar*curlbp[0]/q_ptr[0]+delbxp;
-         Bstar3[1]=bfldzp+mims_ptr[0]*vpar*curlbp[0]/q_ptr[0]+delbzp;
-         Bstar3[2]=bfldzetap+mims_ptr[0]*vpar*curlbp[2]/q_ptr[0];
+         Bstar3[0]=bfldxp+mims[0]*vpar*curlbp[0]/q[0]+delbxp;
+         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[0]/q[0]+delbzp;
+         Bstar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
        
                 
        //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
@@ -464,9 +464,9 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
 
 // !         write(*,*)dbdzetap
-         xdot = (vpar*Bstar3[0]+(mu_ptr[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q_ptr[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-         zdot = (vpar*Bstar3[1]+(mu_ptr[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q_ptr[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-         zetadot = (vpar*Bstar3[2]+(mu_ptr[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q_ptr[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
+         xdot = (vpar*Bstar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
+         zdot = (vpar*Bstar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
+         zetadot = (vpar*Bstar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
 
 
 
@@ -476,15 +476,15 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 // !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3[0]*(q_ptr[0]*exp1-mu_ptr[m]*dbdxp)+Bstar3[1]*(q_ptr[0]*ezp-mu_ptr[m]*dbdzp)+Bstar3[2]*(q_ptr[0]*ezetap-mu_ptr[m]*dbdzetap))/(mims_ptr[0]*bstar);
+         pzdot = (Bstar3[0]*(q[0]*exp1-mu[m]*dbdxp)+Bstar3[1]*(q[0]*ezp-mu[m]*dbdzp)+Bstar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
  
 
-         edot = q_ptr[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
+         edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
 
-         x3_ptr[m] = x2_ptr[m] + dt*xdot;
-         z3_ptr[m] = z2_ptr[m] + dt*zdot;
-         zeta3_ptr[m] = zeta2_ptr[m] + dt*zetadot;
-         u3_ptr[m] = u2_ptr[m] + dt*pzdot;
+         x3[m] = x2[m] + dt*xdot;
+         z3[m] = z2[m] + dt*zdot;
+         zeta3[m] = zeta2[m] + dt*zetadot;
+         u3[m] = u2[m] + dt*pzdot;
 
 // !         dum = 1.0
 // !         vxdum = (ezp/b+vpar/b*delbxp)*dum1
@@ -492,11 +492,11 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 // !         vxdum = eyp+vpar/b*delbxp
 // !         w3(m)=w2(m) + dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-         zeta3_ptr[m]= fmod(zeta3_ptr[m],pi2);
+         zeta3[m]= fmod(zeta3[m],pi2);
 
 
 //         write(*,*)energy, nudi
-if( (x3_ptr[m]>2*dxeq)&&(x3_ptr[m]<lx-2*dxeq)&&(z3_ptr[m]>2*dzeq)&&(z3_ptr[m]<lz-2*dzeq) ){
+if( (x3[m]>2*dxeq)&&(x3[m]<lx-2*dxeq)&&(z3[m]>2*dzeq)&&(z3[m]<lz-2*dzeq) ){
             //energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
             //energy =  max(energy0,0.1*T_center)
             //if (icollision==1) then
@@ -504,25 +504,25 @@ if( (x3_ptr[m]>2*dxeq)&&(x3_ptr[m]<lx-2*dxeq)&&(z3_ptr[m]>2*dzeq)&&(z3_ptr[m]<lz
             //           call random_number(rrr)
             //           p_m = int(2*rrr-1)
             //end if
-            u2_ptr[m]=u3_ptr[m]; //*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u3(m)**2)*nudi*dt)
+            u2[m]=u3[m]; //*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u3(m)**2)*nudi*dt)
             //  !$acc atomic
             //  globle_integer = mod(globle_integer+1,10007)
                
             //write(*,*) rand_table(globle_integer-1), u2(m),u3(m)
-            x2_ptr[m]=x3_ptr[m];
-            z2_ptr[m]=z3_ptr[m];
-            zeta2_ptr[m]=zeta3_ptr[m];
-            w2_ptr[m]=w3_ptr[m];
+            x2[m]=x3[m];
+            z2[m]=z3[m];
+            zeta2[m]=zeta3[m];
+            w2[m]=w3[m];
          
             // write(*,*)rand_table(globle_integer-1),mu(m),(energy0-0.5*mims(1)*u3(m)**2)/b
             // mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
         } else {
-          u3_ptr[m]=u2_ptr[m];
-          x3_ptr[m]=x2_ptr[m];
-          z3_ptr[m]=z2_ptr[m];
-          zeta3_ptr[m]=zeta2_ptr[m];
-          w2_ptr[m]=0.;
-          w3_ptr[m]=0.;
+          u3[m]=u2[m];
+          x3[m]=x2[m];
+          z3[m]=z2[m];
+          zeta3[m]=zeta2[m];
+          w2[m]=0.;
+          w3[m]=0.;
         }
         // if(Myid==0)then
         //   open(935, file='flag_debug',status='unknown',position='append')

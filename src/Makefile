@@ -90,14 +90,29 @@ fcnt.o: fcnt.F90
 gemx_externs.o: gemx_externs.cpp
 	$(CPP) -c $(OPT_C) gemx_externs.cpp
 
-ionPush_c.o: ionPush_c.cpp 
-	$(CPP) -c $(OPT_C) ionPush_c.cpp
+pputil_c.o: pputil_c.cpp
+	$(CPP) -c $(OPT_C) pputil_c.cpp
+
+gemx_com_c.o: gemx_com_c.cpp
+	$(CPP) -c $(OPT_C) gemx_com_c.cpp
+
+equil_c.o: equil_c.cpp
+	$(CPP) -c $(OPT_C) equil_c.cpp
 
 gemx_c.o: gemx_c.cpp
 	$(CPP) -c $(OPT_C) gemx_c.cpp
 
+ionPush_c.o: ionPush_c.cpp 
+	$(CPP) -c $(OPT_C) ionPush_c.cpp
+
+outd_c.o: outd_c.cpp
+	$(CPP) -c $(OPT_C) outd.cpp
+
 fcnt_c.o: fcnt_c.cpp
 	$(CPP) -c $(OPT_C) fcnt_c.cpp
+
+readDatFiles.o: readDatFiles.cpp
+	$(CPP) -c $(OPT_C) readDatFiles.cpp
 
 #Check for git diffs in the src directory
 check_diff:

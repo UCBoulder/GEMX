@@ -3,13 +3,13 @@
 
     i=int(xt/dx);
     j=int(zt/dz);
-    k=int(zeta2_ptr[m]/dzeta);
+    k=int(zeta2[m]/dzeta);
 
     wx0=float(i+1)-xt/dx; 
     wx1=1.-wx0;
     wy0=float(j+1)-zt/dz;
     wy1=1.-wy0;
-    wz0=float(k+1)-zeta2_ptr[m]/dzeta;
+    wz0=float(k+1)-zeta2[m]/dzeta;
     wz1=1.-wz0;
 
         myden[i][j][k]      = myden[i][j][k]

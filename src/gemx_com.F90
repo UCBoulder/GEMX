@@ -126,19 +126,6 @@ parameter(outdir='./out/')
 !real(8) :: amod
 save
 
-!pointer declarations
-type(c_ptr), bind(C, name = "x2_ptr") :: x2_ptr
-type(c_ptr), bind(C, name = "z2_ptr") :: z2_ptr
-type(c_ptr), bind(C, name = "u2_ptr") :: u2_ptr
-type(c_ptr), bind(C, name = "w2_ptr") :: w2_ptr
-type(c_ptr), bind(C, name = "mm_ptr") :: mm_ptr
-type(c_ptr), bind(C) :: oppphi_ptr, oppphik_ptr
-type(c_ptr), bind(c) :: tmm_ptr, zeta2_ptr, mims_ptr, mu_ptr, x3_ptr, zeta3_ptr, z3_ptr, u3_ptr, w3_ptr
-type(c_ptr), bind(c) :: ileft_ptr, xbackw_ptr, zbackw_ptr, jleft_ptr, iright_ptr, xforw_ptr, zforw_ptr, jright_ptr, lr_ptr, jac_ptr, rho_ptr, dene_ptr
-type(c_ptr), bind(c) :: phi_ptr, ex_ptr, ez_ptr, ezeta_ptr, phi_k_ptr, dphidr_ptr, dphi_kdr_ptr, dphidz_ptr, dphi_kdz_ptr, d2phidr2_ptr, d2phi_kdr2_ptr, d2phidz2_ptr
-type(c_ptr), bind(c) :: d2phi_kdz2_ptr, l_hand_ptr, r_hand_ptr, den2d2_ptr, q_ptr, den_ptr, upar_ptr, apars_ptr, apar_ptr, jpar_ptr, dden2d_ptr, den2d1_ptr
-type(c_ptr), bind(c) :: rand_table_ptr, delbx_ptr, delby_ptr, delbz_ptr, phis_ptr, denes_ptr, upars_ptr, gn0e_ptr, gbtor_ptr, bmag_ptr, xg_ptr, gcpnex_ptr, gcpnez_ptr
-
 contains
 subroutine new_gemx_com()
 
@@ -195,76 +182,6 @@ ALLOCATE( nos(nsmx,0:nmx))
 !    flux diagnostics
 ALLOCATE(vol(1:nsubd),efle(1:nsubd,0:nmx),pfle(1:nsubd,0:nmx), &
          pfl(nsmx+1,0:nmx),efl(nsmx,0:nmx))
-
-   !1D Arrays
-   tmm_ptr = c_loc(tmm(1))
-   mm_ptr = c_loc(mm(1))
-   zeta2_ptr = c_loc(zeta2(1))
-   x2_ptr = c_loc(x2(1))
-   z2_ptr = c_loc(z2(1))
-   mims_ptr = c_loc(mims(1))
-   u2_ptr = c_loc(u2(1))
-   mu_ptr = c_loc(mu(1))
-   w2_ptr = c_loc(w2(1))
-   x3_ptr = c_loc(x3(1))
-   zeta3_ptr = c_loc(zeta3(1))
-   z3_ptr = c_loc(z3(1))
-   u3_ptr = c_loc(u3(1))
-   w3_ptr = c_loc(w3(1))
-   q_ptr = c_loc(q(1))
-   lr_ptr = c_loc(lr(1))
-   jac_ptr = c_loc(jac(0))
-   rand_table_ptr = c_loc(rand_table(0))
-   xg_ptr = c_loc(xg(0))
-   !2D Arrays
-   ileft_ptr = c_loc(ileft(0,0))
-   xbackw_ptr = c_loc(xbackw(0,0))
-   zbackw_ptr = c_loc(zbackw(0,0))
-   jleft_ptr = c_loc(jleft(0,0))
-   iright_ptr = c_loc(iright(0,0))
-   xforw_ptr = c_loc(xforw(0,0))
-   zforw_ptr = c_loc(zforw(0,0))
-   jright_ptr = c_loc(jright(0,0))
-   den2d2_ptr = c_loc(den2d2(0,0))
-   dden2d_ptr = c_loc(dden2d(0,0))
-   den2d1_ptr = c_loc(den2d1(0,0))
-   gn0e_ptr = c_loc(gn0e(0,0))
-   bmag_ptr = c_loc(bmag(0,0))
-   gbtor_ptr = c_loc(gbtor(0,0))
-   gcpnex_ptr = c_loc(gcpnex(0,0))
-   gcpnez_ptr = c_loc(gcpnez(0,0))
-   !3D Arrays
-   phi_ptr = c_loc(phi(0,0,0))
-   ex_ptr = c_loc(ex(0,0,0))
-   ez_ptr = c_loc(ez(0,0,0))
-   ezeta_ptr = c_loc(ezeta(0,0,0))
-   phi_k_ptr = c_loc(phi_k(0,0,0))
-   dphidr_ptr = c_loc(dphidr(0,0,0))
-   dphi_kdr_ptr = c_loc(dphi_kdr(0,0,0))
-   dphidz_ptr = c_loc(dphidz(0,0,0))
-   dphi_kdz_ptr = c_loc(dphi_kdz(0,0,0))
-   d2phidr2_ptr = c_loc(d2phidr2(0,0,0))
-   d2phi_kdr2_ptr = c_loc(d2phi_kdr2(0,0,0))
-   d2phidz2_ptr = c_loc(d2phidz2(0,0,0))
-   d2phi_kdz2_ptr = c_loc(d2phi_kdz2(0,0,0))
-   oppphi_ptr = c_loc(OPPphi(0,0,0))
-   oppphik_ptr = c_loc(OPPphik(0,0,0))
-   l_hand_ptr = c_loc(l_hand(0,0,0))
-   r_hand_ptr = c_loc(r_hand(0,0,0))
-   upar_ptr = c_loc(upar(0,0,0))
-   apars_ptr = c_loc(apars(0,0,0))
-   apar_ptr = c_loc(apar(0,0,0))
-   jpar_ptr = c_loc(jpar(0,0,0))
-   rho_ptr = c_loc(rho(0,0,0))
-   dene_ptr = c_loc(dene(0,0,0))
-   delbx_ptr = c_loc(delbx(0,0,0))
-   delby_ptr = c_loc(delby(0,0,0))
-   delbz_ptr = c_loc(delbz(0,0,0))
-   phis_ptr = c_loc(phis(0,0,0))
-   denes_ptr = c_loc(denes(0,0,0))
-   upars_ptr = c_loc(upars(0,0,0))
-   !4D Arrays
-   den_ptr = c_loc(den(1,0,0,0)) !first index uses 1 based index, the rest are like the rest of the 3D Arrays
    
       !call new_gemx_com_c()
 end subroutine new_gemx_com
