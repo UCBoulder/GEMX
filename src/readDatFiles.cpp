@@ -13,7 +13,8 @@ void read1D(std::string fname, double arr[]){
     file.close();
 }
 // Read values from 2D array .dat file and store into 2D array in C++ (bounds inclusive)
-void read2D(std::string fname, CArray2D<double> arr, int x, int y){
+void read2D(std::string fname, CArray2D<double> &arr, int x, int y){
+    std::cout << "reading: " << fname << std::endl;
     int size = (x+1)*(y+1);
     double tempArr[size]; 
     std::ifstream file;

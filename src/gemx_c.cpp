@@ -445,7 +445,6 @@ void initialize_c_(){
       if(myid == i) init();
       ierr = MPI_Barrier(MPI_COMM_WORLD);
    }
-   cout << "after loop" << endl;
    dum = 0.;
    for(int i = 0; i < imx; ++i){
       dum = dum+(jac[i]+jac[i+1])/2;
@@ -474,7 +473,6 @@ void init(){
    std::complex<double> IU[2] = {0., 1.};
    double pi = 4.0*atan(1.0);
    pi2 = pi*2;
-
    //read values from gemx.in
    FILE *in_file = fopen("gemx.in", "r");
    if(in_file == NULL)
@@ -509,23 +507,23 @@ void init(){
       fscanf(in_file, "%d", &dbg);
    }
    fclose(in_file);
-   
 
    nsm = 1;
 
    new_gemx_com(); //initializes arrays in gemx_com_c
-
+   
    ns = 0;
    tmm[ns] = mmx;
    mm[ns] = mmx;
    mims[ns] = 2.0*1.67e-27;
    q[ns] = 1.0*1.6e-19; 
    lr[ns] = 4;
-
+   
    emass = 1./amie;
    qel = -1;
 
    new_equil_c(); 
+   cout << "after equil arra" << endl;
    lx = xdim;
    lz = zdim;
 
@@ -672,7 +670,7 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){
    return;
 }
 
-void get_jpar_(CArray3D<double> matrix){
+void get_jpar_(CArray3D<double> &matrix){
    int i, j, k;
 
    for(k = 0; k <= kmx; ++k){     
@@ -873,7 +871,7 @@ void loadi_c_(){
    return;
 }
 
-void gradu_c_(CArray3D<double> u_, CArray3D<double> ux_, CArray3D<double> uz_){
+void gradu_c_(CArray3D<double> &u_, CArray3D<double> &ux_, CArray3D<double> &uz_){
 
    int ju = 0;
    int jl = 0;
@@ -941,7 +939,7 @@ void gradz_c_(CArray3D<double> &u, CArray3D<double> &uz){
    }
 }
 
-void smooth_c_(CArray3D<double> matrix_c, int &mk){
+void smooth_c_(CArray3D<double> &matrix_c, int &mk){
    CArray3D<double> temp_c;
    temp_c.resize(imx+1, jmx+1, kmx+1);
    
@@ -1461,7 +1459,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void fluxavg_c_(CArray3D<double> phi, CArray2D<double> phiavg_in){
+void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in){
    //Currently only good for 2D case
 
    //Local Variables
@@ -1563,7 +1561,7 @@ void fluxavg_c_(CArray3D<double> phi, CArray2D<double> phiavg_in){
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void efieldcalc_c_(CArray3D<double> input_phi){ 
+void efieldcalc_c_(CArray3D<double> &input_phi){ 
    //Input is phi array - labeled phi by extern
 
    //local vars

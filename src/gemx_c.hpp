@@ -12,13 +12,13 @@
 void parperp_c_(double& vpar, double& vperp2, const int& m, const int& cnt);
 void loadi_c_();
 double ran2_c_(int& idum);
-void gradu_c_(CArray3D<double> u, CArray3D<double> ux, CArray3D<double> uz);
-void fluxavg_c_(CArray3D<double> phi, CArray2D<double> phiavg_in);
-void efieldcalc_c_(CArray3D<double> phi_input);
+void gradu_c_(CArray3D<double> &u, CArray3D<double> &ux, CArray3D<double> &uz);
+void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in);
+void efieldcalc_c_(CArray3D<double> &phi_input);
 void growthdiag_c_(CArray3D<double> &input_phi); 
 void BoltzSolve_c_(CArray3D<double> &input_phi);
-void smooth_c_(CArray3D<double> matrix, int &mk);
-void get_jpar_(CArray3D<double> matrix);
+void smooth_c_(CArray3D<double> &matrix, int &mk);
+void get_jpar_(CArray3D<double> &matrix);
 void get_apar_(const int &flagnumber);
 void integ_c_(int iflag);
 void grid1_c_(int &ip, int &n, int &MyId);

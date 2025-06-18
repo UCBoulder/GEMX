@@ -7,4 +7,4 @@
 #pragma once
 
 void read1D(std::string fname, double arr[]);
-void read2D(std::string fname, CArray2D<double> arr, int x, int y);
+void read2D(std::string fname, CArray2D<double> &arr, int x, int y);
