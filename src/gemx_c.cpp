@@ -498,7 +498,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %lf %lf", &ifluid, &amie, &rneu);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%lf %d %d %lf", &beta, &nonlin, &nonline, &vcut);
+      fscanf(in_file, "%lf %d %d %lf", &betaVal, &nonlin, &nonline, &vcut);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d %d %d %d %d %d %d", &ntracer, &ifield_solver, &i3D, &iBoltzmann, &eAdiabatic, &iterations, &icollision);
       fscanf(in_file, " %*[^\n]\n");

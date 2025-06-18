@@ -14,7 +14,7 @@ void cleanUpEquil();
 //variables extern to create one copy used everywhere
 
 extern double mimp, chgi;
-extern double beta,rmaj0,a,q0,r0,q0p,q0abs,shat0;
+extern double betaVal,rmaj0,a,q0,r0,q0p,q0abs,shat0;
 extern double R,dth,mu0,e,proton;
 extern int nr,nr2,ntheta,isgnf,isgnq,isupae0,tor_n;
 extern double psi_max, psi_min ,R_min, Z_min, Z_internal, psi_div,psi_a;

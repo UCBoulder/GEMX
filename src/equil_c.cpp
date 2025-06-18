@@ -2,7 +2,7 @@
 //As a note to everyone, all arrays are made to be inclusive of final index like fortran. This means a 2D array of size nx+1, nz+1 has a final index of nx,nz. This is how fortran does it
 
 double mimp = 2, chgi = 1;
-double beta,rmaj0,a,q0,r0,q0p,q0abs,shat0;
+double betaVal,rmaj0,a,q0,r0,q0p,q0abs,shat0;
 double dR,dth,mu0,e,proton;
 int nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n;
 double psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647;
@@ -202,7 +202,7 @@ void new_equil_c(){
     xu = proton*vu/(e*bu);
     xu = 1; //?
     nu = 2.5e19;
-    beta = 4*3.14159*1e-7*nu*tu/(bu*bu); //is this the whole thing squared or bu squared? Double check
+    betaVal = 4*3.14159*1e-7*nu*tu/(bu*bu); //is this the whole thing squared or bu squared? Double check
     
 //     assign T, n profiles 
     for(int i = 0; i <= nx; ++i){
