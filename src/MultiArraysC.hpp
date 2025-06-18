@@ -6,10 +6,13 @@
 template<typename T>
 class CArray4D {
     public:
-        CArray4D(size_t xsize, size_t ysize, size_t zsize, size_t qsize) : x_(xsize), y_(ysize), z_(zsize), q_(qsize){
-            data_ = new T[x_ * y_ * z_ * q_];
-            std::fill(data_, data_ + (x_*y_*z_*q_), 0);
-            size_ = x_*y_*z_*q_;
+        CArray4D() {
+            data_ = nullptr;
+            x_ = 0;
+            y_ = 0;
+            z_ = 0;
+            q_ = 0;
+            size_ = 0;
         }
 
         ~CArray4D() {
@@ -20,6 +23,12 @@ class CArray4D {
         //x + y*D1 + z*D1*D2 + t*D1*D2*D3
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
         return data_[((i * y_ + j) * z_ + k) * q_ + l];
+    }
+
+    void resize(size_t xsize, size_t ysize, size_t zsize, size_t qsize){
+        size_ = xsize*ysize*zsize*qsize;
+        data_ = new T[size_];
+        std::fill(data_, data_ + (size_), 0);
     }
 
     void Clear() {

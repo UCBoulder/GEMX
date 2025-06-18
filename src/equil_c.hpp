@@ -1,5 +1,12 @@
 //Actual equil.h file
 #include "MultiArraysC.hpp"
+#include "gemx_com_c.hpp" 
+#include "readDatFiles.hpp"
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+#include <string>
 
 void new_equil_c();
 void cleanUpEquil();

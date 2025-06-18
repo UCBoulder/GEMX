@@ -1,18 +1,18 @@
 #include <iostream>
 #include <iomanip>
 
-#include "pputil_c.h"
+#include "pputil_c.hpp"
 
 using namespace std;
 
 static int me, nvp, npp, GCLR, TCLR, p_color, p_rank;
-static MPI_Comm GRID_COMM, TUBE_COMM, PETSC_COMM;
+// static MPI_Comm GRID_COMM, TUBE_COMM, PETSC_COMM;
 
 void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &com1,MPI_Comm &com2, MPI_Comm &com_petsc,int &petsc_color,int &petsc_rank){
     int ierr;
     int n_tor;
     int n_tor_planes;
-
+    
     ierr = MPI_Init(NULL, NULL); //Null since Init in c++ can interpret command line input, there are none here
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &npp);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &me);

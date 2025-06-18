@@ -2,10 +2,9 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-#include "outd_c.h"
-#include "gemx_com_externs.h"
-#include "equil_externs.h"
-#include "MultiArrays.hpp"
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
+#include "outd_c.hpp"
 
 using namespace std;
 
@@ -70,10 +69,10 @@ void outd_c_(const int &n) {
 
 }
 
-void phixy(Array3D<double> grd, string fl, int unt, int n) { //TODO - later
+// void phixy(Array3D<double> grd, string fl, int unt, int n) { //TODO - later
 
-}
+// }
 
-void phixz(Array3D<double> grd, string fl, int unt, int n) { 
+// void phixz(Array3D<double> grd, string fl, int unt, int n) { 
 
-}
+// }

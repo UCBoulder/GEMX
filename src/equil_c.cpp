@@ -1,12 +1,4 @@
-#include "equil_c.h"
-#include "gemx_com_c.h" 
-#include "readDatFiles.h"
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <string>
-
+#include "equil_c.hpp"
 //As a note to everyone, all arrays are made to be inclusive of final index like fortran. This means a 2D array of size nx+1, nz+1 has a final index of nx,nz. This is how fortran does it
 
 double mimp = 2, chgi = 1;

@@ -1,4 +1,4 @@
-#include "readDatFiles.h"
+#include "readDatFiles.hpp"
 
 // Read values from a 1D array .dat file and store into a 1D array in C++
 void read1D(std::string fname, double arr[]){

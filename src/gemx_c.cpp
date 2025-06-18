@@ -1,11 +1,11 @@
 #include "gemx_c.hpp"
-#include "pputil_c.h" 
+#include "pputil_c.hpp"
 #include "fcnt.hpp"
-#include "gemx_com_c.h"
-#include "equil_c.h"
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
 #include "mpi.h"
-#include "ionPush_c.h"
-#include "outd_c.h"
+#include "ionPush_c.hpp"
+#include "outd_c.hpp"
 #include "MultiArraysC.hpp"
 
 #include <cmath>
@@ -14,18 +14,14 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <petscsys.h>
 #include <petsc.h>
-#include <petscvec.h>
-#include <petscmat.h>
-#include <petscksp.h>
-#include <petscerror.h>
+
 
 #define MatStencil_k 1
 #define MatStencil_j 2
 #define MatStencil_i 3  //temporary
 #define MatStencil_c 4
-//using namespace std;
+using namespace std;
 
 int main(int argc, char *argv[]){ 
    int status,mid_i,mid_j;
@@ -48,7 +44,6 @@ int main(int argc, char *argv[]){
 
    //call init
    initialize_c_();
-
 
 
    outk=0; //(kmx+1)/2
@@ -228,7 +223,7 @@ int main(int argc, char *argv[]){
       }
 
 
-      efieldcalc_c_(phi.start());
+      efieldcalc_c_(phi);
 
 
 
@@ -374,7 +369,7 @@ int main(int argc, char *argv[]){
          }
       }
 
-      efieldcalc_c_(phi.start());
+      efieldcalc_c_(phi);
       if(i3D == 1){
          growthdiag_c_(phi);
       }
@@ -438,9 +433,9 @@ void initialize_c_(){
    double dum, dum1, dum2, jacp, xndum, r, wx0, wx1;
    double x[2];
    double y[2]; //0-1
-
+   
    ppinit_c(myid, numprocs, ntube, kmx, i3D, GRID_COMM, TUBE_COMM, PETSC_COMM, petsc_color, petsc_rank);
-
+  
    //reset timestep counter
    last = numprocs-1;
    timestep = 0;
@@ -450,7 +445,7 @@ void initialize_c_(){
       if(myid == i) init();
       ierr = MPI_Barrier(MPI_COMM_WORLD);
    }
-
+   cout << "after loop" << endl;
    dum = 0.;
    for(int i = 0; i < imx; ++i){
       dum = dum+(jac[i]+jac[i+1])/2;

@@ -1,4 +1,10 @@
 #include "MultiArraysC.hpp"
+#include <petscsys.h>
+#include <petsc.h>
+#include <petscvec.h>
+#include <petscmat.h>
+#include <petscksp.h>
+#include <petscerror.h>
 #pragma once
 
 // extern "C"
@@ -8,7 +14,7 @@ void loadi_c_();
 double ran2_c_(int& idum);
 void gradu_c_(CArray3D<double> u, CArray3D<double> ux, CArray3D<double> uz);
 void fluxavg_c_(CArray3D<double> phi, CArray2D<double> phiavg_in);
-void efieldcalc_c_(double *phi_input);
+void efieldcalc_c_(CArray3D<double> phi_input);
 void growthdiag_c_(CArray3D<double> &input_phi); 
 void BoltzSolve_c_(CArray3D<double> &input_phi);
 void smooth_c_(CArray3D<double> matrix, int &mk);

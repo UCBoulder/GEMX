@@ -9,7 +9,7 @@ void cleanupCom();
 void new_gemx_com();
 //Variables and Constants
 extern int imx, jmx, kmx, mmx;
-extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
+extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int rand_table[]; //10007
 extern int timestep,iez;
 extern int iseed;

@@ -1,6 +1,6 @@
-#include "ionPush_c.h" 
-#include "gemx_com_c.h"
-#include "equil_c.h"
+#include "ionPush_c.hpp" 
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
 #include "mpi.h"
 
 #include <cmath>

@@ -1,5 +1,5 @@
-#include "gemx_com_externs.h"
-#include "equil_externs.h"
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
 
     i=int(xt/dx);
     j=int(zt/dz);

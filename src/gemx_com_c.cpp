@@ -1,5 +1,5 @@
 //ACTUAL GEMX_COM FILE IN C
-#include "gemx_com_c.h"
+#include "gemx_com_c.hpp"
 //Array Declarations
 CArray2D<int> ileft;
 CArray2D<int> jleft;
@@ -81,8 +81,10 @@ CArray3D<double> dnedy;
 CArray3D<double> dupadx;
 CArray3D<double> dupady;
 
-
+MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;
 int imx, jmx, kmx, mmx;
+int numprocs;
+int last,myid, cnt , ierr;
 
 int nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
 int rand_table[10007];
@@ -108,6 +110,11 @@ double cut,amp,tor,amie,emass,qel,rneu;
 int iput,iget,ision,isham,peritr,iadi;
 int idg;
 const int master = 0;
+
+//    Various diagnostic arrays and scalars
+//    plotting constants
+
+    int nplot, xnplt;
 
 double vcut;
 int nonlin,nonline,iflut,ifluid,ipara;
@@ -136,6 +143,9 @@ double *rmsphi = nullptr;
 double *rmsez = nullptr;
 double *rmsapa = nullptr;
 double *avewi = nullptr;
+double *vol = nullptr;
+
+CArray4D<double> den;
 
 
 
@@ -169,11 +179,6 @@ void new_gemx_com(){
     iright.resize(imx+1, jmx+1);
     jright.resize(imx+1, jmx+1);
 
-//    Various diagnostic arrays and scalars
-//    plotting constants
-
-    int nplot, xnplt;
-
 //  energy diagnostic arrays
     ke.resize(nsmx, nmx+1); //careful - 1st index 1 based in ftn (next one too)
     fe = new double[nmx+1];
@@ -185,14 +190,14 @@ void new_gemx_com(){
     nos.resize(nsmx, nmx+1); 
 
     //  flux diagnostics
-    double *vol = new double[nsubd]; //careful, 1-indexed
+    vol = new double[nsubd]; //careful, 1-indexed
     efle.resize(nsubd, nmx+1); //1st index 1-based
     pfle.resize(nsubd, nmx+1); //1st index 1-based
     pfl.resize(nsmx+1, nmx+1); //1st index 1-based, but +1 in ftn
     efl.resize(nsmx, nmx+1);   //1st index 1-based
 
-    int numprocs;
-    int last,myid, cnt , ierr;
+    
+    
         
     //Boltzmann Electron subroutine arrays for Newton solve
     phi_k.resize(imx+1, jmx+1, kmx+1);
@@ -271,7 +276,7 @@ void new_gemx_com(){
     dupadx.resize(imx+1, jmx+1, kmx+1);
     dupady.resize(imx+1, jmx+1, kmx+1);
 
-    CArray4D<double> den(2, imx+1, jmx+1, kmx+1); //1st index 1 based - careful
+    den.resize(2, imx+1, jmx+1, kmx+1); //1st index 1 based - careful
 }
 
 //cleans 1d arrays in COM
