@@ -23,7 +23,7 @@
 #define MatStencil_c 4
 using namespace std;
 
-int main(int argc, char *argv[]){ 
+int main(int argc, char* argv[]){ //int argc, char *argv[] 
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
@@ -51,13 +51,13 @@ int main(int argc, char *argv[]){
    one = 1;
    three = 3;
 
-   
+
    if(eBoltzmann == 0) {
 
       PETSC_COMM_WORLD = PETSC_COMM;
 
       PetscCall(PetscInitialize(&argc, &argv, NULL, NULL));  
-
+      
       PetscCall(KSPCreate(PETSC_COMM_WORLD,&ksp));
       PetscCall(DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL, PETSC_NULL, &dm));
       PetscCall(DMSetFromOptions(dm));
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
       PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr));      	
       PetscCall(DMDAGetCorners(dm,&is,&js,PETSC_NULL,&iw,&jw,PETSC_NULL));
       PetscCall(KSPSetFromOptions(ksp));
-      PetscCall(KSPSetUp(ksp));
+      PetscCall(KSPSetUp(ksp)); //problem
    } //Calder Edit
 
    if(iget == 0) loadi_c_();
@@ -426,6 +426,8 @@ int main(int argc, char *argv[]){
    }
 
    ierr = MPI_Finalize();
+   cleanUpEquil();
+   cleanupCom();
    return 0;
 }
 
@@ -523,7 +525,7 @@ void init(){
    qel = -1;
 
    new_equil_c(); 
-   cout << "after equil arra" << endl;
+   
    lx = xdim;
    lz = zdim;
 
@@ -599,7 +601,6 @@ void init(){
 //         gnuobx(i1,k1) = dnuobdtp*fp/radiusp*grcgtp
       }
    }
-
    iseed = -(1777+myid*13);
    idum = ran2_c_(iseed);
    phi.Clear();
@@ -621,8 +622,6 @@ void init(){
    if(myid == master){
       //more plots
    }
-   cleanUpEquil();
-   cleanupCom();
 }
 
 void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){ 

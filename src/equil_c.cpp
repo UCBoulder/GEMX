@@ -177,7 +177,6 @@ void new_equil_c(){
     read2D("Bz.dat", b0z, nx, nz);
 //  open Bt.dat and input into b0zeta
     read2D("Bt.dat", b0zeta, nx, nz);
-
 //       B0x=0
 //       B0z=0  
 
