@@ -89,31 +89,31 @@ fcnt.o: fcnt.F90
 
 #C++ compilation.
 gemx_externs.o: gemx_externs.cpp
-	$(CPP) -c gemx_externs.cpp $(INCS)
+	$(CPP) -c gemx_externs.cpp $(INCS) $(INCS_C)
 #$(OPT_C)
 pputil_c.o: pputil_c.cpp
-	$(CPP) -c pputil_c.cpp $(INCS)
+	$(CPP) -c pputil_c.cpp $(INCS) $(INCS_C)
 
 gemx_com_c.o: gemx_com_c.cpp
-	$(CPP) -c gemx_com_c.cpp $(INCS)
+	$(CPP) -c gemx_com_c.cpp $(INCS) $(INCS_C)
 
 equil_c.o: equil_c.cpp
-	$(CPP) -c equil_c.cpp $(INCS)
+	$(CPP) -c equil_c.cpp $(INCS) $(INCS_C)
 
 gemx_c.o: gemx_c.cpp
-	$(CPP) -c gemx_c.cpp $(INCS)
+	$(CPP) -c gemx_c.cpp $(INCS) $(INCS_C)
 
 ionPush_c.o: ionPush_c.cpp 
-	$(CPP) -c ionPush_c.cpp $(INCS)
+	$(CPP) -c ionPush_c.cpp $(INCS) $(INCS_C)
 
 outd_c.o: outd_c.cpp
-	$(CPP) -c outd_c.cpp $(INCS)
+	$(CPP) -c outd_c.cpp $(INCS) $(INCS_C)
 
 fcnt_c.o: fcnt_c.cpp
-	$(CPP) -c fcnt_c.cpp $(INCS)
+	$(CPP) -c fcnt_c.cpp $(INCS) $(INCS_C)
 
 readDatFiles.o: readDatFiles.cpp
-	$(CPP) -c readDatFiles.cpp $(INCS)
+	$(CPP) -c readDatFiles.cpp $(INCS) $(INCS_C)
 
 #Check for git diffs in the src directory
 check_diff:

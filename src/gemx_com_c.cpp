@@ -102,6 +102,7 @@ double *mims = nullptr; double *q = nullptr;
 int timestep, iez;
 int iseed;
 //double *time = nullptr; //causing issues, don't want to deal with it
+
 double dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr;
 double etaohm;
 double lx,lz;

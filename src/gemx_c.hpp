@@ -5,6 +5,7 @@
 #include <petscmat.h>
 #include <petscksp.h>
 #include <petscerror.h>
+#include <petscmat.h>
 #pragma once
 
 // extern "C"

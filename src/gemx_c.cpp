@@ -16,14 +16,9 @@
 #include <iomanip>
 #include <petsc.h>
 
-
-#define MatStencil_k 1
-#define MatStencil_j 2
-#define MatStencil_i 3  //temporary
-#define MatStencil_c 4
 using namespace std;
 
-int main(int argc, char* argv[]){ //int argc, char *argv[] 
+int main(){ //int argc, char *argv[] //not needed unless we want to pass command line args, even then put in makefile
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
@@ -56,22 +51,24 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
 
       PETSC_COMM_WORLD = PETSC_COMM;
 
-      PetscCall(PetscInitialize(&argc, &argv, NULL, NULL));  
+      PetscCall(PetscInitialize(nullptr, nullptr, nullptr, nullptr));  
       
       PetscCall(KSPCreate(PETSC_COMM_WORLD,&ksp));
-      PetscCall(DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL, PETSC_NULL, &dm));
+      PetscCall(DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, 
+                             DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,
+                             one,one, nullptr, nullptr, &dm));
       PetscCall(DMSetFromOptions(dm));
       PetscCall(DMSetUp(dm));
       PetscCall(KSPSetDM(ksp,dm));
-      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,nullptr));
-      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr));      	
-      PetscCall(DMDAGetCorners(dm,&is,&js,PETSC_NULL,&iw,&jw,PETSC_NULL));
+      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,nullptr)); //problem?
+      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr)); //problem   	
+      PetscCall(DMDAGetCorners(dm,&is,&js,nullptr,&iw,&jw,nullptr));
       PetscCall(KSPSetFromOptions(ksp));
       PetscCall(KSPSetUp(ksp)); //problem
-   } //Calder Edit
+   } 
 
    if(iget == 0) loadi_c_();
-   integ_c_(2);
+   integ_c_(1); //1st index of den 1-based, since index = 1,2 in ftn, index in c is 0,1 meaning 1 is same index in c as ftn. Funkalicious
 
    if(myid == 0) {
       //write a bunch of stuff to files
@@ -121,13 +118,13 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
 
    phiavg.Clear();
 
-   get_jpar_(apar); //update later to pass array. This is easier for now
+   get_jpar_(apar); 
    get_ne_c_(0);
 
    if(i3D==0){
       apar.Clear();
       dene.Clear();
-      integ_c_(2);
+      integ_c_(1);
    }
 
 
@@ -139,7 +136,7 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
    if(ifield_solver == 1) ncurr=1;
       
    start_total_tm = MPI_Wtime();
-   for(timestep=ncurr; timestep<=nm; ++timestep){
+   for(timestep=ncurr; timestep<=nm; ++timestep) {
       for(int i = 0; i <=10006; ++i){
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[i]=1;
@@ -284,11 +281,11 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
 
       if(ision==1) ppush_c_(timestep);
       if(ifluid==1){ 
-         integ_c_(1);
+         integ_c_(0); //again 1-index shananiganery
       } else {
          if(ision==1) ppush_c_(timestep);
             //if(ifluid==1)call pintef
-         if(ifluid==1) integ_c_(1);
+         if(ifluid==1) integ_c_(0);
    // !             if(myid==0)then
    // !                open(unit=11, file = 'testden',status='unknown',action='write')
    // !                do j=0,jmx                 
@@ -341,7 +338,7 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
                   BoltzSolve_c_(phi);
                } else {
                   PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
-                  PetscCall(KSPSolve(ksp,NULL,NULL));
+                  PetscCall(KSPSolve(ksp,nullptr,nullptr));
                   PetscCall(KSPGetSolution(ksp,&petsc_phi));
                   PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
 
@@ -355,7 +352,7 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
 
                   PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-                  ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                  ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
 
                   for(int i = 0; i <= imx; ++i){
                      for(int j = 0; j <= jmx; ++j){
@@ -408,13 +405,13 @@ int main(int argc, char* argv[]){ //int argc, char *argv[]
    end_total_tm = MPI_Wtime();
    total_tm = total_tm + end_total_tm - start_total_tm;
    
-   ierr = MPI_Reduce(&ppush_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+   ierr = MPI_Reduce(&ppush_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)ppush_tm = tmp/std::real(numprocs);
-   ierr = MPI_Reduce(&cpush_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+   ierr = MPI_Reduce(&cpush_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)cpush_tm = tmp/std::real(numprocs);
-   ierr = MPI_Reduce(&integ_tm, &tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD);
+   ierr = MPI_Reduce(&integ_tm, &tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)integ_tm = tmp/std::real(numprocs);
-   MPI_Reduce(&total_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+   MPI_Reduce(&total_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)total_tm = tmp/std::real(numprocs);
    //More writing stuff to files, work on after
 
@@ -1307,94 +1304,103 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    PetscInt    ym,xs,ys,i1,i5;
    PetscScalar  v[5],Hx,Hy;
    PetscScalar  Hx2,Hy2,tmp_r,a_value;
-   MatStencil   row[4],col[4,5]; //careful here
+   MatStencil   row[1],col[5]; //careful here
+
+   PetscInt ncols = 0;
 
    i1 = 1;
-   i5 = 5;
+   //i5 = 5;
    a_value = 0.5;
-   PetscCall(KSPGetDM(ksp,&dm));
-   PetscCall(DMDAGetInfo(dm,NULL,&mx,&my,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL));
+   ierr = KSPGetDM(ksp,&dm); CHKERRQ(ierr);
+   ierr = DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
+                      nullptr,nullptr,nullptr,nullptr,nullptr,nullptr); CHKERRQ(ierr);
 
    Hx = dx;//! (Rgrid(imx)-Rgrid(0)) / real(imx)
    Hy = dz;//(Zgrid(jmx)-Zgrid(0)) / real(jmx)
 
    Hx2 = Hx*Hx;
    Hy2 = Hy*Hy;
-   PetscCall(DMDAGetCorners(dm,&xs,&ys,NULL,&xm,&ym,NULL));
+   PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
 
-   for(j=ys; j <= ys+ym-1; ++j){
-      for(i=xs; xs <= xs+xm-1; ++i) {
-         row[MatStencil_i-1].i = i;
-         row[MatStencil_j-1].j = j;
+   for(j=ys; j < ys+ym; ++j){
+      for(i=xs; i < xs+xm; ++i) {
+         ncols = 0;
+         row[0].i = i;
+         row[0].j = j;
          if(mask(i,j)<0.99){
             v[0] = c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2);
-            PetscCall(MatSetValuesStencil(BB,i1,row,i1,row,&v[0],INSERT_VALUES));
+            ierr = MatSetValuesStencil(BB,i1,row,i1,row,v,INSERT_VALUES); CHKERRQ(ierr);
          } else {
             if(j > 0) {
                if(j == jmx) {
-                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
+                  v[ncols] = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
                } else {
-                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[ncols] = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                }
+               col[ncols].i = i;
+               col[ncols].j = j - 1;
+               ncols++;
             }
-            col[MatStencil_i, 0].i = i;
-            col[MatStencil_j, 0].j = j - 1;
-
+            
             if(i > 0) {
                if(i == imx) {
-                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
+                  v[ncols] =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
                } else {
-                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[ncols] =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                }
+               col[ncols].i = i - 1;
+               col[ncols].j = j;
+               ncols++;
             }
-            col[MatStencil_i-1, 1].i = i - 1;
-            col[MatStencil_j-1, 1].j = j;
 
-            v[2] = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2;
-            col[MatStencil_i-1, 2].i = i;
-            col[MatStencil_j-1, 2].j = j;
-
-//  write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
+            v[ncols] = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2;
+            col[ncols].i = i;
+            col[ncols].j = j;
+            //  write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
             if(eBoltzmann != 0) {
-               v[2]=v[2]-xn0e(i,j)*mu0*e*e/t0e(i,j);
+               v[ncols]-= xn0e(i,j)*mu0*e*e/t0e(i,j);
             }
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+            ncols++;
 
             if(i < imx){
                if(i == 0){
-                  v[3] = c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
+                  v[ncols] = c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
                } else {
-                  v[3] =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[ncols] =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                }
+               col[ncols].i = i + 1;
+               col[ncols].j = j;
+               ncols++;
             }
-            col[MatStencil_i-1, 3].i = i + 1;
-            col[MatStencil_j-1, 3].j = j;
-
+            
             if(j < jmx) {
                if(j == 0){
-                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
+                  v[ncols] =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
                } else {
-                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[ncols] =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                }
+               col[ncols].i = i;
+               col[ncols].j = j + 1;
+               ncols++;
             }
-            col[MatStencil_i-1, 4].i = i;
-            col[MatStencil_j-1, 4].j = j + 1;
-            PetscCall(MatSetValuesStencil(BB, i1, row, i5, col, v, INSERT_VALUES));
+   
+            ierr = MatSetValuesStencil(BB, i1, row, ncols, col, v, INSERT_VALUES); CHKERRQ(ierr);
          }
-
-
       }
    }
 
-   PetscCall(MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY));
-   PetscCall(MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY));
+   ierr = MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+   ierr = MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
    if(AA != BB) {
-      PetscCall(MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY));
-      PetscCall(MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY));
+      ierr = MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+      ierr = MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
    }
-//      PetscCall(MatView(A,PETSC_VIEWER_STDOUT_WORLD,petsc_ierr))
-//      PetscCall(MatView(B,PETSC_VIEWER_STDOUT_WORLD,petsc_ierr))
+   //   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
+   //   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
+
+   return 0;
 }
 
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
@@ -1404,22 +1410,23 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    PetscInt  mx,my,i,j,xs,xm,ys,ym,vec_start,vec_end; //same ???
    DM dm;
    PetscInt idx;
-   PetscScalar tmp_value,a_value,tmp_r;
+   PetscScalar tmp_value = 0.0;
+   PetscScalar a_value,tmp_r;
 
-   tmp_value = 0;
    PetscInt k = *(PetscInt*)ctx; //probably fine
 
 
    PetscCall(KSPGetDM(ksp,&dm));
-   PetscCall(DMDAGetInfo(dm,NULL,&mx,&my,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL));
+   PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,
+                        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr));
    PetscCall(VecGetOwnershipRange(bbb,&vec_start,&vec_end));
-   PetscCall(DMDAGetCorners(dm,&xs,&ys,NULL,&xm,&ym,NULL));
+   PetscCall(DMDAGetCorners(dm,&xs,&ys,PETSC_NULL,&xm,&ym,PETSC_NULL));
 
 
    idx = vec_start-1;
-   for(j = ys; j <= ys+ym-1; ++j) {
-      for(i = xs; i <= xs+xm-1; ++i) {
-         idx+=1;
+   for(j = ys; j < ys+ym; ++j) {
+      for(i = xs; i < xs+xm; ++i) {
+         ++idx;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
          } else {

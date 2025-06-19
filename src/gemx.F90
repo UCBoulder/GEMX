@@ -310,7 +310,7 @@ program gemx
          !call smooth(apars,2)
            !call get_jpar(apars)
            call get_jpar(apars)
-           !call smooth(jpar,3)      !testing
+           !call smooth(jpar,3)      
            call get_ne_c(-1)
 
 !           if(myid==0)then
