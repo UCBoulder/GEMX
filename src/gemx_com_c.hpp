@@ -25,7 +25,7 @@ extern double endtm,begtm,pstm;
 extern double starttm, lasttm, tottm;
 extern double start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm;
 extern double total_tm, integ_tm, ppush_tm, cpush_tm;
-extern double dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr;
+extern double dx,dz,dzeta,dt,totvol,n0,tcurr;
 extern double etaohm;
 extern double lx,lz;
 extern double cut,amp,tor,amie,emass,qel,rneu;

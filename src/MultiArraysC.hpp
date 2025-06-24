@@ -116,7 +116,7 @@ public:
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
-        return data_[(i * (z_ * y_)) + (j*z_) + k];
+        return data_[(i * y_ + j) * z_ + k];
     }
 
     inline CArray3D& operator=(const CArray3D &arr){

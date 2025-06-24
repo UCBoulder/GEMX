@@ -372,26 +372,25 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 //   particle can go out of bounds during gyroavg...
             if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
             if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
-            zeta= fmod(zeta3[m], 2*pi);
+            zeta = fmod(zeta3[m], 2*pi);
             i=static_cast<int>(xt/dx);
             j=static_cast<int>(zt/dz);
             k=static_cast<int>(zeta/dzeta);
 
-
-            wx0=(i+1)-xt/dx;
+            wx0=(float)(i+1)-xt/dx;
             wx1=1.-wx0;
             wy0=(j+1)-zt/dz;
-            wy1=1.-wy0;
+            wy1=(float)1.-wy0;
             wz0=(k+1)-zeta/dzeta;
-            wz1=1.-wz0;
+            wz1=(float)1.-wz0;
 
                 k_plus_1=k+1;
-                if(k==kmx) k_plus_1=0;
+              if(k==kmx) k_plus_1=0;
             exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
             + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
             wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
             wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
-
+            
             ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
             + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
             wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
@@ -420,6 +419,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
+
          exp1 = exp1/4.;
          ezp = ezp/4.;
          ezetap = ezetap/4.;

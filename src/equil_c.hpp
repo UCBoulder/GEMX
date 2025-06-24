@@ -23,6 +23,7 @@ extern int nzeta;
 extern int nx, nz;
 extern double zctr;
 extern double  dxeq, xdim, xctr, zdim, dzeq;
+extern double pi,pi2;
 
 extern CArray2D<double> b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2;
 extern CArray2D<double> t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez;

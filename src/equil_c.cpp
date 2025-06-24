@@ -14,6 +14,7 @@ int nzeta = 32;
 int nx=449, nz=433;
 double zctr;
 double  dxeq, xdim, xctr, zdim, dzeq;
+double pi,pi2;
 
 CArray2D<double> b0, b0x, b0z, b0zeta,dbdx,dbdz, c2_over_vA2;
 CArray2D<double> t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez;
@@ -64,7 +65,7 @@ int *priv = new int[num_lines+1];
 void new_equil_c(){
     using namespace std;
     //all commented variables are declared by never refrenced
-    double pi;  //pi2, r, th, s 
+     //pi2, r, th, s 
 
     int i;       //j,k,m,i1,j1,j2;
                 //double dum,x,tempn;
@@ -359,7 +360,8 @@ void new_equil_c(){
 
 //  cout << "betaU=" << beta << endl;
 
-    pi = atan(1.0)*4;
+    pi = atan(1.0)*4.0;
+    pi2 = 2*pi;
     rmaj0 = 1000.;
     a = 360.;
 

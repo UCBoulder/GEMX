@@ -103,7 +103,7 @@ int timestep, iez;
 int iseed;
 //double *time = nullptr; //causing issues, don't want to deal with it
 
-double dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr;
+double dx,dz,dzeta,dt,totvol,n0,tcurr;
 double etaohm;
 double lx,lz;
 int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision;

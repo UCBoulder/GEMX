@@ -19,6 +19,7 @@
 using namespace std;
 
 int main() {
+   void* kval; //used for compute rhs
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
@@ -60,11 +61,11 @@ int main() {
       PetscCall(DMSetFromOptions(dm));
       PetscCall(DMSetUp(dm));
       PetscCall(KSPSetDM(ksp,dm));
-      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,nullptr)); //problem?
-      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr)); //problem   	
+      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,nullptr)); 
+      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr));    	
       PetscCall(DMDAGetCorners(dm,&is,&js,nullptr,&iw,&jw,nullptr));
       PetscCall(KSPSetFromOptions(ksp));
-      PetscCall(KSPSetUp(ksp)); //problem
+      PetscCall(KSPSetUp(ksp)); 
    } 
 
    if(iget == 0) loadi_c_();
@@ -145,10 +146,10 @@ int main() {
       }
       tcurr = tcurr+dt;
 
-   //	   call accumulate(timestep-1,0)
-   //	   call ezamp
-   //	   call gkps
-   //    call field(timestep-1,0)
+   //	   accumulate(timestep-1,0)
+   //	   ezamp()
+   //	   gkps()
+   //    field(timestep-1,0)
 
 
       if(ifield_solver == 1) {
@@ -167,24 +168,20 @@ int main() {
                      BoltzSolve_c_(phi);
                      cout << "Boltz" << endl;
                   } else {
-                     cout << "check loop: "<< iter << endl;
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
-                     cout << "1" << endl;
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
-                     cout << "2" << endl;
+                     kval = (void*)k;
+                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
+                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
                      PetscCall(KSPSolve(ksp,nullptr,nullptr));
-                     cout << "3" << endl;
                      PetscCall(KSPGetSolution(ksp,&petsc_phi));
-                     cout << "4" << endl;
                      PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
-                     cout << "5" << endl;
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-                     cout << "6" << endl;
-                     for(idx = 1; idx <= (vec_end-vec_start); ++idx){
-                        i=idx-1%iw+is;
+                     for(idx = 1; idx <= (vec_end-vec_start); ++idx) {
+                        //cout << idx << endl;
+                        i=((idx-1)%iw)+is;
                         j=(idx-1)/(iw)+js;
-                        phi(i,j,k)=phi_array[idx];//*mask(i,j);
+                        phi(i,j,k)=phi_array[idx];//*mask(i,j);  //right here officer
                      }
+                     //cout << "after loop" << endl;
                      PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
                   }
                }
@@ -198,7 +195,8 @@ int main() {
             if(eBoltzmann == 1) {
                BoltzSolve_c_(phi);
             } else {
-               PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
+               kval = (void*)k;
+               PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
                PetscCall(KSPSolve(ksp,NULL,NULL));
                PetscCall(KSPGetSolution(ksp,&petsc_phi));
                PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
@@ -227,7 +225,6 @@ int main() {
 
 
       efieldcalc_c_(phi);
-
 
 
 
@@ -307,10 +304,8 @@ int main() {
    // !	   call ezamp
    // !	   call gkps
    // !	   call field(timestep,1)
-
       if(ifield_solver == 1) {
          phi.Clear();
-
          if(i3D != 0){
             for(k=myid*(kmx+1)/(numprocs); k <= (myid+1)*(kmx+1)/(numprocs)-1; ++k){
                for(iter = 0; iter<=iterations; ++iter){
@@ -318,14 +313,14 @@ int main() {
                   if(eBoltzmann == 1){
                      BoltzSolve_c_(phi);
                   } else {
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
+                     kval = (void*)k;
+                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
                      PetscCall(KSPSolve(ksp,NULL,NULL));
                      PetscCall(KSPGetSolution(ksp,&petsc_phi));
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
                      PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
-
                      for(idx=1; idx <= (vec_end-vec_start); ++idx) {
-                        i=(idx-1%(iw))+is;
+                        i=((idx-1)%(iw))+is;
                         j=(idx-1)/(iw)+js;
                         phi(i,j,k)=phi_array[idx];//*mask(i,j);
                      }
@@ -343,6 +338,7 @@ int main() {
                if(eBoltzmann == 1){
                   BoltzSolve_c_(phi);
                } else {
+                  kval = (void*)k;
                   PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
                   PetscCall(KSPSolve(ksp,nullptr,nullptr));
                   PetscCall(KSPGetSolution(ksp,&petsc_phi));
@@ -376,12 +372,12 @@ int main() {
       if(i3D == 1){
          growthdiag_c_(phi);
       }
-
       if(myid == 0 && (timestep%10)==0){
          //write more stuff
       }
-
+      cout << "stuff before" << endl;
       if(ision==1) cpush_c_(timestep);
+      cout << "stuff after" << endl;
       //cintef(timestep);
       if(ifluid==1){
          integ_c_(2);
@@ -477,8 +473,6 @@ void init(){
    double bfldp, btorp, bxp, bzp, gt0ip, gt0ep, gn0ip, gn0ep, capnxp, capnzp;
    double upae0p; //??? seems weird to me, not calculated anywhere, maybe old/ got deleted?
    //std::complex<double> IU[2] = {0., 1.};
-   double pi = 4.0*atan(1.0);
-   pi2 = pi*2;
    //read values from gemx.in
    FILE *in_file = fopen("gemx.in", "r");
    if(in_file == NULL)
@@ -1412,30 +1406,28 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 }
 
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
-   cout << "in compute rhs" << endl;
    int ii,jj,iflag;
    //PetscScalar* b_array = new PetscScalar[]; 
    PetscScalar  h,Hx,Hy;
-   PetscInt  mx,my,i,j,xs,xm,ys,ym,vec_start,vec_end; //same ???
+   PetscInt  mx,my,i,j,xs,xm,ys,ym,vec_start,vec_end;
    DM dm;
    PetscInt idx;
    PetscScalar tmp_value = 0.0;
-   //PetscScalar a_value,tmp_r;
+   // PetscScalar a_value,tmp_r;
 
-   PetscInt k = *(PetscInt*)ctx; //probably fine
-
-
+   PetscInt k = (PetscInt)ctx; 
+   tmp_value = 0;
+   
    PetscCall(KSPGetDM(ksp,&dm));
    PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,
                         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr));
    PetscCall(VecGetOwnershipRange(bbb,&vec_start,&vec_end));
    PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
 
-
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
       for(i = xs; i < xs+xm; ++i) {
-         ++idx;
+         idx+=1;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
          } else {
@@ -1460,10 +1452,8 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
                } else {
                   tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
                }
-
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             }
-
          }
          PetscCall(VecSetValues(bbb,1,&idx, &tmp_value, INSERT_VALUES));
       }
