@@ -63,10 +63,11 @@ int *priv = new int[num_lines+1];
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void new_equil_c(){
     using namespace std;
-    double pi, pi2, r, th, s;
+    //all commented variables are declared by never refrenced
+    double pi;  //pi2, r, th, s 
 
-    int i,j,k,m,i1,j1,j2;
-    double dum,x,tempn;
+    int i;       //j,k,m,i1,j1,j2;
+                //double dum,x,tempn;
     double omegau;          //,e,proton
     
     //allocating arrays
@@ -129,20 +130,43 @@ void new_equil_c(){
     while(std::getline(file, line)) {
         std::stringstream str(line);
         while(getline(str, num, delimeter[0])) {
-            int res = i % 11;
+            int res = index % 11;
             switch (res)
             {
-            case 0: gindex[currI] = stod(num); break;
-            case 1: psitab[currI] = stod(num); break;
-            case 2: iarray[currI] = stod(num); break;
-            case 3: jarray[currI] = stod(num); break;
-            case 4: weight00[currI] = stod(num); break;
-            case 5: weight10[currI] = stod(num); break;
-            case 6: weight01[currI] = stod(num); break;
-            case 7: weight11[currI] = stod(num); break;
-            case 8: jacobian[currI] = stod(num); break;
-            case 9: deno[currI] = stod(num); break;
-            case 10: priv[currI] = stod(num); currI+=1; break;
+            case 0: 
+            gindex[currI] = stod(num); 
+            break;
+            case 1: 
+            psitab[currI] = stod(num); 
+            break;
+            case 2: 
+            iarray[currI] = stod(num); 
+            break;
+            case 3: 
+            jarray[currI] = stod(num); 
+            break;
+            case 4: 
+            weight00[currI] = stod(num); 
+            break;
+            case 5: 
+            weight10[currI] = stod(num); 
+            break;
+            case 6: 
+            weight01[currI] = stod(num); 
+            break;
+            case 7: 
+            weight11[currI] = stod(num);
+             break;
+            case 8: 
+            jacobian[currI] = stod(num); 
+            break;
+            case 9: 
+            deno[currI] = stod(num); 
+            break;
+            case 10: 
+            priv[currI] = stod(num); 
+            currI+=1; 
+            break;
             default: break;
             }
             index+=1;

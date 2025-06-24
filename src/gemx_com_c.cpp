@@ -153,7 +153,7 @@ CArray4D<double> den;
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void new_gemx_com(){
     mm = new int[nsmx+1]; tmm = new int[nsmx+1]; lr = new int[nsmx+1];
-    mims = new double[nsmx+1]; q = new double[nsmx+1];
+    mims = new double[nsmx+1]; q = new double[nsmx];
 
     //time = new double[nmx+1];
 

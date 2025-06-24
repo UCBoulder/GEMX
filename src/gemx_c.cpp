@@ -18,24 +18,24 @@
 
 using namespace std;
 
-int main(){ //int argc, char *argv[] //not needed unless we want to pass command line args, even then put in makefile
+int main() {
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
 
-   double random;
+   //double random;
    double tmp;
-   double retVal;
-   PetscInt is,js,iw,jw,idx,n_in_porcs;
+   //double retVal;
+   PetscInt is,js,iw,jw,idx;//,n_in_porcs;
    PetscInt one,three,vec_start,vec_end;
-   PetscErrorCode petsc_ierr;
-   PetscScalar* phi_array;
+   //PetscErrorCode petsc_ierr;
+   const PetscScalar* phi_array;
    KSP ksp;
-   DM dm ;               //need to figure out petsc library here to make work
-   PetscObject  vec;
-   Vec petsc_phi,mpi_phi;
-   PetscViewer viewer;
-   VecScatter   ctx;
+   DM dm;
+   //PetscObject  vec;
+   Vec petsc_phi;//mpi_phi;
+   //PetscViewer viewer;
+   //VecScatter   ctx;
 
    //call init
    initialize_c_();
@@ -119,8 +119,7 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
    phiavg.Clear();
 
    get_jpar_(apar); 
-   get_ne_c_(0);
-
+   get_ne_c_(1);
    if(i3D==0){
       apar.Clear();
       dene.Clear();
@@ -137,14 +136,13 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
       
    start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
-      for(int i = 0; i <=10006; ++i){
+      for(int q = 0; q <=10006; ++q){
          if(ran2_c_(iseed)-0.5 > 0){
-            rand_table[i]=1;
+            rand_table[q]=1;
          } else {
-            rand_table[i]=-1;
+            rand_table[q]=-1;
          }
       }
-   
       tcurr = tcurr+dt;
 
    //	   call accumulate(timestep-1,0)
@@ -161,19 +159,27 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
 
 
          if(i3D != 0) {
-            for(int k = myid*(kmx+1)/(numprocs); k <= (myid+1)*(kmx+1)/(numprocs)-1; ++k){
+            for(int k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
                for(iter = 0; iter<=iterations; ++iter){
                   fluxavg_c_(phi, phiavg);
+
                   if(eBoltzmann == 1){
                      BoltzSolve_c_(phi);
+                     cout << "Boltz" << endl;
                   } else {
+                     cout << "check loop: "<< iter << endl;
                      PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
+                     cout << "1" << endl;
                      PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
-                     PetscCall(KSPSolve(ksp,NULL,NULL));
+                     cout << "2" << endl;
+                     PetscCall(KSPSolve(ksp,nullptr,nullptr));
+                     cout << "3" << endl;
                      PetscCall(KSPGetSolution(ksp,&petsc_phi));
+                     cout << "4" << endl;
                      PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
+                     cout << "5" << endl;
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-
+                     cout << "6" << endl;
                      for(idx = 1; idx <= (vec_end-vec_start); ++idx){
                         i=idx-1%iw+is;
                         j=(idx-1)/(iw)+js;
@@ -183,7 +189,6 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
                   }
                }
             }
-         }
          ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else {
          k = 0;
@@ -218,6 +223,7 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
             }
          }
       }
+   }
 
 
       efieldcalc_c_(phi);
@@ -419,7 +425,7 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
    tottm=lasttm-starttm;
 
    if(eBoltzmann==0){
-      PetscCall(petsc_ierr = PetscFinalize());
+      PetscCall(PetscFinalize());
    }
 
    ierr = MPI_Finalize();
@@ -429,9 +435,10 @@ int main(){ //int argc, char *argv[] //not needed unless we want to pass command
 }
 
 void initialize_c_(){
-   double dum, dum1, dum2, jacp, xndum, r, wx0, wx1;
-   double x[2];
-   double y[2]; //0-1
+   double  dum, jacp; 
+   //double dum1, dum2,  xndum, r, wx0, wx1
+   // double x[2];
+   // double y[2]; //0-1
    
    ppinit_c(myid, numprocs, ntube, kmx, i3D, GRID_COMM, TUBE_COMM, PETSC_COMM, petsc_color, petsc_rank);
   
@@ -465,11 +472,11 @@ void initialize_c_(){
 
 void init(){
    int ns, i, k, idum;
-   double x, z, dum, zdum;
+   double x, z, dum; //zdum
    double wx0, wx1, wz0, wz1, b;
    double bfldp, btorp, bxp, bzp, gt0ip, gt0ep, gn0ip, gn0ep, capnxp, capnzp;
    double upae0p; //??? seems weird to me, not calculated anywhere, maybe old/ got deleted?
-   std::complex<double> IU[2] = {0., 1.};
+   //std::complex<double> IU[2] = {0., 1.};
    double pi = 4.0*atan(1.0);
    pi2 = pi*2;
    //read values from gemx.in
@@ -862,7 +869,7 @@ void loadi_c_(){
 //    w2(m) = w2(m)-myavgw
       w3[m] = w2[m];
       m++;
-   }while(m <= mm[0]);
+   }while(m < mm[0]);
 
    return;
 }
@@ -1216,33 +1223,34 @@ void gradparz_c_(double *matrix){ //need const values for args, using const int 
    }
 }
 
-void gradpar_c_(CArray3D<double> &matrix_c, CArray3D<double> &gradpar){ 
-
+void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){ 
    for(int k = 1; k <= kmx-1; ++k){
       for(int i = 2; i <= imx-2; ++i){
          for(int j = 2; j <= jmx-2; ++j){
             if (!(mask2(i,j)<1.99)){
-               gradpar(i,j,k) = (b0x(i,j)/b0(i,j)*(matrix_c(i+1,j,k)-matrix_c(i-1,j,k))*0.5/dx  
-               +b0z(i,j)/b0(i,j)*(matrix_c(i,j+1,k)-matrix_c(i,j-1,k))*0.5/dz                
-               +b0zeta(i,j)/b0(i,j)*(matrix_c(i,j,k+1)-matrix_c(i,j,k-1))/((Rgrid[i]/xu)*2*dzeta));
+               gradPar(i,j,k)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/dx  
+               +b0z(i,j)/b0(i,j)*(matrix(i,j+1,k)-matrix(i,j-1,k))*0.5/dz                
+               +b0zeta(i,j)/b0(i,j)*(matrix(i,j,k+1)-matrix(i,j,k-1))/((Rgrid[i]/xu)*2*dzeta));
             }
          }
       }
    }
-
    for(int i = 2; i <= imx-2; ++i){
       for(int j = 2; j <= jmx-2; ++j){
-         gradpar(i,j,0) = (b0x(i,j)/b0(i,j)*(matrix_c(i+1,j,0)-matrix_c(i-1,j,0))*0.5/dx  
-               +b0z(i,j)/b0(i,j)*(matrix_c(i,j+1,0)-matrix_c(i,j-1,0))*0.5/dz                
-               +b0zeta(i,j)/b0(i,j)*(matrix_c(i,j,1)-matrix_c(i,j,kmx))/((Rgrid[i]/xu)*2*dzeta));
+            if(!(mask2(i,j)<1.99)){
+            gradPar(i,j,0)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,0)-matrix(i-1,j,0))*0.5/dx  
+               +b0z(i,j)/b0(i,j)*(matrix(i,j+1,0)-matrix(i,j-1,0))*0.5/dz                
+               +b0zeta(i,j)/b0(i,j)*(matrix(i,j,1)-matrix(i,j,kmx))/((Rgrid[i]/xu)*2*dzeta));
+         }
       }
    }
-
    for(int i = 2; i <= imx-2; ++i){
       for(int j = 2; j <= jmx-2; ++j){
-         gradpar(i,j,kmx) = (b0x(i,j)/b0(i,j)*(matrix_c(i+1,j,kmx)-matrix_c(i-1,j,kmx))*0.5/dx  
-               +b0z(i,j)/b0(i,j)*(matrix_c(i,j+1,kmx)-matrix_c(i,j-1,kmx))*0.5/dz                
-               +b0zeta(i,j)/b0(i,j)*(matrix_c(i,j,0)-matrix_c(i,j,kmx-1))/((Rgrid[i]/xu)*2*dzeta));
+         if(!(mask2(i,j)<1.99)){
+            gradPar(i,j,kmx)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,kmx)-matrix(i-1,j,kmx))*0.5/dx
+               +b0z(i,j)/b0(i,j)*(matrix(i,j+1,kmx)-matrix(i,j-1,kmx))*0.5/dz    
+               +b0zeta(i,j)/b0(i,j)*(matrix(i,j,0)-matrix(i,j,kmx-1))/((Rgrid[i]/xu)*2*dzeta));
+         }
       }
    }
 }
@@ -1288,7 +1296,7 @@ void pintef_c_(){
 PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void) {
     PetscFunctionBegin;
 
-    PetscInt* ctx = (PetscInt*) ctx_void;  // Cast void* to expected type
+    //PetscInt* ctx = (PetscInt*) ctx_void;  // Cast void* to expected type
 
     PetscScalar h = 0.0;
     PetscCall(VecSet(init_guess, h));
@@ -1298,19 +1306,19 @@ PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void) {
 
 PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    DM dm;
-   int ii,jj;
+   //int ii,jj;
    dummy = static_cast<int*>(dummy);
    PetscInt i,j,mx,my,xm;
-   PetscInt    ym,xs,ys,i1,i5;
+   PetscInt    ym,xs,ys,i1, i5; 
    PetscScalar  v[5],Hx,Hy;
-   PetscScalar  Hx2,Hy2,tmp_r,a_value;
-   MatStencil   row[1],col[5]; //careful here
+   PetscScalar  Hx2,Hy2; //tmp_r,a_value
+   MatStencil   row[1],col[5]; 
 
    PetscInt ncols = 0;
 
    i1 = 1;
-   //i5 = 5;
-   a_value = 0.5;
+   i5 = 5;
+   //a_value = 0.5;
    ierr = KSPGetDM(ksp,&dm); CHKERRQ(ierr);
    ierr = DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
                       nullptr,nullptr,nullptr,nullptr,nullptr,nullptr); CHKERRQ(ierr);
@@ -1404,6 +1412,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 }
 
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
+   cout << "in compute rhs" << endl;
    int ii,jj,iflag;
    //PetscScalar* b_array = new PetscScalar[]; 
    PetscScalar  h,Hx,Hy;
@@ -1411,7 +1420,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    DM dm;
    PetscInt idx;
    PetscScalar tmp_value = 0.0;
-   PetscScalar a_value,tmp_r;
+   //PetscScalar a_value,tmp_r;
 
    PetscInt k = *(PetscInt*)ctx; //probably fine
 
@@ -1420,7 +1429,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,
                         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr));
    PetscCall(VecGetOwnershipRange(bbb,&vec_start,&vec_end));
-   PetscCall(DMDAGetCorners(dm,&xs,&ys,PETSC_NULL,&xm,&ym,PETSC_NULL));
+   PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
 
 
    idx = vec_start-1;
@@ -1462,23 +1471,25 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
 
    PetscCall(VecAssemblyBegin(bbb));
    PetscCall(VecAssemblyEnd(bbb));
+   
+   return(PETSC_SUCCESS);
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in){
    //Currently only good for 2D case
-
+   
    //Local Variables
-   double phiavg1d[102] = {0};
-   double psi1d[102] = {0};
-   double phiavg1d_private[102] = {0};
+   double phiavg1d[102];
+   double psi1d[102];
+   double phiavg1d_private[102];
    int gi = 0, xix, yjy, miw, psi_zero, store, k; 
    double weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1;
 
-   //set all arrays to zero here.
-   //std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
-   //std::fill(std::begin(psi1d), std::end(psi1d), 0);
-   //std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0);
+   // //set all arrays to zero here.
+   std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
+   std::fill(std::begin(psi1d), std::end(psi1d), 0);
+   std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0);
 
    psi_zero = 1;
 

@@ -6,8 +6,8 @@ BINDIR := $(ROOT)/bin
 JOBDIR := $(ROOT)/jobs
 
 SRCS := $(wildcard *.F90)
-INCS_C := $(wildcard *.hpp *.h) 
-INCS_C += -I$(MPIPATH)/include
+#INCS_C := $(wildcard *.hpp *.h) 
+INCS_C := -I$(MPIPATH)/include
 SRCS_C := $(wildcard *.cpp) #C++ sources
 OBJS := $(SRCS:.F90=.o)
 OBJS_C := $(SRCS_C:.cpp=.o)
@@ -15,6 +15,7 @@ LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc -lmpi_cxx
 INCS := -I${PETSC_PATH}/include
 DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx
+SUPPRESS := --diag_suppress set_but_not_used --diag_suppress declared_but_not_referenced
 
 #Setup flags for various situations.
 DEBUG ?= 0 #Use 'make DEBUG=1' to build with debug capabilities.
@@ -36,7 +37,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall $(OPT_COMMON_C)
 	else
-		OPT_C := -O4 $(OPT_COMMON_C)
+		OPT_C := -O4 -march=native -fopenmp
 	endif
 endif
 
@@ -61,7 +62,6 @@ endif
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
 $(EXE): $(OBJS_C)
 	$(CPP) -o $(EXE) $(LIBS) $(OBJS_C)
-#$(OBJS) $(OPT_C) 
 	$(MAKE) install
 	$(MAKE) check_diff
 
@@ -89,31 +89,31 @@ fcnt.o: fcnt.F90
 
 #C++ compilation.
 gemx_externs.o: gemx_externs.cpp
-	$(CPP) -c gemx_externs.cpp $(INCS) $(INCS_C)
-#$(OPT_C)
+	$(CPP) -c $(OPT_C) gemx_externs.cpp $(INCS) $(SUPPRESS)
+
 pputil_c.o: pputil_c.cpp
-	$(CPP) -c pputil_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) pputil_c.cpp $(INCS) $(SUPPRESS)
 
 gemx_com_c.o: gemx_com_c.cpp
-	$(CPP) -c gemx_com_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) gemx_com_c.cpp $(INCS) $(SUPPRESS)
 
 equil_c.o: equil_c.cpp
-	$(CPP) -c equil_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) equil_c.cpp $(INCS) $(SUPPRESS)
 
 gemx_c.o: gemx_c.cpp
-	$(CPP) -c gemx_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) gemx_c.cpp $(INCS) $(SUPPRESS)
 
 ionPush_c.o: ionPush_c.cpp 
-	$(CPP) -c ionPush_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) ionPush_c.cpp $(INCS) $(SUPPRESS)
 
 outd_c.o: outd_c.cpp
-	$(CPP) -c outd_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) outd_c.cpp $(INCS) $(SUPPRESS)
 
 fcnt_c.o: fcnt_c.cpp
-	$(CPP) -c fcnt_c.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) fcnt_c.cpp $(INCS) $(SUPPRESS)
 
 readDatFiles.o: readDatFiles.cpp
-	$(CPP) -c readDatFiles.cpp $(INCS) $(INCS_C)
+	$(CPP) -c $(OPT_C) readDatFiles.cpp $(INCS) $(SUPPRESS)
 
 #Check for git diffs in the src directory
 check_diff:

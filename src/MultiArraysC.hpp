@@ -79,8 +79,8 @@ public:
             delete[] data_;
         }
         size_ = x_*y_*z_;
-        data_ = new T[size_];
-        std::fill(data_, data_ + (size_), 0);
+        data_ = new T[xsize * ysize * zsize];
+        std::fill(data_, data_ + (xsize * ysize * zsize), 0);
     }
 
     void CreateArray3D(const T* const data, const std::size_t x, const std::size_t y, const std::size_t z) { //legacy?
@@ -107,12 +107,16 @@ public:
         return z_;
     }
 
+    size_t getSize() {
+        return size_;
+    }
+
     T* start() {
         return data_;
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
-        return data_[k + (j * y_) + (i * x_ * y_)];
+        return data_[(i * (z_ * y_)) + (j*z_) + k];
     }
 
     inline CArray3D& operator=(const CArray3D &arr){
@@ -167,7 +171,7 @@ class CArray2D{
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j) {
-        return data_[j * x_ + i];
+        return data_[i * y_ + j];
     }
 
     inline CArray2D& operator=(const CArray2D &arr){
