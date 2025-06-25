@@ -72,10 +72,8 @@ program gemx
 
 !  include "Initialize_petsc.h"
      
-      call new_gemx_com()
        if(iget.eq.0)call loadi
        call integ(2)
-       !call integ_c(2)
 
                if(myid==0)then
                 open(unit=11, file = 'testden',status='unknown',action='write')
@@ -135,7 +133,6 @@ program gemx
            
            phiavg=0 !Calder Edit
 
-           !call get_jpar(apar)
            call get_jpar(apar)
            call get_ne(1)
 
@@ -217,11 +214,9 @@ program gemx
        do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
                  
          do iter=0, iterations
-            !call fluxavg(phi,phiavg)
-            call fluxavg_c(phi, phiavg)
+            call fluxavg(phi,phiavg)
                if (eBoltzmann == 1) then
                   call boltzsolve(phi)
-                  !call boltzsolve_c(phi)
                else
 
 
@@ -248,11 +243,9 @@ program gemx
        k=0
 
        do iter=0, iterations
-         !call fluxavg(phi,phiavg)
-         call fluxavg_c(phi, phiavg)
+         call fluxavg(phi,phiavg)
          if (eBoltzmann == 1) then
-            !call boltzsolve(phi)
-            call boltzsolve_c(phi)
+            call boltzsolve(phi)
          else
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
@@ -308,7 +301,6 @@ program gemx
  
          call get_apar(-1)
          !call smooth(apars,2)
-           !call get_jpar(apars)
            call get_jpar(apars)
            !call smooth(jpar,3)      
            call get_ne_c(-1)

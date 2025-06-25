@@ -35,7 +35,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	JOB := job_local
 	CPU := 1
 	ifeq ($(DEBUG),1)
-		OPT_C := -O0 -g -Wall $(OPT_COMMON_C)
+		OPT_C := -O0 -g -Wall $(OPT_COMMON_C) $(INCS)
 	else
 		OPT_C := -Ofast -march=native -fopenmp
 	endif

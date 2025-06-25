@@ -29,8 +29,8 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
 
-    #pragma acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table_ptr) //Until rand table in C++, leaving as pointer to array
-    for(m = 0; m < mm[0]; ++m){
+    #pragma acc parallel loop gang vector private(rhoy,Bstar3,rhox) copy(rand_table) //Until rand table in C++, leaving as pointer to array
+    for(m = 0; m <= mm[0]; ++m){
         x = x2[m];
         i = static_cast<int>(x/dxeq);
         i = min(i,nx-1);
@@ -48,7 +48,7 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
-        for(j = 0; j < 3; ++j){
+        for(j = 0; j <= 2; ++j){
             curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
               +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
         }
@@ -128,7 +128,8 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
     delbzp=0;
 
 //  4 pt. avg. done explicitly for vectorization...
-#pragma acc loop seq
+        #pragma acc parallel
+        #pragma acc loop seq
         for(l = 0; l < lr[0]; ++l){
 
             xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
@@ -249,7 +250,7 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
          z3[m] = z2[m] + 0.5*dt*zdot;
          zeta3[m] = zeta2[m] + 0.5*dt*zetadot;
          u3[m] = u2[m] + 0.5*dt*pzdot;
-
+//if(m == 0) cout << "ppush u3[0]: " << u3[0] << endl;
          //dum = 1.0
          //vxdum = (ezp/b+vpar/b*delbxp)*dum1
          //vzdum = (-exp1/b+vpar/b*delbzp)*dum1
@@ -271,7 +272,7 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 }
 
 //!-------------- End of subroutine ppush --------------------------------
-
+//probably re-write cpush quickly to try and fix weird overwriting issue
 void cpush_c_(const int &n){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
         double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,T_center;                          //nudi=0,energy,rrr,energy0
         double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum
@@ -289,9 +290,9 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
         T_center = t0i(imx/2,jmx/2);
         //write(*,*)T_center*e
         //write(*,*)nudi0
-
-        #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table_ptr)
-        for(m = 0; m < mm[0]; ++m){
+        
+        #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
+        for(m = 0; m <= mm[0]; ++m){
             x=x3[m];
             i = static_cast<int>(x/dxeq);
             i = min(i,nx-1);
@@ -345,15 +346,15 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
          b=1.-tor+tor*bfldp;
 
-         rhog=sqrt(2*b*mu[m]*mims[0])/(q[0]*b)*iflr;
+         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;
 
          rhox[0] = rhog;
-         rhoy[0] = 0;
+         rhoy[0] = 0.;
          rhox[1] = -rhox[0];
          rhoy[1] = -rhoy[0];
-         rhox[2] = 0;
+         rhox[2] = 0.;
          rhoy[2] = rhog;
-         rhox[3] = 0;
+         rhox[3] = 0.;
          rhoy[3] = -rhoy[2];
 //    calculate avg. e-field...
 //    do 1,2,4 point average, where lr is the no. of points...
@@ -363,8 +364,11 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          ezetap=0.;
          delbxp=0.;
          delbzp=0.;
-        #pragma loop seq
+
+        #pragma acc parallel
+        #pragma acc loop seq
         for(l = 0; l < lr[0]; ++l){
+
 //SP            xs=x3(m)+rhox(l) !rwx(1,l)*rhog
             xt=x3[m]+rhox[l]; //rwx(1,l)*rhog
             zt=z3[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog
@@ -377,20 +381,20 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
             j=static_cast<int>(zt/dz);
             k=static_cast<int>(zeta/dzeta);
 
-            wx0=(float)(i+1)-xt/dx;
+            wx0=static_cast<float>((i+1)-xt/dx);
             wx1=1.-wx0;
-            wy0=(j+1)-zt/dz;
-            wy1=(float)1.-wy0;
-            wz0=(k+1)-zeta/dzeta;
-            wz1=(float)1.-wz0;
+            wy0=static_cast<float>((j+1)-zt/dz);
+            wy1=1.-wy0;
+            wz0=static_cast<float>((k+1)-zeta/dzeta);
+            wz1=1.-wz0;
 
                 k_plus_1=k+1;
-              if(k==kmx) k_plus_1=0;
-            exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
+              if(k==kmx) {k_plus_1=0;}
+            exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k)
             + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
             wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
             wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
-            
+
             ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
             + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
             wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
@@ -412,15 +416,14 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
             delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
             + wx1*wy0*wz0*delbz(i+1,j,k) 
-            + wx0*wy1*wz0*delbz(i,j+1,k) 
+            + wx0*wy1*wz0*delbz(i,j+1,k)  
             + wx1*wy1*wz0*delbz(i+1,j+1,k)  
             + wx0*wy0*wz1*delbz(i,j, k_plus_1)  
             + wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
-
-         exp1 = exp1/4.;
+         exp1 = exp1/4.; //proabably could use bitwise here if we wanted to
          ezp = ezp/4.;
          ezetap = ezetap/4.;
          delbxp = delbxp/4.;
@@ -431,12 +434,12 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
        
          vpar = u3[m];
+//if(m==0) cout << "cpush u3[0]: "<< u3[0] << endl;
          enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
        
          Bstar3[0]=bfldxp+mims[0]*vpar*curlbp[0]/q[0]+delbxp;
-         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[0]/q[0]+delbzp;
+         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp; 
          Bstar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
-       
                 
        //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
        
@@ -468,8 +471,6 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          zdot = (vpar*Bstar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
          zetadot = (vpar*Bstar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
 
-
-
 // !        pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 // !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*q(1)/mims(1)*nonlin
 // !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*(q(1)/mims(1)+bdcurlbp*vpar/b)*nonlin
@@ -496,7 +497,9 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
 
 //         write(*,*)energy, nudi
-if( (x3[m]>2*dxeq)&&(x3[m]<lx-2*dxeq)&&(z3[m]>2*dzeq)&&(z3[m]<lz-2*dzeq) ){
+        
+if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ){
+            //cout << "new: "<< x2[0] << endl;
             //energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
             //energy =  max(energy0,0.1*T_center)
             //if (icollision==1) then
@@ -517,12 +520,12 @@ if( (x3[m]>2*dxeq)&&(x3[m]<lx-2*dxeq)&&(z3[m]>2*dzeq)&&(z3[m]<lz-2*dzeq) ){
             // write(*,*)rand_table(globle_integer-1),mu(m),(energy0-0.5*mims(1)*u3(m)**2)/b
             // mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
         } else {
-          u3[m]=u2[m];
-          x3[m]=x2[m];
-          z3[m]=z2[m];
-          zeta3[m]=zeta2[m];
-          w2[m]=0.;
-          w3[m]=0.;
+            u3[m]=u2[m];
+            x3[m]=x2[m];
+            z3[m]=z2[m];
+            zeta3[m]=zeta2[m];
+            w2[m]=0.;
+            w3[m]=0.;
         }
         // if(Myid==0)then
         //   open(935, file='flag_debug',status='unknown',position='append')

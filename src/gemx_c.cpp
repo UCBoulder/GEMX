@@ -41,6 +41,9 @@ int main() {
    //call init
    initialize_c_();
 
+   while(dbg == 1){
+      sleep(1);         //if debug option set sleep for forever. To release type "dbg = 0" into debug consol once attatched. Happy Hunting!
+   }
 
    outk=0; //(kmx+1)/2
 
@@ -78,8 +81,8 @@ int main() {
    starttm=MPI_Wtime();
    upar.Clear();
 
-   mid_i=imx/2;
-   mid_j=jmx/2;
+   mid_i=imx>>1; //faster to bit shift
+   mid_j=jmx>>1;
    mid_i=257;
    mid_j=257;
 
@@ -121,6 +124,7 @@ int main() {
 
    get_jpar_(apar); 
    get_ne_c_(1);
+
    if(i3D==0){
       apar.Clear();
       dene.Clear();
@@ -133,7 +137,7 @@ int main() {
    }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
-   if(ifield_solver == 1) ncurr=1;
+   if(ifield_solver == 1) {ncurr=1;}
       
    start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
@@ -161,9 +165,9 @@ int main() {
 
          if(i3D != 0) {
             for(int k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
+
                for(iter = 0; iter<=iterations; ++iter){
                   fluxavg_c_(phi, phiavg);
-
                   if(eBoltzmann == 1){
                      BoltzSolve_c_(phi);
                      cout << "Boltz" << endl;
@@ -175,18 +179,18 @@ int main() {
                      PetscCall(KSPGetSolution(ksp,&petsc_phi));
                      PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
+
+
                      for(idx = 1; idx <= (vec_end-vec_start); ++idx) {
-                        //cout << idx << endl;
                         i=((idx-1)%iw)+is;
                         j=(idx-1)/(iw)+js;
                         phi(i,j,k)=phi_array[idx];//*mask(i,j);  //right here officer
                      }
-                     //cout << "after loop" << endl;
                      PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
                   }
                }
             }
-         ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+         ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else {
          k = 0;
 
@@ -209,11 +213,11 @@ int main() {
 
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-               ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+               ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
                for(int i = 0; i <= imx; ++i){
                   for(int j = 0; j <= jmx; ++j){
-                     for(int k = 0; k <= kmx; ++k){
+                     for(int k = 1; k <= kmx; ++k){
                         phi(i,j,k) = phi(i,j,0);
                      }
                   }
@@ -222,8 +226,6 @@ int main() {
          }
       }
    }
-
-
       efieldcalc_c_(phi);
 
 
@@ -287,7 +289,7 @@ int main() {
          integ_c_(0); //again 1-index shananiganery
       } else {
          if(ision==1) ppush_c_(timestep);
-            //if(ifluid==1)call pintef
+                  //if(ifluid==1)call pintef
          if(ifluid==1) integ_c_(0);
    // !             if(myid==0)then
    // !                open(unit=11, file = 'testden',status='unknown',action='write')
@@ -306,8 +308,10 @@ int main() {
    // !	   call field(timestep,1)
       if(ifield_solver == 1) {
          phi.Clear();
+
          if(i3D != 0){
-            for(k=myid*(kmx+1)/(numprocs); k <= (myid+1)*(kmx+1)/(numprocs)-1; ++k){
+            for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
+
                for(iter = 0; iter<=iterations; ++iter){
                   fluxavg_c_(phi, phiavg);
                   if(eBoltzmann == 1){
@@ -328,7 +332,8 @@ int main() {
                   }
                }
             }
-            ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
          } else {
 
             k = 0;
@@ -354,11 +359,11 @@ int main() {
 
                   PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-                  ierr = MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+                  ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
 
                   for(int i = 0; i <= imx; ++i){
                      for(int j = 0; j <= jmx; ++j){
-                        for(int k = 0; k <= kmx; ++k){
+                        for(int k = 1; k <= kmx; ++k){
                            phi(i,j,k) = phi(i,j,0);
                         }
                      }
@@ -375,16 +380,14 @@ int main() {
       if(myid == 0 && (timestep%10)==0){
          //write more stuff
       }
-      cout << "stuff before" << endl;
-      if(ision==1) cpush_c_(timestep);
-      cout << "stuff after" << endl;
+      if(ision==1) cpush_c_(timestep); //<------ Right here officer 
       //cintef(timestep);
       if(ifluid==1){
-         integ_c_(2);
+         integ_c_(1);
       } else {
          if(ision==1) cpush_c_(timestep);
          //if(ifluid==1) cintef(timestep)
-         if(ifluid==1) integ_c_(2);
+         if(ifluid==1) integ_c_(1);
          //MPI_BARRIER(MPI_COMM_WORLD)
       }
 
@@ -395,7 +398,7 @@ int main() {
       outd_c_(timestep);
 
       if(myid==0 && ifield_solver==1 && (timestep%10) == 0){
-         //write a shit load of stuff
+         //write a load of stuff
       }
 
 
@@ -776,7 +779,7 @@ void loadi_c_(){
 
    cnt = static_cast<int>(tmm[0]/numprocs);
    cnt = mmx; 
-   while(m < mm[0]){
+   while(m <= mm[0]){
    //load a slab of ions...
 
       //dumx=xdim*(ran2(iseed)+0.01)*0.9
@@ -848,13 +851,13 @@ void loadi_c_(){
 
    myavgw = myavgw/mm[0];
 
-   ierr = MPI_Allreduce(&myavgv, &avgv, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD);
+   ierr = MPI_Allreduce(&myavgv, &avgv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
    if(idg == 1) std::cout << "all reduce" << std::endl;
    avgv = avgv/static_cast<float>(tmm[0]);
 
    m = 0;
-   do{
+   for(int m = 0; m <= mm[0]; ++m){
       u2[m] = u2[m]-avgv;
       x3[m] = x2[m];
       z3[m] = z2[m];
@@ -862,9 +865,7 @@ void loadi_c_(){
       u3[m] = u2[m];
 //    w2(m) = w2(m)-myavgw
       w3[m] = w2[m];
-      m++;
-   }while(m < mm[0]);
-
+   }
    return;
 }
 
@@ -964,7 +965,7 @@ void smooth_c_(CArray3D<double> &matrix_c, int &mk){
    matrix_c = temp_c;
 }
 
-void integ_c_(int iflag) { //fix in future
+void integ_c_(int iflag) {
    int i, j, k;
    double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1;
    int start_integ_tm = MPI_Wtime();
@@ -976,10 +977,11 @@ void integ_c_(int iflag) { //fix in future
       }
    }
    upar.Clear(); 
-
+   
+   //if I can't fix before I leave: something weird going on ith x3 and z3, second call in new timestep produceses nan values at max index
+   //actually happens at m = 0 for that error. Need to find where error occurs and why it happens
    #pragma acc parallel loop gang vector
-   for(int m = 0; m < mm[0]; ++m) {
-
+   for(int m = 0; m <= mm[0]; ++m) {
       x = x3[m];
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;

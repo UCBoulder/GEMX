@@ -22,7 +22,7 @@ class CArray4D {
 
         //x + y*D1 + z*D1*D2 + t*D1*D2*D3
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
-        return data_[((i * y_ + j) * z_ + k) * q_ + l];
+        return data_[i * (x_*y_*z_) + j * (y_*z_) + (k * z_) + l];
     }
 
     void resize(size_t xsize, size_t ysize, size_t zsize, size_t qsize){

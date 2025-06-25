@@ -395,7 +395,7 @@
             if( (xt<2*dxeq).or.(xt>lx-2*dxeq) ) xt=x3(m)
             if( (zt<2*dzeq).or.(zt>lz-2*dzeq) ) zt=z3(m)
             zeta=modulo(zeta3(m),2*pi)
-           i=int(xt/dx)
+            i=int(xt/dx)
             j=int(zt/dz)
             k=int(zeta/dzeta)
 

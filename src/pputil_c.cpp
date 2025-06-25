@@ -13,7 +13,7 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &
     int n_tor;
     int n_tor_planes;
     
-    ierr = MPI_Init(NULL, NULL); //Null since Init in c++ can interpret command line input, there are none here
+    ierr = MPI_Init(nullptr, nullptr); //Null since Init in c++ can interpret command line input, there are none here
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &npp);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &me);
     nproc = npp;
@@ -40,7 +40,7 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &
 //            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,0,nproc,PETSC_COMM,ierr)
 // 
     com1 = TUBE_COMM;
-    com2 = GRID_COMM;
-    com_petsc = PETSC_COMM;
+        com2 = GRID_COMM;
+        com_petsc = PETSC_COMM;
     nvp = npp/ntube;
 }
