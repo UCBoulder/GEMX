@@ -12,7 +12,7 @@ using namespace std;
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //       Ion pre-push
 //
-void ppush_c_(const int &n){ //all warnings from this function are vars used in commented code
+void ppush_c_(const int &n){ 
     double exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp;
     double wx0,wx1,wy0,wy1,wz0,wz1,dum1; 
     int m,i,j,k,l,k_plus_1;
@@ -35,13 +35,13 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
         i = static_cast<int>(x/dxeq);
         i = min(i,nx-1);
         wx0 = (i+1)-x/dxeq;
-        wx1 = 1-wx0;
+        wx1 = 1.-wx0;
 
         z = z2[m];
         k = static_cast<int>(z/dzeq);
         k = min(k,nz-1);
         wz0 = (k+1)-z/dzeq;
-        wz1 = 1-wz0;
+        wz1 = 1.-wz0;
 
 
 
@@ -98,7 +98,8 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
             //  p_m = int(2*rrr-1)
          }
          //write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
-         u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-pow(u2[m],2))*nudi*dt);
+         u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-(u2[m]*u2[m]))*nudi*dt);
+        
          globle_integer = (globle_integer+1) % 10007;
          //   write(*,*) rand_table(globle_integer-1), u2(m),u3(m)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
          //    write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
@@ -108,7 +109,7 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 
 
 
-        rhog=sqrt(2*b*mu[m]*mims[0])/(q[0]*b)*iflr;
+        rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;
 
         rhox[0] = rhog;
         rhoy[0] = 0;
@@ -142,16 +143,16 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
             zeta=zeta2[m];
             //xt=modulo(xs,xdim)
             //zt=modulo(zt,zdim)
-            i=int(xt/dx);
-            j=int(zt/dz);
-            k=int(zeta/dzeta);
+            i=static_cast<int>(xt/dx);
+            j=static_cast<int>(zt/dz);
+            k=static_cast<int>(zeta/dzeta);
 
 
-            wx0=(i+1)-xt/dx;
+            wx0=static_cast<float>(i+1)-xt/dx;
             wx1=1-wx0;
-            wy0=(j+1)-zt/dz;
+            wy0=static_cast<float>(j+1)-zt/dz;
             wy1=1-wy0;
-            wz0=(k+1)-zeta/dzeta;
+            wz0=static_cast<float>(k+1)-zeta/dzeta;
             wz1=1-wz0;
 
                 k_plus_1=k+1;
@@ -250,15 +251,15 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
          z3[m] = z2[m] + 0.5*dt*zdot;
          zeta3[m] = zeta2[m] + 0.5*dt*zetadot;
          u3[m] = u2[m] + 0.5*dt*pzdot;
-//if(m == 0) cout << "ppush u3[0]: " << u3[0] << endl;
          //dum = 1.0
          //vxdum = (ezp/b+vpar/b*delbxp)*dum1
          //vzdum = (-exp1/b+vpar/b*delbzp)*dum1
          //vxdum = eyp+vpar/b*delbxp
          //w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-        if( !((x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq)) ) 
-        {
+        if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ) {
+                continue;
+        } else {
           u3[m]=u2[m];
           x3[m]=x2[m];
           z3[m]=z2[m];
@@ -272,7 +273,6 @@ void ppush_c_(const int &n){ //all warnings from this function are vars used in 
 }
 
 //!-------------- End of subroutine ppush --------------------------------
-//probably re-write cpush quickly to try and fix weird overwriting issue
 void cpush_c_(const int &n){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
         double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,T_center;                          //nudi=0,energy,rrr,energy0
         double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum

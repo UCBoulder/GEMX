@@ -272,12 +272,10 @@ program gemx
        end if !Calder Edit
       end do !Calder Edit
                
-      end if
+   end if
       
          
-      !call efieldcalc(phi)
-      call efieldcalc_c(phi)
-   
+   call efieldcalc(phi)   
 
           
 

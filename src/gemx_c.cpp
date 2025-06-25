@@ -19,6 +19,7 @@
 using namespace std;
 
 int main() {
+   ofstream file;
    void* kval; //used for compute rhs
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
@@ -75,14 +76,24 @@ int main() {
    integ_c_(1); //1st index of den 1-based, since index = 1,2 in ftn, index in c is 0,1 meaning 1 is same index in c as ftn. Funkalicious
 
    if(myid == 0) {
-      //write a bunch of stuff to files
+      
+      file.open("testden", ios::app);
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j) {
+            file << den2d2(i,j) << "   \n";
+         }
+      }
+      file.close();
+   }
+   if(i3D == 0) {
+      xn0i = den2d2;
    }
 
    starttm=MPI_Wtime();
    upar.Clear();
 
-   mid_i=imx>>1; //faster to bit shift
-   mid_j=jmx>>1;
+   mid_i=imx/2; //faster to bit shift if we want
+   mid_j=jmx/2;
    mid_i=257;
    mid_j=257;
 
@@ -133,7 +144,41 @@ int main() {
 
 
    if(myid==0){
-      //write loads of stuff
+      file.open("testj0");
+      for(int i = 0 ; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            file << jpar(i,j,outk) << "   \n";
+         }
+      }
+      file.close();
+
+      file.open("testne0");
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            file << dene(i,j,outk) << "   \n";
+         }
+      }
+      file.close();
+
+      file.open("testapar0");
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            file << apar(i,j,outk) << "   \n";
+         }
+      }
+      file.close();
+
+      file.open("testne0_zeta");
+      for(int k = 0; k <= kmx; ++k){
+            file << dene(mid_i,mid_j,k) << "   \n";
+      }
+      file.close();
+
+      file.open("testjpar0_zeta");
+      for(int k = 0; k <= kmx; ++k){
+            file << jpar(mid_i,mid_j,k) << "   \n";
+      }
+      file.close();
    }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
@@ -141,11 +186,11 @@ int main() {
       
    start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
-      for(int q = 0; q <=10006; ++q){
+      for(int randTabInd = 0; randTabInd <=10006; ++randTabInd){
          if(ran2_c_(iseed)-0.5 > 0){
-            rand_table[q]=1;
+            rand_table[randTabInd]=1;
          } else {
-            rand_table[q]=-1;
+            rand_table[randTabInd]=-1;
          }
       }
       tcurr = tcurr+dt;
@@ -170,7 +215,6 @@ int main() {
                   fluxavg_c_(phi, phiavg);
                   if(eBoltzmann == 1){
                      BoltzSolve_c_(phi);
-                     cout << "Boltz" << endl;
                   } else {
                      kval = (void*)k;
                      PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
@@ -190,7 +234,8 @@ int main() {
                   }
                }
             }
-         ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+         MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else {
          k = 0;
 
@@ -213,7 +258,7 @@ int main() {
 
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-               ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
                for(int i = 0; i <= imx; ++i){
                   for(int j = 0; j <= jmx; ++j){
@@ -283,10 +328,11 @@ int main() {
    //  !                 enddo
    //  !                 close(11)
    //  !              end if
-
+     
       if(ision==1) ppush_c_(timestep);
+      
       if(ifluid==1){ 
-         integ_c_(0); //again 1-index shananiganery
+         integ_c_(0);
       } else {
          if(ision==1) ppush_c_(timestep);
                   //if(ifluid==1)call pintef
@@ -333,7 +379,7 @@ int main() {
                }
             }
 
-            ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
          } else {
 
             k = 0;
@@ -359,7 +405,7 @@ int main() {
 
                   PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-                  ierr = MPI_Allreduce(MPI_IN_PLACE, &phi(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+                  MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
 
                   for(int i = 0; i <= imx; ++i){
                      for(int j = 0; j <= jmx; ++j){
@@ -377,9 +423,54 @@ int main() {
       if(i3D == 1){
          growthdiag_c_(phi);
       }
+
+
       if(myid == 0 && (timestep%10)==0){
-         //write more stuff
+         cout << "outk=" << outk << endl;
+
+         file.open("testphi");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j) {
+               file << phi(i,j,outk) << "    \n";
+            }
+         }
+         file.close();
       }
+
+      get_apar_(1);
+      //  !call smooth_c(apar,2)   !testing
+      // !call get_jpar(apar)
+      get_jpar_(apar);
+      //call smooth(jpar,3)   !testing
+      get_ne_c_(1);
+
+      if(myid == 0 && (timestep%10) == 0) {
+         file.open("testphiavg");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               file << phiavg(i,j) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testER");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               file << ex(i,j,0) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testEZ");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               file << ez(i,j,0) << "   \n";
+            }
+         }
+         file.close();
+      }
+
+
       if(ision==1) cpush_c_(timestep); //<------ Right here officer 
       //cintef(timestep);
       if(ifluid==1){
@@ -392,20 +483,78 @@ int main() {
       }
 
       if(myid == 0 && (timestep%10)==0){
-         //write more stuff
+         file.open("testden2");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << den2d2(i,j) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testdiffden");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << dden2d(i,j) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testupar");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << upar(i,j,0) << "   \n";
+            }
+         }
+         file.close();
       }
+
 
       outd_c_(timestep);
 
       if(myid==0 && ifield_solver==1 && (timestep%10) == 0){
-         //write a load of stuff
+         file.open("testapar");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << apar(i,j,outk) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testjpar");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << jpar(i,j,outk) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testne");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << dene(i,j,outk) << "   \n";
+            }
+         }
+         file.close();
+
+         file.open("testphi_r_phi");
+         for(int i = 0; i <= imx; ++i) {
+            for(int k = 0; k <= kmx; ++k){
+               file << phi(i,mid_j,k) << "   \n";
+            }
+         }
+         file.close();
       }
 
 
       if(myid==master && (timestep%xnplt)==0){
-         //plot some stuff
+         
       }
-
+      
+      if(myid == master && ifield_solver == 1) {
+         cout << "time_step=" << timestep << endl;
+         cout << "dx=" << dx << "dz=" << dz << "dzeta=" << dzeta << "omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << endl;
+         cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << endl;
+      }
    }
    end_total_tm = MPI_Wtime();
    total_tm = total_tm + end_total_tm - start_total_tm;
@@ -454,7 +603,7 @@ void initialize_c_(){
    for(int i = 0; i < imx; ++i){
       dum = dum+(jac[i]+jac[i+1])/2;
    }
-   ierr = MPI_Allreduce(&dum, &jacp, 1, MPI_DOUBLE, MPI_SUM, TUBE_COMM);
+   MPI_Allreduce(&dum, &jacp, 1, MPI_DOUBLE, MPI_SUM, TUBE_COMM);
    totvol = lx*lz*pi2*xctr;
    n0 = static_cast<float>(tmm[0]/totvol);
 
@@ -851,7 +1000,7 @@ void loadi_c_(){
 
    myavgw = myavgw/mm[0];
 
-   ierr = MPI_Allreduce(&myavgv, &avgv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   MPI_Allreduce(&myavgv, &avgv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
    if(idg == 1) std::cout << "all reduce" << std::endl;
    avgv = avgv/static_cast<float>(tmm[0]);
@@ -1056,8 +1205,8 @@ void integ_c_(int iflag) {
    #pragma acc wait
    
   
-   ierr = MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   ierr = MPI_Allreduce(MPI_IN_PLACE, &upar(0,0,0), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   MPI_Allreduce(MPI_IN_PLACE, upar.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
 
    for(int i = 0 ; i <= imx; ++i) {
