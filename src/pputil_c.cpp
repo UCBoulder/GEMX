@@ -6,7 +6,6 @@
 using namespace std;
 
 static int me, nvp, npp, GCLR, TCLR, p_color, p_rank;
-// static MPI_Comm GRID_COMM, TUBE_COMM, PETSC_COMM;
 
 void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &com1,MPI_Comm &com2, MPI_Comm &com_petsc,int &petsc_color,int &petsc_rank){
     int ierr;
@@ -22,8 +21,8 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &
     GCLR = static_cast<int>(me/ntube);
     TCLR = me%ntube;
 
-    ierr = MPI_Comm_split(MPI_COMM_WORLD, GCLR, TCLR, &GRID_COMM);
-    ierr = MPI_Comm_split(MPI_COMM_WORLD, TCLR, GCLR, &TUBE_COMM);
+    ierr = MPI_Comm_split(MPI_COMM_WORLD, GCLR, TCLR, &com2);
+    ierr = MPI_Comm_split(MPI_COMM_WORLD, TCLR, GCLR, &com1);
 
     if(i3D != 0){
         n_tor_planes = kmx+1;
@@ -33,7 +32,7 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &
     
     p_color = static_cast<int>(me*(n_tor_planes)/npp);
     p_rank = me%(npp/(kmx+1));
-    ierr = MPI_Comm_split(MPI_COMM_WORLD, p_color, p_rank, &PETSC_COMM);
+    ierr = MPI_Comm_split(MPI_COMM_WORLD, p_color, p_rank, &com_petsc);
     petsc_color = p_color;
     petsc_rank = p_rank;
 //         else

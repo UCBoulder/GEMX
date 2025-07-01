@@ -152,27 +152,30 @@ CArray4D<double> den;
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void new_gemx_com(){
-    mm = new int[nsmx+1]; tmm = new int[nsmx+1]; lr = new int[nsmx+1];
-    mims = new double[nsmx+1]; q = new double[nsmx];
+    mm = new int[nsmx+1]; std::fill(mm, mm+nsmx+1, 0);
+    tmm = new int[nsmx+1]; std::fill(tmm, tmm+nsmx, 0);
+    lr = new int[nsmx+1]; std::fill(lr, lr+nsmx+1, 0);
+    mims = new double[nsmx+1]; std::fill(mims, mims+nsmx+1, 0.0);
+    q = new double[nsmx]; std::fill(q, q+nsmx, 0.0);
 
     //time = new double[nmx+1];
 
-    xg = new double[imx+1];
-    zg = new double[jmx+1];
-    jac = new double[imx+1];
+    xg = new double[imx+1]; std::fill(xg, xg+imx+1, 0.0);
+    zg = new double[jmx+1]; std::fill(zg, zg+jmx+1, 0.0);
+    jac = new double[imx+1]; std::fill(jac, jac+imx+1, 0.0);
 
     //          particle array declarations
-    mu = new double[mmx]; //note: be careful here - these are 1-based index in c++, need account for in code
-    x2 = new double[mmx];
-    zeta2 = new double[mmx];
-    z2 = new double[mmx];
-    u2 = new double[mmx];
-    x3 = new double[mmx];
-    zeta3 = new double[mmx];
-    z3 = new double[mmx];
-    u3 = new double[mmx];
-    w2 = new double[mmx];
-    w3 = new double[mmx];
+    mu = new double[mmx]; std::fill(mu, mu+mmx, 0.0);//note: be careful here - these are 1-based index in c++, need account for in code
+    x2 = new double[mmx]; std::fill(x2, x2+mmx, 0.0);
+    zeta2 = new double[mmx]; std::fill(zeta2, zeta2+mmx, 0.0);
+    z2 = new double[mmx]; std::fill(z2, z2+mmx, 0.0);
+    u2 = new double[mmx]; std::fill(u2, u2+mmx, 0.0);
+    x3 = new double[mmx]; std::fill(x3, x3+mmx, 0.0);
+    zeta3 = new double[mmx]; std::fill(zeta3, zeta3+mmx, 0.0);
+    z3 = new double[mmx]; std::fill(z3, z3+mmx, 0.0);
+    u3 = new double[mmx]; std::fill(u3, u3+mmx, 0.0);
+    w2 = new double[mmx]; std::fill(w2, w2+mmx, 0.0);
+    w3 = new double[mmx]; std::fill(w3, w3+mmx, 0.0);
 
 //      variables for tracing a grid (i,j) along field lien to the neighboring planes
     ileft.resize(imx+1, jmx+1);
@@ -182,16 +185,16 @@ void new_gemx_com(){
 
 //  energy diagnostic arrays
     ke.resize(nsmx, nmx+1); //careful - 1st index 1 based in ftn (next one too)
-    fe = new double[nmx+1];
-    te = new double[nmx+1];
-    rmsphi = new double[nmx+1];
-    rmsez = new double[nmx+1];
-    rmsapa = new double[nmx+1];
-    avewi = new double[nmx+1];
+    fe = new double[nmx+1]; std::fill(fe, fe+nmx+1, 0.0);
+    te = new double[nmx+1]; std::fill(te, te+nmx+1, 0.0);
+    rmsphi = new double[nmx+1]; std::fill(rmsphi, rmsphi+nmx+1, 0.0);
+    rmsez = new double[nmx+1]; std::fill(rmsez, rmsez+nmx+1, 0.0);
+    rmsapa = new double[nmx+1]; std::fill(rmsapa, rmsapa+nmx+1, 0.0);
+    avewi = new double[nmx+1]; std::fill(avewi, avewi+nmx+1, 0.0);
     nos.resize(nsmx, nmx+1); 
 
     //  flux diagnostics
-    vol = new double[nsubd]; //careful, 1-indexed
+    vol = new double[nsubd]; std::fill(vol, vol+nsubd, 0.0);//careful, 1-indexed
     efle.resize(nsubd, nmx+1); //1st index 1-based
     pfle.resize(nsubd, nmx+1); //1st index 1-based
     pfl.resize(nsmx+1, nmx+1); //1st index 1-based, but +1 in ftn

@@ -2,12 +2,13 @@
 #include "MultiArraysC.hpp"
 #include "gemx_com_c.hpp" 
 #include "readDatFiles.hpp"
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <string>
-
+#pragma once
 void new_equil_c();
 void cleanUpEquil();
 

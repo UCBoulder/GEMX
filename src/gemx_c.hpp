@@ -1,15 +1,14 @@
 #include "MultiArraysC.hpp"
-#include <petscsys.h>
-#include <petsc.h>
-#include <petscvec.h>
-#include <petscmat.h>
+// #include <petscsys.h>
+// #include <petsc.h>
+// #include <petscvec.h>
+// #include <petscmat.h>
 #include <petscksp.h>
-#include <petscerror.h>
-#include <petscmat.h>
+// #include <petscerror.h>
+// #include <petscmat.h>
 #pragma once
 
-// extern "C"
-// {
+
 void parperp_c_(double& vpar, double& vperp2, const int& m, const int& cnt);
 void loadi_c_();
 double ran2_c_(int& idum);
@@ -27,7 +26,7 @@ void pintef_c_();
 void gradparz_c_(double *matrix);
 void get_ne_c_(int flagnumber);
 void initialize_c_();
-// }
+
 void gradz_c_(CArray3D<double> &u, CArray3D<double> &uz);
 void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar);
 void init();

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cassert>
 
 template<typename T>
 class CArray4D {
@@ -16,19 +17,24 @@ class CArray4D {
         }
 
         ~CArray4D() {
-            data_ = NULL;
             delete[] data_;
+            data_ = NULL;
         }
 
         //x + y*D1 + z*D1*D2 + t*D1*D2*D3
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
-        return data_[i * (x_*y_*z_) + j * (y_*z_) + (k * z_) + l];
+        assert(i < x_ && j < y_ && k < z_ && l < q_ && "Index out of range");
+        return data_[i * (y_ * z_ * q_) + j * (z_ * q_) + k * q_ + l];
     }
 
     void resize(size_t xsize, size_t ysize, size_t zsize, size_t qsize){
+        x_ = xsize;
+        y_ = ysize;
+        z_ = zsize;
+        q_ = qsize;
         size_ = xsize*ysize*zsize*qsize;
-        data_ = new T[size_];
-        std::fill(data_, data_ + (size_), 0);
+        data_ = new T[xsize*ysize*zsize*qsize];
+        std::fill(data_, data_ + (xsize*ysize*zsize*qsize), 0);
     }
 
     void Clear() {
@@ -67,8 +73,8 @@ public:
     }
 
     ~CArray3D() {
-        data_ = NULL;
         delete[] data_;
+        data_ = NULL;
     }
 
     void resize(size_t xsize, size_t ysize, size_t zsize) { //int flag (idea for future, allow dynamic re-allocation without deleting previous data)
@@ -116,8 +122,9 @@ public:
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
+        assert(i < x_ && j < y_ && k < z_ && "Index out of range");
         return data_[(i * y_ + j) * z_ + k];
-    }
+    }  
 
     inline CArray3D& operator=(const CArray3D &arr){
         for(auto i = 0; i < size_; ++i){
@@ -146,9 +153,8 @@ class CArray2D{
     }
 
     ~CArray2D(){
-        x_ = 0;
-        y_ = 0;
-        delete[] this->data_;
+        delete[] data_;
+        data_ = NULL;
     }
 
     void resize(size_t xsize, size_t ysize) {
@@ -171,6 +177,7 @@ class CArray2D{
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j) {
+        assert(i < x_ && j < y_ && "Index out of range");
         return data_[i * y_ + j];
     }
 

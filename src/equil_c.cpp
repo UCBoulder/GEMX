@@ -49,17 +49,17 @@ CArray3D<double> curlb; //last index 1 based in ftn - cPP:(0,1,2) vs ftn:(1,2,3)
 // for phi average Calder Edit
 int num_lines = 80817, line;
 CArray2D<double> phiavg;
-double *psitab = new double[num_lines+1];
-double *weight00 = new double[num_lines+1];
-double *weight01 = new double[num_lines+1];
-double *weight10 = new double[num_lines+1];
-double *weight11 = new double[num_lines+1];
-double *jacobian = new double[num_lines+1];
-double *deno = new double[num_lines+1];
-int *gindex = new int[num_lines+1];
-int *iarray = new int[num_lines+1];
-int *jarray = new int[num_lines+1];
-int *priv = new int[num_lines+1];
+double *psitab;
+double *weight00;
+double *weight01;
+double *weight10;
+double *weight11;
+double *jacobian;
+double *deno;
+int *gindex;
+int *iarray;
+int *jarray;
+int *priv;
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void new_equil_c(){
@@ -72,19 +72,31 @@ void new_equil_c(){
     double omegau;          //,e,proton
     
     //allocating arrays
-    psi = new double[nr+1];
-    psip = new double[nr+1];
-    sf = new double[nr+1];
-    vpari = new double[nr+1];
-    vparip = new double[nr+1];
-    zeff = new double[nr+1];
-    nue0 = new double[nr+1];
-    phinc = new double[nr+1];
-    phincp = new double[nr+1];
-    er = new double[nr+1];
-    upari = new double[nr+1];
-    Rgrid = new double[nx+1];
-    Zgrid = new double[nz+1];
+    psitab = new double[num_lines+1]; std::fill(psitab, psitab+num_lines+1, 0.0);
+    weight00 = new double[num_lines+1]; std::fill(weight00, weight00+num_lines+1, 0.0);
+    weight01 = new double[num_lines+1]; std::fill(weight01, weight01+num_lines+1, 0.0);
+    weight10 = new double[num_lines+1]; std::fill(weight10, weight10+num_lines+1, 0.0);
+    weight11 = new double[num_lines+1]; std::fill(weight11, weight11+num_lines+1, 0.0);
+    jacobian = new double[num_lines+1]; std::fill(jacobian, jacobian+num_lines+1, 0.0);
+    deno = new double[num_lines+1];std::fill(deno, deno+num_lines+1, 0.0);
+    gindex = new int[num_lines+1]; std::fill(gindex, gindex+num_lines+1, 0);
+    iarray = new int[num_lines+1]; std::fill(iarray, iarray+num_lines+1, 0);
+    jarray = new int[num_lines+1]; std::fill(jarray, jarray+num_lines+1, 0);
+    priv = new int[num_lines+1]; std::fill(priv, priv+num_lines+1, 0);
+
+    psi = new double[nr+1]; std::fill(psi, psi+nr+1, 0.0);
+    psip = new double[nr+1]; std::fill(psip, psip+nr+1, 0.0);
+    sf = new double[nr+1]; std::fill(sf, sf+nr+1, 0.0);
+    vpari = new double[nr+1]; std::fill(vpari, vpari+nr+1, 0.0);
+    vparip = new double[nr+1]; std::fill(vparip, vparip+nr+1, 0.0);
+    zeff = new double[nr+1]; std::fill(zeff, zeff+nr+1, 0.0);
+    nue0 = new double[nr+1]; std::fill(nue0, nue0+nr+1, 0.0);
+    phinc = new double[nr+1]; std::fill(phinc, phinc+nr+1, 0.0);
+    phincp = new double[nr+1]; std::fill(phincp, phincp+nr+1, 0.0);
+    er = new double[nr+1]; std::fill(er, er+nr+1, 0.0);
+    upari = new double[nr+1]; std::fill(upari, upari+nr+1, 0.0);
+    Rgrid = new double[nx+1]; std::fill(Rgrid, Rgrid+nx+1, 0.0);
+    Zgrid = new double[nz+1]; std::fill(Zgrid, Zgrid+nz+1, 0.0);
 
 
     b0.resize(nx+1,nz+1), b0x.resize(nx+1,nz+1), b0z.resize(nx+1,nz+1),

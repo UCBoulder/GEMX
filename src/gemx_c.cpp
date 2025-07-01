@@ -73,8 +73,7 @@ int main() {
    } 
 
    if(iget == 0) loadi_c_();
-   integ_c_(1); //1st index of den 1-based, since index = 1,2 in ftn, index in c is 0,1 meaning 1 is same index in c as ftn. Funkalicious
-
+   integ_c_(1); //1st index of den 1-based, since index = 1,2 in ftn, index in c is 0,1 meaning 1 is same index in c as ftn.
    if(myid == 0) {
       
       file.open("testden", ios::app);
@@ -130,7 +129,6 @@ int main() {
          }
       }
    }
-
    phiavg.Clear();
 
    get_jpar_(apar); 
@@ -258,7 +256,7 @@ int main() {
 
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+               //MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
                for(int i = 0; i <= imx; ++i){
                   for(int j = 0; j <= jmx; ++j){
@@ -297,7 +295,6 @@ int main() {
       get_jpar_(apars);
       //smooth(jpar,3)
       get_ne_c_(-1);
-
    // !           if(myid==0)then
    // !               open(unit=11, file = 'testapars',status='unknown',action='write')
    // !               do j=0,jmx
@@ -328,9 +325,7 @@ int main() {
    //  !                 enddo
    //  !                 close(11)
    //  !              end if
-     
       if(ision==1) ppush_c_(timestep);
-      
       if(ifluid==1){ 
          integ_c_(0);
       } else {
@@ -344,7 +339,7 @@ int main() {
    // !                enddo
    // !                  close(11)
    // !              end if
-      }
+      }  
    // ! write(*,*)'dx=', dx, 'dz=',dz
 
 
@@ -470,8 +465,9 @@ int main() {
          file.close();
       }
 
-
-      if(ision==1) cpush_c_(timestep); //<------ Right here officer 
+      
+      if(ision==1) cpush_c_(timestep); //<------ Right here officer
+      cout << "check" << endl; 
       //cintef(timestep);
       if(ifluid==1){
          integ_c_(1);
@@ -816,7 +812,6 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){
    vpar = temp*iflag;
 
    vperp2 = -2.0*log(r2); 
-   return;
 }
 
 void get_jpar_(CArray3D<double> &matrix){
@@ -928,7 +923,7 @@ void loadi_c_(){
 
    cnt = static_cast<int>(tmm[0]/numprocs);
    cnt = mmx; 
-   while(m <= mm[0]){
+   while(m < mm[0]){
    //load a slab of ions...
 
       //dumx=xdim*(ran2(iseed)+0.01)*0.9
@@ -1006,7 +1001,7 @@ void loadi_c_(){
    avgv = avgv/static_cast<float>(tmm[0]);
 
    m = 0;
-   for(int m = 0; m <= mm[0]; ++m){
+   for(int m = 0; m < mm[0]; ++m){
       u2[m] = u2[m]-avgv;
       x3[m] = x2[m];
       z3[m] = z2[m];
@@ -1015,7 +1010,6 @@ void loadi_c_(){
 //    w2(m) = w2(m)-myavgw
       w3[m] = w2[m];
    }
-   return;
 }
 
 void gradu_c_(CArray3D<double> &u_, CArray3D<double> &ux_, CArray3D<double> &uz_){
@@ -1115,13 +1109,27 @@ void smooth_c_(CArray3D<double> &matrix_c, int &mk){
 }
 
 void integ_c_(int iflag) {
-   int i, j, k;
-   double wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1;
+   int i = 0;
+   int j = 0;
+   int k = 0;
+   int m = 0;
+
+   double wx0 = 0;
+   double wx1 = 0;
+   double wzeta0 = 0;
+   double wzeta1 = 0;
+   double wy0 = 0;
+   double wy1 = 0;
+   double x = 0;
+   double z = 0;
+   double zeta = 0;
+   double R_major_over_R = 0;
+   double R_major_over_R1 = 0;;
    int start_integ_tm = MPI_Wtime();
-   for(int i = 0; i <= imx; ++i) {
-      for (int j = 0; j <= jmx; ++j) {
-         for(int k = 0; k <= kmx; ++k) {
-            den(iflag,i,j,k) = 0;
+   for(int l = 0; l <= imx; l = l +1) {
+      for (int r = 0; r <= jmx; r = r+1) {
+         for(int n = 0; n <= kmx; n = n+1) {
+            den(iflag,l,r,n) = 0;
          }
       }
    }
@@ -1129,8 +1137,8 @@ void integ_c_(int iflag) {
    
    //if I can't fix before I leave: something weird going on ith x3 and z3, second call in new timestep produceses nan values at max index
    //actually happens at m = 0 for that error. Need to find where error occurs and why it happens
-   #pragma acc parallel loop gang vector
-   for(int m = 0; m <= mm[0]; ++m) {
+   // #pragma acc parallel loop gang vector
+   for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
@@ -1149,60 +1157,60 @@ void integ_c_(int iflag) {
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      #pragma acc atomic update 
+      // #pragma acc atomic update 
       den(iflag,i,j,k)=den(iflag,i,j,k)+w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
-      #pragma acc atomic update 
+      // #pragma acc atomic update 
       upar(i,j,k)=upar(i,j,k)+u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       upar(i+1,j,k)=upar(i+1,j,k)+u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       upar(i,j+1,k)=upar(i,j+1,k)+u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-      #pragma acc atomic update
+      // #pragma acc atomic update
       upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       if(k != kmx) {
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i,j,k+1)=upar(i,j,k+1)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
    } else {
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i,j,0)=den(iflag,i,j,0)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i,j,0)=upar(i,j,0)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i+1,j,0)=upar(i+1,j,0)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i,j+1,0)=upar(i,j+1,0)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         #pragma acc atomic update
+         // #pragma acc atomic update
          upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
-   #pragma acc wait
+   // #pragma acc wait
    
   
    MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1734,10 +1742,10 @@ void efieldcalc_c_(CArray3D<double> &input_phi){
                kminus = kmx;
                ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,kminus))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
             }
-            if(k == kmx){
+            else if(k == kmx){
                kplus = 0;
                ezeta(i,j,k) = -(input_phi(i,j,kplus) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
-            }else{
+            } else {
                ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
             }
          }

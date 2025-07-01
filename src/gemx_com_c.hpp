@@ -1,8 +1,9 @@
 //actual gemx_com_c file to convert
 //include this header to access all variables and arrays allocated in gemx_com_c
 #include "MultiArraysC.hpp"
-#include "mpi.h"
+#include <mpi.h>
 #include <complex>
+#include <algorithm>
 #pragma once
 
 void cleanupCom();

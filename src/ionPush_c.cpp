@@ -12,7 +12,7 @@ using namespace std;
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //       Ion pre-push
 //
-void ppush_c_(const int &n){ 
+void ppush_c_(const int &n) { 
     double exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp;
     double wx0,wx1,wy0,wy1,wz0,wz1,dum1; 
     int m,i,j,k,l,k_plus_1;
@@ -21,16 +21,23 @@ void ppush_c_(const int &n){
     double x;
     double xt,zt,xdot,zdot,zetadot,pzdot,edot;
     double dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap,dbdzetap=0;
-    double rhox[4], rhoy[4], curlbp[3], Bstar3[3]; //Realize these are 0 indexed: 0, 1, 2, 3 not 1, 2, 3, 4
+    double rhox[4], rhoy[4], curlbp[3], Bstar3[3];
     //real(8),dimension(3)::curlbp,Bstar3
     start_ppush_tm = MPI_Wtime();
 
-    nudi0 = 1/sqrt(2)*18.4*pow(e,1.5)*(4.7140*e-8)*(1e-6);
+    nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)* 4.7140e-8* 1.e-6;
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
 
-    #pragma acc parallel loop gang vector private(rhoy,Bstar3,rhox) copy(rand_table) //Until rand table in C++, leaving as pointer to array
-    for(m = 0; m <= mm[0]; ++m){
+//     // #pragma acc parallel loop gang vector \
+//     private(exp1, ezp, ezetap, delbxp, delbzp, energy, energy0, wx0, wx1, wy0, wy1, wz0, wz1, dum1, \
+//                 i, j, k, l, k_plus_1, rhog, vfac, kapxp, kapzp, vpar, kaptxp, kapnxp, kaptzp, kapnzp, xnp, \
+//                 b, enerb, ter, z, zeta, bstar, x, xt, zt, xdot, zdot, zetadot, pzdot, edot, \
+//                 dbdxp, dbdzp, bfldp, bfldxp, bfldzp, bfldzetap, dbdzetap, \
+//                 rhox, rhoy, curlbp, Bstar3) \
+//     present() \
+//     copy(rand_table)
+    for(m = 0; m < mm[0]; ++m){
         x = x2[m];
         i = static_cast<int>(x/dxeq);
         i = min(i,nx-1);
@@ -42,9 +49,6 @@ void ppush_c_(const int &n){
         k = min(k,nz-1);
         wz0 = (k+1)-z/dzeq;
         wz1 = 1.-wz0;
-
-
-
 
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
@@ -88,22 +92,23 @@ void ppush_c_(const int &n){
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
-        ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
-                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
-         energy0 = (mu[m]*b+0.5*mims[0]*pow(u3[m],2));
+        // ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) //repeated code here
+        //          +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
+         energy0 = (mu[m]*b+0.5*mims[0]*(u3[m] * u3[m]));
          energy =  max(energy0,0.1*T_center);
          if(icollision == 1){
-            nudi=pow(nudi0*ni_temp/(energy), 1.5); 
+            nudi=nudi0*xnp/pow(energy, 1.5);  //whole thing to 1.5 or just energy?
             //  call random_number(rrr)
             //  p_m = int(2*rrr-1)
          }
          //write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
+       
          u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-(u2[m]*u2[m]))*nudi*dt);
-        
          globle_integer = (globle_integer+1) % 10007;
          //   write(*,*) rand_table(globle_integer-1), u2(m),u3(m)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
          //    write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
-         mu[m]= (energy0-0.5*mims[0]*pow(u2[m],2))/b;
+
+         mu[m]= (energy0-0.5*mims[0]*(u2[m] * u2[m]))/b;
 
 /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   */
 
@@ -129,18 +134,18 @@ void ppush_c_(const int &n){
     delbzp=0;
 
 //  4 pt. avg. done explicitly for vectorization...
-        #pragma acc parallel
-        #pragma acc loop seq
-        for(l = 0; l < lr[0]; ++l){
+        // // #pragma acc parallel
+        // // #pragma acc loop seq
+        for(l = 0; l <= lr[0]; ++l){
 
             xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
             zt=z2[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog;
+            zeta=zeta2[m];
             //zeta=modulo(zeta2(m),pi2);
      
    //particle can go out of bounds during gyroavg...
             if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x2[m];
             if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z2[m];
-            zeta=zeta2[m];
             //xt=modulo(xs,xdim)
             //zt=modulo(zt,zdim)
             i=static_cast<int>(xt/dx);
@@ -196,7 +201,7 @@ void ppush_c_(const int &n){
         delbxp = delbxp/4;
         delbzp = delbzp/4;
 
-         vfac = 0.5*(mims[0]*pow(u2[m],2) + 2*mu[m]*b);
+         vfac = 0.5*(mims[0] * u2[m] * u2[m] + 2 * mu[m] * b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
 
@@ -257,9 +262,9 @@ void ppush_c_(const int &n){
          //vxdum = eyp+vpar/b*delbxp
          //w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-        if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ) {
-                continue;
-        } else {
+        if( x3[m] <= 2 * dxeq || x3[m] >= lx - 2 * dxeq ||
+            z3[m] <= 2 * dzeq || z3[m] >= lz - 2 * dzeq) 
+        {
           u3[m]=u2[m];
           x3[m]=x2[m];
           z3[m]=z2[m];
@@ -267,7 +272,7 @@ void ppush_c_(const int &n){
           w3[m]=0;
         }
     }
-    #pragma acc wait
+//     // #pragma acc wait
     end_ppush_tm = MPI_Wtime();
     ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
 }
@@ -291,8 +296,8 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
         //write(*,*)T_center*e
         //write(*,*)nudi0
         
-        #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
-        for(m = 0; m <= mm[0]; ++m){
+        // // #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
+        for(m = 0; m < mm[0]; ++m){
             x=x3[m];
             i = static_cast<int>(x/dxeq);
             i = min(i,nx-1);
@@ -365,8 +370,8 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          delbxp=0.;
          delbzp=0.;
 
-        #pragma acc parallel
-        #pragma acc loop seq
+        // // #pragma acc parallel
+        // // #pragma acc loop seq
         for(l = 0; l < lr[0]; ++l){
 
 //SP            xs=x3(m)+rhox(l) !rwx(1,l)*rhog
@@ -434,7 +439,6 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
        
          vpar = u3[m];
-//if(m==0) cout << "cpush u3[0]: "<< u3[0] << endl;
          enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
        
          Bstar3[0]=bfldxp+mims[0]*vpar*curlbp[0]/q[0]+delbxp;
@@ -499,7 +503,6 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 //         write(*,*)energy, nudi
         
 if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ){
-            //cout << "new: "<< x2[0] << endl;
             //energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
             //energy =  max(energy0,0.1*T_center)
             //if (icollision==1) then
@@ -540,7 +543,7 @@ if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) )
         //          close(19)
         //       end if  
   }
-  #pragma acc wait
+//   // #pragma acc wait
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
 }
