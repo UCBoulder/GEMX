@@ -420,7 +420,7 @@ int main() {
 
 
       if(myid == 0 && (timestep%10)==0){
-         cout << "outk=" << outk << endl;
+         cout << "outk=" << outk << "\n";
 
          file.open("testphi");
          for(int i = 0; i <= imx; ++i){
@@ -464,10 +464,7 @@ int main() {
          file.close();
       }
 
-      cout << u2[0] << endl;
       if(ision==1) cpush_c_(timestep); //<------ Right here officer
-      cout << u2[0] << endl;
-      cout << "check" << endl; 
       //cintef(timestep);
       if(ifluid==1){
          integ_c_(1);
@@ -547,9 +544,9 @@ int main() {
       }
       
       if(myid == master && ifield_solver == 1) {
-         cout << "time_step=" << timestep << endl;
-         cout << "dx=" << dx << "dz=" << dz << "dzeta=" << dzeta << "omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << endl;
-         cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << endl;
+         cout << "time_step=" << timestep << "\n";
+         cout << "dx=" << dx << "dz=" << dz << "dzeta=" << dzeta << "omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << "\n";
+         cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << "\n";
       }
    }
    end_total_tm = MPI_Wtime();
@@ -808,7 +805,7 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){
    }
    else{
       t = 5.0;
-      std::cout << "parperp2 warning m= " << m << std::endl;
+      std::cout << "parperp2 warning m= " << m << "\n";
    }
 
    temp = t-(c0+c1*t+c2*(t*t))/(1.+d1*t+d2*(t*t)+d3*(t*t*t));
@@ -990,7 +987,7 @@ void loadi_c_(){
       while(j < mmx){
          myFile << std::setprecision(16) << x2[j] << "      ";
          myFile << std::setprecision(16) << z2[j] << "      ";
-         myFile << std::setprecision(16) << zeta2[j] << "      " << std::endl;
+         myFile << std::setprecision(16) << zeta2[j] << "      " << "\n";
          j++;
       }
       myFile.close();
@@ -999,7 +996,7 @@ void loadi_c_(){
 
    MPI_Allreduce(&myavgv, &avgv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-   if(idg == 1) std::cout << "all reduce" << std::endl;
+   if(idg == 1) std::cout << "all reduce" << "\n";
    avgv = avgv/static_cast<float>(tmm[0]);
 
    m = 0;
@@ -1131,7 +1128,7 @@ void integ_c_(int iflag) {
    for(int l = 0; l <= imx; l = l +1) {
       for (int r = 0; r <= jmx; r = r+1) {
          for(int n = 0; n <= kmx; n = n+1) {
-            //cout << l << " " << r << " " << n << " " << endl;
+            //cout << l << " " << r << " " << n << " " << "\n";
          }
       }
    }
@@ -1142,7 +1139,7 @@ void integ_c_(int iflag) {
    // #pragma acc parallel loop gang vector
    for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
-      if(x < 0 || x > lx) cout << "x=" <<x << endl;
+      if(x < 0 || x > lx) cout << "x=" <<x << "\n";
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
@@ -1151,13 +1148,13 @@ void integ_c_(int iflag) {
       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
 
       z = z3[m];
-      if(z < 0 || z > lz) cout << "z="<< z << endl;
+      if(z < 0 || z > lz) cout << "z="<< z << "\n";
       j = static_cast<int>(z/dzeq);
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
       zeta= fmod(zeta3[m], pi2);
-      if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << endl;
+      if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << "\n";
       k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
@@ -1215,7 +1212,6 @@ void integ_c_(int iflag) {
          upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
-   cout << "integ Check loop" << endl;
    // #pragma acc wait
    
   
@@ -1270,7 +1266,6 @@ void integ_c_(int iflag) {
          }
       }
    }
-   cout << "integ Check end" << endl;
    int end_integ_tm = MPI_Wtime();
    integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
 }
@@ -1803,9 +1798,9 @@ void growthdiag_c_(CArray3D<double> &input_phi){
    std::ofstream myFile("testphiavgsq", std::ios::app);
    if(myFile.is_open()){
       myFile << "            " << timestep << "    "; //looks weird, just making it look identical to the old test files
-      myFile << std::setprecision(16) << phiavgsq << std::endl;
+      myFile << std::setprecision(16) << phiavgsq << "\n";
    }else{
-      std::cerr << "Error opening testphiavgsq" << std::endl;
+      std::cerr << "Error opening testphiavgsq" << "\n";
    }
    myFile.close();
 }

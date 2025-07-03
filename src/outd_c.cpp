@@ -12,7 +12,7 @@ void outd_c_(const int &n) {
 
     outTracer.open("./out/tracer.out", ios::app); 
     for(int m = 0; m < ntracer; ++m) {
-        outTracer << "            " << timestep << "            " << m+1 << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << endl;
+        outTracer << "            " << timestep << "            " << m+1 << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << "\n";
     }
     outTracer.close();
 
@@ -21,7 +21,7 @@ void outd_c_(const int &n) {
         for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j) {  
                 if(trace == 3){
-                    testNe << endl;
+                    testNe << "\n";
                     trace = 0;
                 }
                 testNe << "    " << fixed << setprecision(16) << dene(i,j,0) << "         ";
@@ -30,7 +30,7 @@ void outd_c_(const int &n) {
         }
         testNe.close();
     } else {
-        cerr << "Warning testne failed to open/ wasn't created" << endl;
+        cerr << "Warning testne failed to open/ wasn't created" << "\n";
     }
 
     testPhi.open("./out/testphi");
@@ -39,7 +39,7 @@ void outd_c_(const int &n) {
         for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j) {
                 if(trace == 3){
-                    testPhi << endl;
+                    testPhi << "\n";
                     trace = 0;
                 }
                 testPhi << "    " << fixed << setprecision(16) << phi(i,j,0) << "         "; 
@@ -48,7 +48,7 @@ void outd_c_(const int &n) {
         }
         testPhi.close();
     } else {
-        cerr << "Warning testphi failed to open/ wasn't created" << endl;
+        cerr << "Warning testphi failed to open/ wasn't created" << "\n";
     }
 
 

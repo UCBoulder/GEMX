@@ -370,7 +370,7 @@ void new_equil_c(){
         }
     }
 
-//  cout << "betaU=" << beta << endl;
+//  cout << "betaU=" << beta << "\n";
 
     pi = atan(1.0)*4.0;
     pi2 = 2*pi;
