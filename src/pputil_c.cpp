@@ -7,7 +7,7 @@ using namespace std;
 
 static int me, nvp, npp, GCLR, TCLR, p_color, p_rank;
 
-void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &com1,MPI_Comm &com2, MPI_Comm &com_petsc,int &petsc_color,int &petsc_rank){
+void ppinit_c(int& idproc, int& nproc, int &ntube,int &kmx, int& i3D, MPI_Comm &com1,MPI_Comm &com2, MPI_Comm &com_petsc,int &petsc_color,int &petsc_rank){
     int ierr;
     int n_tor;
     int n_tor_planes;
@@ -31,8 +31,13 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &imx, int& i3D, MPI_Comm &
     }
     
     p_color = static_cast<int>(me*(n_tor_planes)/npp);
-    p_rank = me%(npp/(kmx+1));
-    ierr = MPI_Comm_split(MPI_COMM_WORLD, p_color, p_rank, &com_petsc);
+
+    if((kmx+1) > npp) { //0%0 causes undefined behaviour
+        p_rank = me;
+    } else {
+        p_rank = me%(npp/(kmx+1));
+    }
+    ierr = MPI_Comm_split(MPI_COMM_WORLD, p_color, p_rank, &PETSC_COMM);
     petsc_color = p_color;
     petsc_rank = p_rank;
 //         else

@@ -1,3 +1,10 @@
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
+#include <cmath>
+#include <iostream>
+#include <chrono>
+
+#include <mpi.h>
 #pragma once
 
 void ppush_c_(const int &n);

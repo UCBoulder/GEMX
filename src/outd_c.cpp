@@ -1,11 +1,4 @@
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <string>
-#include "gemx_com_c.hpp"
-#include "equil_c.hpp"
 #include "outd_c.hpp"
-
 using namespace std;
 
 void outd_c_(const int &n) { 

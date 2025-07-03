@@ -1,3 +1,9 @@
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <string>
+#include "gemx_com_c.hpp"
+#include "equil_c.hpp"
 #pragma once
 
 void outd_c_(const int &n);

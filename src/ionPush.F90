@@ -254,6 +254,7 @@
          x3(m) = x2(m) + 0.5*dt*xdot
          z3(m) = z2(m) + 0.5*dt*zdot
          zeta3(m) = zeta2(m) + 0.5*dt*zetadot
+        !  zeta3(m) = modulo(zeta2(m) + 0.5*dt*zetadot, pi2)
          u3(m) = u2(m) + 0.5*dt*pzdot
 
 !        dum = 1.0

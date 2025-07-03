@@ -88,8 +88,8 @@ fcnt.o: fcnt.F90
 	$(F90) -c $(OPT) fcnt.F90
 
 #C++ compilation.
-gemx_externs.o: gemx_externs.cpp
-	$(CPP) -c $(OPT_C) gemx_externs.cpp $(INCS) 
+# gemx_externs.o: gemx_externs.cpp
+# 	$(CPP) -c $(OPT_C) gemx_externs.cpp $(INCS) 
 
 pputil_c.o: pputil_c.cpp
 	$(CPP) -c $(OPT_C) pputil_c.cpp $(INCS) 

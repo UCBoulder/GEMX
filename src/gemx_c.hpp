@@ -6,9 +6,10 @@
 #include <petscksp.h>
 // #include <petscerror.h>
 // #include <petscmat.h>
+
 #pragma once
 
-
+extern "C" {
 void parperp_c_(double& vpar, double& vperp2, const int& m, const int& cnt);
 void loadi_c_();
 double ran2_c_(int& idum);
@@ -33,3 +34,4 @@ void init();
 PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void);
 PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy);
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* k);
+}

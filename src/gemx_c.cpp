@@ -3,7 +3,6 @@
 #include "fcnt.hpp"
 #include "gemx_com_c.hpp"
 #include "equil_c.hpp"
-#include "mpi.h"
 #include "ionPush_c.hpp"
 #include "outd_c.hpp"
 #include "MultiArraysC.hpp"
@@ -41,7 +40,7 @@ int main() {
 
    //call init
    initialize_c_();
-
+   
    while(dbg == 1){
       sleep(1);         //if debug option set sleep for forever. To release type "dbg = 0" into debug consol once attatched. Happy Hunting!
    }
@@ -55,7 +54,7 @@ int main() {
    if(eBoltzmann == 0) {
 
       PETSC_COMM_WORLD = PETSC_COMM;
-
+      //note: try to comment out all petsc code to see if this is causing the problems
       PetscCall(PetscInitialize(nullptr, nullptr, nullptr, nullptr));  
       
       PetscCall(KSPCreate(PETSC_COMM_WORLD,&ksp));
@@ -465,8 +464,9 @@ int main() {
          file.close();
       }
 
-      
+      cout << u2[0] << endl;
       if(ision==1) cpush_c_(timestep); //<------ Right here officer
+      cout << u2[0] << endl;
       cout << "check" << endl; 
       //cintef(timestep);
       if(ifluid==1){
@@ -583,18 +583,21 @@ void initialize_c_(){
    //double dum1, dum2,  xndum, r, wx0, wx1
    // double x[2];
    // double y[2]; //0-1
-   
-   ppinit_c(myid, numprocs, ntube, kmx, i3D, GRID_COMM, TUBE_COMM, PETSC_COMM, petsc_color, petsc_rank);
   
    //reset timestep counter
    last = numprocs-1;
    timestep = 0;
    tcurr = 0.;
+   init();
+   ppinit_c(myid,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank);
 
-   for(int i = 0; i <= last; ++i){
-      if(myid == i) init();
-      ierr = MPI_Barrier(MPI_COMM_WORLD);
-   }
+   // for(int i = 0; i <= last; ++i){
+   //    if(myid == i) {
+         
+   //    }
+   //       ierr = MPI_Barrier(MPI_COMM_WORLD);
+   // }
+
    dum = 0.;
    for(int i = 0; i < imx; ++i){
       dum = dum+(jac[i]+jac[i+1])/2;
@@ -992,7 +995,6 @@ void loadi_c_(){
       }
       myFile.close();
    }
-
    myavgw = myavgw/mm[0];
 
    MPI_Allreduce(&myavgv, &avgv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1124,12 +1126,12 @@ void integ_c_(int iflag) {
    double z = 0;
    double zeta = 0;
    double R_major_over_R = 0;
-   double R_major_over_R1 = 0;;
+   double R_major_over_R1 = 0;
    int start_integ_tm = MPI_Wtime();
    for(int l = 0; l <= imx; l = l +1) {
       for (int r = 0; r <= jmx; r = r+1) {
          for(int n = 0; n <= kmx; n = n+1) {
-            den(iflag,l,r,n) = 0;
+            //cout << l << " " << r << " " << n << " " << endl;
          }
       }
    }
@@ -1140,6 +1142,7 @@ void integ_c_(int iflag) {
    // #pragma acc parallel loop gang vector
    for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
+      if(x < 0 || x > lx) cout << "x=" <<x << endl;
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
@@ -1148,11 +1151,13 @@ void integ_c_(int iflag) {
       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
 
       z = z3[m];
+      if(z < 0 || z > lz) cout << "z="<< z << endl;
       j = static_cast<int>(z/dzeq);
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
       zeta= fmod(zeta3[m], pi2);
+      if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << endl;
       k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
@@ -1210,6 +1215,7 @@ void integ_c_(int iflag) {
          upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
+   cout << "integ Check loop" << endl;
    // #pragma acc wait
    
   
@@ -1224,6 +1230,7 @@ void integ_c_(int iflag) {
          }
       }
    }
+
 
    for(int i = 0; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
@@ -1252,7 +1259,7 @@ void integ_c_(int iflag) {
       }
    }
 
-   if(iflag==2) {
+   if(iflag==1) {
       for(i = 0; i <= imx; ++i) {
          for(j = 0; j <= jmx; ++j) {
             dden2d(i,j)-=den2d1(i,j);
@@ -1263,7 +1270,7 @@ void integ_c_(int iflag) {
          }
       }
    }
-
+   cout << "integ Check end" << endl;
    int end_integ_tm = MPI_Wtime();
    integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
 }

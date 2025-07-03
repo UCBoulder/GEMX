@@ -1,11 +1,4 @@
 #include "ionPush_c.hpp" 
-#include "gemx_com_c.hpp"
-#include "equil_c.hpp"
-#include "mpi.h"
-
-#include <cmath>
-#include <iostream>
-#include <chrono>
 
 using namespace std;
 
@@ -255,6 +248,8 @@ void ppush_c_(const int &n) {
          x3[m] = x2[m] + 0.5*dt*xdot;
          z3[m] = z2[m] + 0.5*dt*zdot;
          zeta3[m] = zeta2[m] + 0.5*dt*zetadot;
+         if(zeta3[m] < 0) zeta3[m] = zeta3[m] + pi2;
+
          u3[m] = u2[m] + 0.5*dt*pzdot;
          //dum = 1.0
          //vxdum = (ezp/b+vpar/b*delbxp)*dum1
@@ -381,7 +376,8 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 //   particle can go out of bounds during gyroavg...
             if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
             if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
-            zeta = fmod(zeta3[m], 2*pi);
+            zeta = fmod(zeta3[m], pi2);
+            if(zeta < 0) zeta += pi2;
             i=static_cast<int>(xt/dx);
             j=static_cast<int>(zt/dz);
             k=static_cast<int>(zeta/dzeta);
@@ -498,6 +494,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 // !         w3(m)=w2(m) + dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
          zeta3[m]= fmod(zeta3[m],pi2);
+         if(zeta3[m] < 0) zeta3[m] = zeta3[m] + pi2;
 
 
 //         write(*,*)energy, nudi
