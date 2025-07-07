@@ -222,7 +222,7 @@ int main() {
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
 
 
-                     for(idx = 1; idx <= (vec_end-vec_start); ++idx) {
+                     for(idx = 1; idx < (vec_end-vec_start); ++idx) {
                         i=((idx-1)%iw)+is;
                         j=(idx-1)/(iw)+js;
                         phi(i,j,k)=phi_array[idx];//*mask(i,j);  //right here officer
@@ -363,7 +363,7 @@ int main() {
                      PetscCall(KSPGetSolution(ksp,&petsc_phi));
                      PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
                      PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
-                     for(idx=1; idx <= (vec_end-vec_start); ++idx) {
+                     for(idx=1; idx < (vec_end-vec_start); ++idx) {
                         i=((idx-1)%(iw))+is;
                         j=(idx-1)/(iw)+js;
                         phi(i,j,k)=phi_array[idx];//*mask(i,j);
@@ -918,8 +918,6 @@ void loadi_c_(){
    
    double dumx, dumy, dumz, jacp; //jacp used in initialize, not sure if value is supposed to be updated here since jacp not passed to function - currently does nothing
    double wx0, wx1, wz0, wz1;
-
-   const long double pi2 = M_PI*2;
 
    cnt = static_cast<int>(tmm[0]/numprocs);
    cnt = mmx; 

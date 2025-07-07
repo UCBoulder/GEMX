@@ -122,9 +122,9 @@ void new_equil_c(){
     //global equilibrium data
 
     //open R.dat and input into Rgrid
-    read1D("R.dat", Rgrid);
+    read1D("R.dat", Rgrid, 0);
     //open Z.dat and input into Zgrid
-    read1D("Z.dat", Zgrid);
+    read1D("Z.dat", Zgrid, 1);
     //open psi_p.dat and input into psi_p
     read2D("psi_p.dat", psi_p, nx, nz);
 

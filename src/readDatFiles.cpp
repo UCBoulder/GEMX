@@ -1,15 +1,29 @@
 #include "readDatFiles.hpp"
 
-// Read values from a 1D array .dat file and store into a 1D array in C++
-void read1D(std::string fname, double arr[]){
+/* Read values from a 1D array .dat file and store into a 1D array in C++
+ *fname is a string argument. Type name of file you'd like to read
+ *arr is where you want to store that data
+ *dflag indicates which delimeter you'd like to use. Please see file for details. 
+*/
+void read1D(std::string fname, double arr[], int dflag){
     std::ifstream file;
     std::string line;
     int i = 0;
     file.open(fname);
-    while(getline(file, line)) {
+    if (dflag == 0) {
+        while(getline(file, line)) {
+            arr[i] = stod(line); 
+            ++i;    
+        }
+    } else if (dflag == 1)
+    {
+        std::string delimeter = "	";
+        while(getline(file, line, delimeter[0])) {
         arr[i] = stod(line); 
         ++i;    
+        }
     }
+    
     file.close();
 }
 // Read values from 2D array .dat file and store into 2D array in C++ (bounds inclusive)

@@ -6,15 +6,19 @@ using namespace std;
 //       Ion pre-push
 //
 void ppush_c_(const int &n) { 
-    double exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp;
-    double wx0,wx1,wy0,wy1,wz0,wz1,dum1; 
-    int m,i,j,k,l,k_plus_1;
-    double rhog,vfac,kapxp,kapzp,vpar,kaptxp,kapnxp,kaptzp,kapnzp,xnp;
-    double b,enerb,ter,z,zeta,bstar;
-    double x;
-    double xt,zt,xdot,zdot,zetadot,pzdot,edot;
-    double dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap,dbdzetap=0;
+    double exp1 = 0,ezp = 0,ezetap = 0,delbxp = 0,delbzp  = 0,energy = 0, energy0 = 0,nudi0 = 0,nudi = 0,T_center = 0,ni_temp = 0;
+    double wx0 = 0,wx1 = 0,wy0 = 0,wy1 = 0,wz0 = 0,wz1 = 0,dum1 = 0; 
+    int m = 0,i = 0,j = 0,k = 0,l = 0,k_plus_1 = 0;
+    double rhog = 0,vfac = 0,kapxp = 0,kapzp = 0,vpar = 0,kaptxp = 0,kapnxp = 0,kaptzp = 0,kapnzp = 0,xnp = 0;
+    double b = 0,enerb = 0,ter = 0,z = 0,zeta = 0,bstar = 0;
+    double x = 0;
+    double xt = 0,zt = 0,xdot = 0,zdot = 0,zetadot = 0,pzdot = 0,edot = 0;
+    double dbdxp = 0,dbdzp = 0,bfldp = 0,bfldxp = 0,bfldzp = 0,bfldzetap = 0,dbdzetap=0;
     double rhox[4], rhoy[4], curlbp[3], Bstar3[3];
+//     fill(rhox,  rhox+3, 0.0);
+//     fill(rhoy,  rhoy+3, 0.0);
+//     fill(curlbp,  curlbp+2, 0.0);
+//     fill(Bstar3,  Bstar3+2, 0.0);
     //real(8),dimension(3)::curlbp,Bstar3
     start_ppush_tm = MPI_Wtime();
 
@@ -133,12 +137,12 @@ void ppush_c_(const int &n) {
 
             xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
             zt=z2[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog;
-            zeta=zeta2[m];
             //zeta=modulo(zeta2(m),pi2);
      
    //particle can go out of bounds during gyroavg...
-            if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x2[m];
-            if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z2[m];
+            if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) {xt=x2[m];}
+            if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) {zt=z2[m];}
+            zeta=zeta2[m];
             //xt=modulo(xs,xdim)
             //zt=modulo(zt,zdim)
             i=static_cast<int>(xt/dx);
@@ -147,11 +151,11 @@ void ppush_c_(const int &n) {
 
 
             wx0=static_cast<float>(i+1)-xt/dx;
-            wx1=1-wx0;
+            wx1=1.-wx0;
             wy0=static_cast<float>(j+1)-zt/dz;
-            wy1=1-wy0;
+            wy1=1.-wy0;
             wz0=static_cast<float>(k+1)-zeta/dzeta;
-            wz1=1-wz0;
+            wz1=1.-wz0;
 
                 k_plus_1=k+1;
                 if(k==kmx) k_plus_1=0;

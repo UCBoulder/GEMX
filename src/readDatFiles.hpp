@@ -6,5 +6,5 @@
 
 #pragma once
 
-void read1D(std::string fname, double arr[]);
+void read1D(std::string fname, double arr[], int dflag);
 void read2D(std::string fname, CArray2D<double> &arr, int x, int y);
