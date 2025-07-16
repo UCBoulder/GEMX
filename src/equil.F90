@@ -169,8 +169,8 @@ contains
       
       do i =0,nx
             do j =0,nz
-		b0(i,j) = sqrt(b0x(i,j)**2+b0z(i,j)**2+b0zeta(i,j)**2)
-    	end do
+               b0(i,j) = sqrt(b0x(i,j)**2+b0z(i,j)**2+b0zeta(i,j)**2)
+            end do
       end do 
 
 

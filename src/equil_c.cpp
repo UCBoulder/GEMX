@@ -185,7 +185,7 @@ void new_equil_c(){
             index+=1;
         }
     }
-    //Calder Edits Finish (sorta)
+    //Calder Edits Finish 
 
 
 
@@ -239,7 +239,7 @@ void new_equil_c(){
     xu = proton*vu/(e*bu);
     xu = 1; //?
     nu = 2.5e19;
-    betaVal = 4*3.14159*1e-7*nu*tu/(bu*bu); //is this the whole thing squared or bu squared? Double check
+    betaVal = 4*3.14159*1e-7*nu*tu/(bu*bu); //is this the whole thing squared or bu squared? Double check if ever used
     
 //     assign T, n profiles 
     for(int i = 0; i <= nx; ++i){
@@ -328,7 +328,7 @@ void new_equil_c(){
 
     for(int i = 2; i <= nx-2; ++i){
         for(int j = 2; j <= nz-2; ++j){
-            if(!(mask(i+1,j) * mask(i-1,j) * mask(i,j+1) * mask(1,j-1))){ //idea: bitwise & can make this faster technically
+            if((mask(i+1,j) * mask(i-1,j) * mask(i,j+1) * mask(i,j-1)) == 0){ //idea: bitwise & can make this faster technically
                 mask2(i,j) = 0;
             } else {
                 mask2(i,j) = 2;
@@ -338,7 +338,7 @@ void new_equil_c(){
 
     for(int i = 2; i <= nx-2; ++i){
         for(int j = 2; j <= nz-2; ++j){
-            if(!(mask2(i+1,j) * mask2(i-1,j) * mask2(i,j+1) * mask2(1,j-1))){ //idea: bitwise & can make this faster technically
+            if((mask2(i+1,j) * mask2(i-1,j) * mask2(i,j+1) * mask2(i,j-1))==0){ //idea: bitwise & can make this faster technically
                 mask3(i,j) = 0;
             } else {
                 mask3(i,j) = 3;
@@ -346,9 +346,9 @@ void new_equil_c(){
         }
     }
 
-    for(int i = 2; i < nx-2; ++i){
-        for(int j = 2; j < nz-2; ++j){
-            if(!(mask3(i+1,j) * mask3(i-1,j) * mask3(i,j+1) * mask3(1,j-1))){ //idea: bitwise & can make this faster technically
+    for(int i = 2; i <= nx-2; ++i){
+        for(int j = 2; j <= nz-2; ++j){
+            if((mask3(i+1,j) * mask3(i-1,j) * mask3(i,j+1) * mask3(i,j-1))==0){ //idea: bitwise & can make this faster technically
                 mask4(i,j) = 0;
             } else {
                 mask4(i,j) = 4;
@@ -357,12 +357,47 @@ void new_equil_c(){
     }
 
     if(myid==0){ 
-        //prints a lot of information to different files do later
         ofstream file;
-        file.open("mask.out");
+        file.open("test_1_over_vA2");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << c2_over_vA2(i,j) << "    ";
+            }
+            file << "\n";
+         }
+         file.close();
+        
+        file.open("mask");
          for(int j = 0; j <= jmx; ++j)  {
             for(int i = 0; i <= imx; ++i) {
                file << mask(i,j) << "    ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+        file.open("mask2");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << mask2(i,j) << "    ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+         file.open("mask3");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << mask3(i,j) << "    ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+         file.open("mask4");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << mask4(i,j) << "    ";
             }
             file << "\n";
          }

@@ -570,7 +570,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d %d %d", &iput, &iget, &ision, &peritr);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d %d", &nplot, &xnplt);
+      fscanf(in_file, "%d %d %d", &nplot, &xnplt, &iflr);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%lf %lf %lf", &cut, &amp, &tor);
       fscanf(in_file, " %*[^\n]\n");
@@ -589,7 +589,6 @@ void init(){
       fscanf(in_file, "%d", &dbg);
    }
    fclose(in_file);
-
    nsm = 1;
 
    new_gemx_com(); //initializes arrays in gemx_com_c
@@ -1099,7 +1098,7 @@ void integ_c_(int iflag) {
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
-      zeta= fmod(zeta3[m], pi2);
+      zeta= fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
       if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << "\n";
       k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
