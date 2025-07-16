@@ -13,10 +13,10 @@
       REAL(8) :: b,th,r,enerb,qr,ter,x,z,zeta,bstar
       REAL(8) :: xt,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap,vcurlbdotE,dbdzetap=0
-      REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),Bstar3(3)
+      REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),BStar3(3)
       !Dom timing
       REAL(8) :: myStart, myEnd
-!      real(8),dimension(3)::curlbp,Bstar3
+!      real(8),dimension(3)::curlbp,BStar3
       start_ppush_tm = MPI_WTIME()
 
 
@@ -25,7 +25,7 @@
        T_center = t0i(imx/2,jmx/2)
 
        
-!$acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table)
+!$acc parallel loop gang vector private(rhoy,BStar3,rhox) copy(rand_table)
        
       call cpu_time(myStart)
       do m=1,mm(1)
@@ -207,13 +207,13 @@
          vpar = u2(m)
          enerb=(mu(m)+mims(1)*vpar*vpar/b)/q(1)*tor
 
-         Bstar3(1)=bfldxp +mims(1)*vpar*curlbp(1)/q(1)+delbxp
-         Bstar3(2)=bfldzp+mims(1)*vpar*curlbp(2)/q(1)+delbzp
-         Bstar3(3)=bfldzetap+mims(1)*vpar*curlbp(3)/q(1)
+         BStar3(1)=bfldxp +mims(1)*vpar*curlbp(1)/q(1)+delbxp
+         BStar3(2)=bfldzp+mims(1)*vpar*curlbp(2)/q(1)+delbzp
+         BStar3(3)=bfldzetap+mims(1)*vpar*curlbp(3)/q(1)
 
 
 !         bstar=b+mims(1)*vpar*bdcurlbp/q(1)
-         bstar=(bfldxp*Bstar3(1)+bfldzp*Bstar3(2)+bfldzetap*Bstar3(3))/bfldp
+         bstar=(bfldxp*BStar3(1)+bfldzp*BStar3(2)+bfldzetap*BStar3(3))/bfldp
 !         write(*,*)bstar-b-mims(1)*vpar*bdcurlbp/q(1), b-bfldp
 !         vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
          
@@ -232,9 +232,9 @@
 
 
 !         write(*,*) dbdzetap
-         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
-         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
-         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
+         xdot = (vpar*BStar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
+         zdot = (vpar*BStar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
+         zetadot = (vpar*BStar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
 
 
          
@@ -246,7 +246,7 @@
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3(1)*(q(1)*exp1-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
+         pzdot = (BStar3(1)*(q(1)*exp1-mu(m)*dbdxp)+BStar3(2)*(q(1)*ezp-mu(m)*dbdzp)+BStar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
           
          
          edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
@@ -300,8 +300,8 @@
       REAL(8) :: b,th,r,enerb,qr,ter,x,z,zeta
       REAL(8) :: xt,xs,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0,vcurlbdotE
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0
-      REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),Bstar3(3)
-!      real(8),dimension(3)::curlbp,Bstar3
+      REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),BStar3(3)
+!      real(8),dimension(3)::curlbp,BStar3
 
       start_cpush_tm = MPI_WTIME()
       nudi0 = 1/sqrt(2.0)*18.4*e**1.5*4.7140d-8*1.d-6
@@ -311,7 +311,7 @@
       !      write(*,*)nudi0
 
       
-!$acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
+!$acc parallel loop gang vector private(BStar3,rhoy,rhox) copy(rand_table)
       do m=1,mm(1)
          x=x3(m)
          i = int(x/dxeq)
@@ -456,14 +456,14 @@
          vpar = u3(m)
          enerb=(mu(m)+mims(1)*vpar*vpar/b)/q(1)*tor
 
-         Bstar3(1)=bfldxp+mims(1)*vpar*curlbp(1)/q(1)+delbxp
-         Bstar3(2)=bfldzp+mims(1)*vpar*curlbp(2)/q(1)+delbzp
-         Bstar3(3)=bfldzetap+mims(1)*vpar*curlbp(3)/q(1)
+         BStar3(1)=bfldxp+mims(1)*vpar*curlbp(1)/q(1)+delbxp
+         BStar3(2)=bfldzp+mims(1)*vpar*curlbp(2)/q(1)+delbzp
+         BStar3(3)=bfldzetap+mims(1)*vpar*curlbp(3)/q(1)
 
          
 !        bstar=b+mims(1)*vpar*bdcurlbp/q(1)
 
-         bstar=(bfldxp*Bstar3(1)+bfldzp*Bstar3(2)+bfldzetap*Bstar3(3))/bfldp
+         bstar=(bfldxp*BStar3(1)+bfldzp*BStar3(2)+bfldzetap*BStar3(3))/bfldp
          
 
 !         vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
@@ -487,9 +487,9 @@
 
 
 !         write(*,*)dbdzetap
-         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
-         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
-         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
+         xdot = (vpar*BStar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
+         zdot = (vpar*BStar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
+         zetadot = (vpar*BStar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
 
 
          
@@ -499,7 +499,7 @@
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3(1)*(q(1)*exp1-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
+         pzdot = (BStar3(1)*(q(1)*exp1-mu(m)*dbdxp)+BStar3(2)*(q(1)*ezp-mu(m)*dbdzp)+BStar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
           
 
          edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)

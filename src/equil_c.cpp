@@ -297,7 +297,7 @@ void new_equil_c(){
             t0i(i,j) = t0i(i,j)*tu;
         }
     }
-    xn0i = xn0i; //not sure why this is here
+    xn0i = xn0e; 
 
     for(int i = 0; i <= nx; ++i){
         for(int j = 0; j <= nz; ++j){
@@ -358,6 +358,15 @@ void new_equil_c(){
 
     if(myid==0){ 
         //prints a lot of information to different files do later
+        ofstream file;
+        file.open("mask.out");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << mask(i,j) << "    ";
+            }
+            file << "\n";
+         }
+         file.close();
     }
 
     //Normalization

@@ -9,3 +9,6 @@
 
 void ppush_c_(const int &n);
 void cpush_c_(const int &n);
+inline void prepareDeviceData();
+inline void freeDeviceData();
+void updateHost1DArrays();

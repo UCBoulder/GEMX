@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cassert>
+#include <iostream>
 
 template<typename T>
 class CArray4D {
@@ -20,6 +21,19 @@ class CArray4D {
             delete[] data_;
             data_ = NULL;
         }
+
+    void todev(){ // move to device
+        #pragma acc enter data copyin(this[0:1], data_[0:size_])
+    }
+    void fromdev(){ // remove from device
+        #pragma acc exit data delete( data_[0:size_], this[0:1])
+    }
+    void updatehost(){ // update host copy of data
+        #pragma acc update self( data_[0:size_] )
+    }
+    void updatedev(){ // update device copy of data
+        #pragma acc update device( data_[0:size_] )
+    }
 
         //x + y*D1 + z*D1*D2 + t*D1*D2*D3
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
@@ -74,7 +88,19 @@ public:
 
     ~CArray3D() {
         delete[] data_;
-        data_ = NULL;
+    }
+
+    void todev(){ // move to device
+        #pragma acc enter data copyin(this[0:1], data_[0:size_])
+    }
+    void fromdev(){ // remove from device
+        #pragma acc exit data delete( data_[0:size_], this[0:1])
+    }
+    void updatehost(){ // update host copy of data
+        #pragma acc update self( data_[0:size_] )
+    }
+    void updatedev(){ // update device copy of data
+        #pragma acc update device( data_[0:size_] )
     }
 
     void resize(size_t xsize, size_t ysize, size_t zsize) { //int flag (idea for future, allow dynamic re-allocation without deleting previous data)
@@ -95,6 +121,12 @@ public:
        y_ = y;
        z_ = z;
        size_ = x_ * y_ * z_;
+    }
+
+    void Print() {
+        for(auto i = 0; i <= size_; ++i) {
+            std::cout << i << "   " << data_[i] << std::endl;
+        }
     }
 
     void Clear() {
@@ -145,6 +177,7 @@ private:
 template<typename T>
 class CArray2D{
     public:
+    //constructor and destructor
     CArray2D() {
         x_ = 0;
         y_ = 0;
@@ -154,9 +187,23 @@ class CArray2D{
 
     ~CArray2D(){
         delete[] data_;
-        data_ = NULL;
     }
 
+    //GPU and CPU parallelization functions (Use these to copy info in arrays to devices/hosts)
+    void todev(){ // move to device
+        #pragma acc enter data copyin(this[0:1], data_[0:size_])
+    }
+    void fromdev(){ // remove from device
+        #pragma acc exit data delete( data_[0:size_], this[0:1])
+    }
+    void updatehost(){ // update host copy of data
+        #pragma acc update self( data_[0:size_] )
+    }
+    void updatedev(){ // update device copy of data
+        #pragma acc update device( data_[0:size_] )
+    }
+
+    //Member Functions (use these to interact with arrays)
     void resize(size_t xsize, size_t ysize) {
         x_ = xsize;
         y_ = ysize;
@@ -170,6 +217,14 @@ class CArray2D{
 
     void Clear() {
         std::fill(data_, data_+size_, T{});
+    }
+
+    void Print() {
+        for(auto i = 0; i <= size_; ++i) {
+            if(data_[i] > 100000) {
+                std::cout << i << "   " << data_[i] << std::endl;
+            }
+        }
     }
 
     T* start() {

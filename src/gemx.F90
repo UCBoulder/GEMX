@@ -47,24 +47,24 @@ program gemx
 
       if (eBoltzmann == 0) then !Calder Edit
 
-       PETSC_COMM_WORLD =  PETSC_COMM
-      
+         PETSC_COMM_WORLD =  PETSC_COMM
+         
 
-       
-       PetscCallA(PetscInitialize(petsc_ierr))
+         
+         PetscCallA(PetscInitialize(petsc_ierr))
 
 
 
-       PetscCallA(KSPCreate(PETSC_COMM_WORLD,ksp,petsc_ierr))
-       PetscCallA(DMDACreate2D(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, dm, petsc_ierr))
-       PetscCallA(DMSetFromOptions(dm,petsc_ierr))
-       PetscCallA(DMSetUp(dm,petsc_ierr))
-       PetscCallA(KSPSetDM(ksp,dm,petsc_ierr))
-       PetscCallA(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,0,petsc_ierr))
-       PetscCallA(KSPSetComputeOperators(ksp,ComputeMatrix,0,petsc_ierr))      	
-       PetscCallA(DMDAGetCorners(dm,is,js,PETSC_NULL_INTEGER,iw,jw,PETSC_NULL_INTEGER,petsc_ierr))
-       PetscCallA(KSPSetFromOptions(ksp,petsc_ierr))
-       PetscCallA(KSPSetUp(ksp,petsc_ierr))
+         PetscCallA(KSPCreate(PETSC_COMM_WORLD,ksp,petsc_ierr))
+         PetscCallA(DMDACreate2D(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, dm, petsc_ierr))
+         PetscCallA(DMSetFromOptions(dm,petsc_ierr))
+         PetscCallA(DMSetUp(dm,petsc_ierr))
+         PetscCallA(KSPSetDM(ksp,dm,petsc_ierr))
+         PetscCallA(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,0,petsc_ierr))
+         PetscCallA(KSPSetComputeOperators(ksp,ComputeMatrix,0,petsc_ierr))      	
+         PetscCallA(DMDAGetCorners(dm,is,js,PETSC_NULL_INTEGER,iw,jw,PETSC_NULL_INTEGER,petsc_ierr))
+         PetscCallA(KSPSetFromOptions(ksp,petsc_ierr))
+         PetscCallA(KSPSetUp(ksp,petsc_ierr))
       end if !Calder Edit
 
 
@@ -72,32 +72,32 @@ program gemx
 
 !  include "Initialize_petsc.h"
      
-       if(iget.eq.0)call loadi
-       call integ(2)
+      if(iget.eq.0)call loadi
+      call integ(2)
 
-               if(myid==0)then
-                open(unit=11, file = 'testden',status='unknown',action='write')
-                do j=0,jmx                 
-                  write(11,*) den2d2(:,j)
-                enddo
-                  close(11)
-               end if
-               if(i3D==0)then
-                  do k=1,kmx
-                     xn0i=den2d2
-                  end do
-               end if
-               
-       
-        starttm=MPI_WTIME()
-        upar=0
+      if(myid==0)then
+         open(unit=11, file = 'testden',status='unknown',action='write')
+         do j=0,jmx                 
+         write(11,*) den2d2(:,j)
+         enddo
+         close(11)
+      end if
+      if(i3D==0)then
+         do k=1,kmx
+            xn0i=den2d2
+         end do
+      end if
+            
+      
+      starttm=MPI_WTIME()
+      upar=0
 
-        mid_i=imx/2
-        mid_j=jmx/2
-        mid_i=257
-        mid_j=257
+      mid_i=imx/2
+      mid_j=jmx/2
+      mid_i=257
+      mid_j=257
 
-        tor_n=1
+      tor_n=1
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!initialize perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         do k=0,kmx
@@ -131,457 +131,351 @@ program gemx
               enddo
            enddo
            
-           phiavg=0 !Calder Edit
+      phiavg=0 !Calder Edit
 
-           call get_jpar(apar)
-           call get_ne(1)
+      call get_jpar(apar)
+      call get_ne(1)
 
-           if(i3d==0)then
-              apar=0
-              dene=0
-              call integ(2)
-           end if
+      if(i3d==0)then
+         apar=0
+         dene=0
+         call integ(2)
+      end if
            
 
-           if (MyId==0) then
+      if (MyId==0) then
 
-           open(unit=11, file = 'testj0',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) jpar(:,j,outk)
-                  enddo
-               close(11)
+      open(unit=11, file = 'testj0',status='unknown',action='write')
+         do j=0,jmx
+            
+            write(11,*) jpar(:,j,outk)
+            enddo
+         close(11)
 
-               open(unit=11, file = 'testne0',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) dene(:,j,outk)
-                  enddo
-               close(11)
+         open(unit=11, file = 'testne0',status='unknown',action='write')
+         do j=0,jmx
+            
+            write(11,*) dene(:,j,outk)
+            enddo
+         close(11)
 
-               open(unit=11, file = 'testapar0',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) apar(:,j,outk)
-                  enddo
-               close(11)
-               
-               open(unit=11, file = 'testne0_zeta',status='unknown',action='write')
-                 do k=0,kmx
-                   write(11,*) dene(mid_i,mid_j,k)
-                 enddo
-               close(11)
+         open(unit=11, file = 'testapar0',status='unknown',action='write')
+         do j=0,jmx
+            
+            write(11,*) apar(:,j,outk)
+            enddo
+         close(11)
+         
+         open(unit=11, file = 'testne0_zeta',status='unknown',action='write')
+            do k=0,kmx
+               write(11,*) dene(mid_i,mid_j,k)
+            enddo
+         close(11)
 
-              open(unit=11, file = 'testjpar0_zeta',status='unknown',action='write')
-                 do k=0,kmx
-                   write(11,*) jpar(mid_i,mid_j,k)
-                 enddo
-               close(11)
-            end if
+         open(unit=11, file = 'testjpar0_zeta',status='unknown',action='write')
+            do k=0,kmx
+               write(11,*) jpar(mid_i,mid_j,k)
+            enddo
+         close(11)
+      end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
          
  if (ifield_solver .eq. 1) then         
                  ncurr = 1                      
  end if
 
-  start_total_tm = MPI_WTIME()
-  do  timestep=ncurr,nm
-     do i=0,10006
-          if (ran2(iseed)-0.5>0) then
-             rand_table(i)=1
-          else
-             rand_table(i)=-1
-      end if
-          
-      end do
-           tcurr = tcurr+dt
+!START OF MAIN LOOP HERE!
+start_total_tm = MPI_WTIME()
+do  timestep=ncurr,nm
+   do i=0,10006
+      if (ran2(iseed)-0.5>0) then
+         rand_table(i)=1
+      else
+         rand_table(i)=-1
+      end if   
+   end do
+   tcurr = tcurr+dt
 
-!	   call accumulate(timestep-1,0)
-!	   call ezamp
-!	   call gkps
-!     call field(timestep-1,0)
+   if(ifield_solver .eq. 1 ) then
 
-
-      if(ifield_solver .eq. 1 ) then
-
-       phi = 0.0 
-       phiavg = 0.0
-       denes=dene
+      phi = 0.0 
+      phiavg = 0.0
+      denes=dene
 
 
-       
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
-                 
-         do iter=0, iterations
-            call fluxavg(phi,phiavg)
+         
+      if(i3D /= 0) then
+         do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
+                     
+            do iter=0, iterations
+               call fluxavg(phi,phiavg)
                if (eBoltzmann == 1) then
                   call boltzsolve(phi)
                else
-
-
-          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
-
-         
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
+                  PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+                  PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+                  PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+                  PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+                  PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+                  PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+               
+                  do idx=1, vec_end-vec_start
+                     i=mod(idx-1,(iw))+is
+                     j=(idx-1)/(iw)+js
+                     phi(i,j,k)=phi_array(idx)!*mask(i,j)
+                  enddo
+                  PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+               end if
+            enddo
          enddo
-          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-            end if
-         enddo
-       enddo
-            
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-   else   
-       k=0
-
-       do iter=0, iterations
-         call fluxavg(phi,phiavg)
-         if (eBoltzmann == 1) then
-            call boltzsolve(phi)
-         else
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
-
-
-        PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-       
-        
-
+               
          call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+      else   
+         k=0
 
-         do k=1,kmx
-            phi(:,:,k)=phi(:,:,0)
-         end do
-
-       end if !Calder Edit
-      end do !Calder Edit
-               
-   end if
-      
-         
-   call efieldcalc(phi)   
-
-          
-
-!            if (Myid==0) then
-!               open(unit=11, file = 'testphis',status='unknown',action='write')
-!               do j=0,jmx
-                  
-!                  write(11,*) phi(:,j,outk)-phi(:,j,outk+1)
-!                  enddo
-!                  close(11)
-!             endif
-
- !              open(unit=11, file = 'testphis1',status='unknown',action='write')
- !              do j=0,jmx
-                  
- !                 write(11,*) phi(:,j,outk+1)
- !                 enddo
- !              close(11)
-      
-         
- 
-         call get_apar(-1)
-         !call smooth(apars,2)
-           call get_jpar(apars)
-           !call smooth(jpar,3)      
-           call get_ne_c(-1)
-
-!           if(myid==0)then
-!               open(unit=11, file = 'testapars',status='unknown',action='write')
-!               do j=0,jmx
-                  
-!                  write(11,*) apars(:,j,outk)-apars(:,j,outk+1)
-!                  enddo
-!                  close(11)
-
-!               open(unit=11, file = 'testjpars',status='unknown',action='write')
-!               do j=0,jmx
-                  
-!                  write(11,*) jpar(:,j,outk)-jpar(:,j,outk+1)
-!                  enddo
-!               close(11)   
-
-
- !              open(unit=11, file = 'testnes',status='unknown',action='write')
- !              do j=0,jmx
-                  
- !                 write(11,*) denes(:,j,outk)-denes(:,j,outk+1)
- !                 enddo
- !                 close(11)
-
- !              open(unit=11, file = 'testBR',status='unknown',action='write')
- !              do j=0,jmx
-                  
- !                 write(11,*) b0x(:,j)
- !                 enddo
- !                 close(11)
- !              end if
-
-
-               if(ision==1)call ppush_c(timestep)
-               if(ifluid==1)call integ(1)
-               
-
-          else
-             if(ision==1)call ppush_c(timestep)
-                        !  if(ifluid==1)call pintef
-             if(ifluid==1)call integ(1)
-             !if(ifluid==1)call integ_c(1)
-
-!             if(myid==0)then
-!                open(unit=11, file = 'testden',status='unknown',action='write')
-!                do j=0,jmx                 
-!                  write(11,*) den2d2(:,j)
-!                enddo
-!                  close(11)
-!              end if
-                              
-               
-            endif
-            
- ! write(*,*)'dx=', dx, 'dz=',dz
-
-
-!	   call accumulate(timestep,1)
-!	   call ezamp
-!	   call gkps
-!	   call field(timestep,1)
-
-     if (ifield_solver .eq. 1) then
-        phi=0.0
-
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
-       
-         do iter=0,iterations
+         do iter=0, iterations
             call fluxavg(phi,phiavg)
             if (eBoltzmann == 1) then
                call boltzsolve(phi)
-            else      
-                     
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+            else
+               PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+               PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+               PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+               PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+               PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
 
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
-         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-         end if
-	enddo
-      enddo
+               do idx=1, vec_end-vec_start
+                  i=mod(idx-1,(iw))+is
+                  j=(idx-1)/(iw)+js
+                  phi(i,j,k)=phi_array(idx)!*mask(i,j)
+               enddo
+            
+               PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+               call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
-      
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-           
+               do k=1,kmx
+                  phi(:,:,k)=phi(:,:,0)
+               end do
+
+            end if !Calder Edit
+         end do !Calder Edit            
+      end if !end of i3d if statement
+         
+            
+      call efieldcalc(phi)
+         
+            
+   
+      call get_apar(-1)
+      call get_jpar(apars)
+      call get_ne_c(-1)
+
+
+      if(ision==1)call ppush_c(timestep)
+      if(ifluid==1)call integ(1)
+                  
+
    else
+      if(ision==1)call ppush_c(timestep)
+      if(ifluid==1)call integ(1)
+   endif !endif for fist ifieldsolver
 
-      k=0
-      
+   if (ifield_solver .eq. 1) then
+      phi=0.0
+
+      if(i3D /= 0) then
+         do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
+            do iter=0,iterations
+               call fluxavg(phi,phiavg)
+               if (eBoltzmann == 1) then
+                  call boltzsolve(phi)
+               else      
+                        
+                  PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+                  PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+                  PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+                  PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+                  PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+
+                  do idx=1, vec_end-vec_start
+                     i=mod(idx-1,(iw))+is
+                     j=(idx-1)/(iw)+js
+                     phi(i,j,k)=phi_array(idx)!*mask(i,j)
+                  enddo
+                  PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+               end if
+            enddo
+         enddo
+
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+            
+      else
+
+         k=0
+         
          do iter=0, iterations
             call fluxavg(phi,phiavg)
             if (eBoltzmann == 1) then
                call boltzsolve_c(phi)
             else
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+               PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+               PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+               PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+               PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
 
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
-         
-         
-            
-
-            PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-
-         do k=1,kmx
-            phi(:,:,k)=phi(:,:,0)
-         end do
-      end if !Calder Edit
-     end do !Calder Edit         
-   end if
-   
-
-
-   !call efieldcalc(phi)
-   call efieldcalc(phi) 
-   if (i3D == 1) then
-      call growthdiag(phi)
-   end if
-
-
-
-               if(MyId==0 .and. mod(timestep,10)==0)then
-                  write(*,*)'outk=',outk
-
-               open(unit=11, file = 'testphi',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) phi(:,j,outk)
+               do idx=1, vec_end-vec_start
+                  i=mod(idx-1,(iw))+is
+                  j=(idx-1)/(iw)+js
+                  phi(i,j,k)=phi_array(idx)!*mask(i,j)
                enddo
+
+               PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+               call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+               do k=1,kmx
+                  phi(:,:,k)=phi(:,:,0)
+               end do
+            end if !Calder Edit
+         end do !Calder Edit         
+      end if !End of second i3d check
+      
+      call efieldcalc(phi) 
+      if (i3D == 1) then
+         call growthdiag(phi)
+      end if
+
+      if(MyId==0 .and. mod(timestep,10)==0)then
+         write(*,*)'outk=',outk
+
+      open(unit=11, file = 'testphi',status='unknown',action='write')
+      do j=0,jmx
+         
+         write(11,*) phi(:,j,outk)
+      enddo
+      
+      close(11)
+
+      end if
                
-               close(11)
+   
+                     
+      
 
-               end if
-            
- 
-                  
-     
-
-    call get_apar(1)
-    !call smooth_c(apar,2)   !testing
-      !call get_jpar(apar)
+      call get_apar(1)
       call get_jpar(apar)
-      !call smooth(jpar,3)   !testing
       call get_ne_c(1)
 
 
       if(MyId==0 .and. mod(timestep,10)==0)then
+         open(unit=11, file = 'testphiavg',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) phiavg(:,j)
+         enddo
+         close(11)
 
-      open(unit=11, file = 'testphiavg',status='unknown',action='write')
-      do j=0,jmx
-         write(11,*) phiavg(:,j)
-      enddo
-      close(11)
+         open(unit=11, file = 'testER', status='unknown',action='write')
+         do j=0, jmx
+            write(11,*) ex(:,j,0)
+         end do
 
-      open(unit=11, file = 'testER', status='unknown',action='write')
-      do j=0, jmx
-         write(11,*) ex(:,j,0)
-      end do
-
-      open(unit=11,file='testEZ', status='unknown',action='write')
-      do j=0,jmx
-         write(11,*) ez(:,j,0)
-      end do
+         open(unit=11,file='testEZ', status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) ez(:,j,0)
+         end do
       end if
+
+         
+
+      if(ision==1)call cpush(timestep)
+         !        if(ifluid==1)call cintef(timestep)
+         if(ifluid==1)call integ(2)
+      else
+         !if(ision==1)call cpush(timestep)
+         if(ision==1)call cpush_c(timestep)
+         !        if(ifluid==1)call cintef(timestep)
+         if(ifluid==1)call integ(2)
+         !if(ifluid==1)call integ_c(2)
+         !        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      end if
+      
+
+      if(myid==0 .and. mod(timestep,10)==0)then
+         open(unit=11, file = 'testden2',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) den2d2(:,j)
+         enddo
+         close(11)
+         open(unit=11, file = 'testdiffden',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) dden2d(:,j)
+         enddo
+         open(unit=11, file = 'testupar',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) upar(:,j,0)
+         enddo
+         close(11)
+      end if
+         
 
       
 
-       if(ision==1)call cpush(timestep)
-        !        if(ifluid==1)call cintef(timestep)
-       if(ifluid==1)call integ(2)
-    else
-        !if(ision==1)call cpush(timestep)
-        if(ision==1)call cpush_c(timestep)
-        !        if(ifluid==1)call cintef(timestep)
-        if(ifluid==1)call integ(2)
-        !if(ifluid==1)call integ_c(2)
-        !        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-     end if
-     
+      call outd_c(timestep)
 
-        if(myid==0 .and. mod(timestep,10)==0)then
-           open(unit=11, file = 'testden2',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) den2d2(:,j)
-           enddo
-           close(11)
-           open(unit=11, file = 'testdiffden',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) dden2d(:,j)
-           enddo
-           open(unit=11, file = 'testupar',status='unknown',action='write')
-           do j=0,jmx
-              write(11,*) upar(:,j,0)
-           enddo
-           close(11)
-        end if
-        
+      if(MyId==0 .and. ifield_solver==1 .and. mod(timestep,10)==0) then    
+         open(unit=11, file = 'testapar',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) apar(:,j,outk)
+         enddo
+         close(11)
 
-    
+         open(unit=11, file = 'testjpar',status='unknown',action='write')
+         do j=0,jmx
+            write(11,*) jpar(:,j,outk)
+         enddo
+         close(11)   
 
-     call outd_c(timestep)
+         open(unit=11, file = 'testne',status='unknown',action='write')
+         do j=0,jmx 
+            write(11,*) dene(:,j,outk)
+         enddo
+            close(11)
 
-         if(MyId==0 .and. ifield_solver==1 .and. mod(timestep,10)==0) then    
-               open(unit=11, file = 'testapar',status='unknown',action='write')
-               do j=0,jmx
+         open(unit=11, file = 'testphi_r_phi',status='unknown',action='write')
+         do k=0,kmx
+            write(11,*) phi(:,mid_j,k)
+         enddo
+         close(11)
+      end if
+         
+
+
+
+
+      if(myid.eq.master .and. mod(timestep,xnplt)==0)then
+         open(9,file='plot',status='unknown',position='append')
+         m = 2
+         i = 4
+         write(9,10)timestep,(x2(m+i*j),z2(m+i*j),j=1,7)
+   10           format(1x,i6,16(1x,e10.3))
+         close(9)
+      end if
+
+      if(myid.eq.master .and. ifield_solver.eq.1)then
+         open(unit=11, file = 'testAtPhitrhotjt',status='unknown',position='append')                
+         write(11,*)apar(387,256,outk),phi(387,256,outk),dene(387,256,outk),jpar(387,256,outk)
+         close(11)
+         if(mod(timestep,100)==0)then
+            open(unit=11, file = 'testPhit',status='unknown',position='append')
+            write(11,*)phi(:,:,outk)
+         end if
+               
                   
-                  write(11,*) apar(:,j,outk)
-                  enddo
-                  close(11)
-
-               open(unit=11, file = 'testjpar',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) jpar(:,j,outk)
-                  enddo
-               close(11)   
-
-
-               open(unit=11, file = 'testne',status='unknown',action='write')
-               do j=0,jmx
-                  
-                  write(11,*) dene(:,j,outk)
-                  enddo
-                  close(11)
-
-               open(unit=11, file = 'testphi_r_phi',status='unknown',action='write')
-               do k=0,kmx
-                  
-                  write(11,*) phi(:,mid_j,k)
-                  enddo
-               close(11)
-            end if
             
-
-
-
-
-           if(myid.eq.master .and. mod(timestep,xnplt)==0)then
-              open(9,file='plot',status='unknown',position='append')
-              m = 2
-              i = 4
-              write(9,10)timestep,(x2(m+i*j),z2(m+i*j),j=1,7)
- 10           format(1x,i6,16(1x,e10.3))
-              close(9)
-           end if
-
-           if(myid.eq.master .and. ifield_solver.eq.1)then
-              open(unit=11, file = 'testAtPhitrhotjt',status='unknown',position='append')                
-              write(11,*)apar(387,256,outk),phi(387,256,outk),dene(387,256,outk),jpar(387,256,outk)
-              close(11)
-              if(mod(timestep,100)==0)then
-                 open(unit=11, file = 'testPhit',status='unknown',position='append')
-                 write(11,*)phi(:,:,outk)
-              end if
-              
-                 
-          
-           write(*,*)'time_step=', timestep
-           write(*,*)'dx=', dx, 'dz=',dz,'dzeta=',dzeta,'omega_A0=', tor_n/(Rgrid(mid_i)/xu*sqrt(c2_over_vA2(mid_i,mid_j)))
-           write(*,*)'v_A=', 1/sqrt(c2_over_vA2(mid_i,mid_j)), 'Omega_i=', q(1)*b0(mid_i,mid_j)/mims(1)
-        end if
-        
-
- end do
+         write(*,*)'time_step=', timestep
+         write(*,*)'dx=', dx, 'dz=',dz,'dzeta=',dzeta,'omega_A0=', tor_n/(Rgrid(mid_i)/xu*sqrt(c2_over_vA2(mid_i,mid_j)))
+         write(*,*)'v_A=', 1/sqrt(c2_over_vA2(mid_i,mid_j)), 'Omega_i=', q(1)*b0(mid_i,mid_j)/mims(1)
+      end if
+end do
 end_total_tm = MPI_WTIME()
 total_tm = total_tm + end_total_tm - start_total_tm
         call MPI_reduce(ppush_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)

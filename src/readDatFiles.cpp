@@ -47,8 +47,8 @@ void read2D(std::string fname, CArray2D<double> &arr, int x, int y){
     file.close();
     //use vlaues stored in 1D array to translate to 2D array
     int r = 0; //indexing term for 1D array
-    for(int i = 0; i <= x; ++i){
-        for(int j = 0; j <= y; ++j){
+    for(int j = 0; j <= y; ++j){
+        for(int i = 0; i <= x; ++i){
             arr(i,j) = tempArr[r];
             r++;
         }

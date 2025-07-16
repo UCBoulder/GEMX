@@ -25,7 +25,7 @@ OPT_COMMON_C := $(INCS_C)
 OPT_COMMON_REL := -O4
 OPT_COMMON_DBG := -O0 -g -C -traceback -Mchkptr
 OPT_CPU := -acc=host #Default to serial for cpu. -acc=multicore for parallel but should test against OpenMP on system.
-OPT_GPU := -acc -Minfo=accel
+OPT_GPU := -acc -Minfo=accel #-gpu=cuda12.2 #(mine)
 OPT_CPU_DBG := -Mbounds #Note, bounds checking disabled on gpu by OpenACC.
 
 #If not on perlmutter use local run script and local compiler. Default to CPU compilation for now.
@@ -37,7 +37,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall -fno-omit-frame-pointer $(OPT_COMMON_C) $(INCS) $(SUPPRESS)
 	else
-		OPT_C := -Ofast -march=native -Wall -Wextra -fopenmp $(SUPPRESS)
+		OPT_C := -O4 -march=native -Wall $(SUPPRESS) $(OPT_GPU)
 	endif
 endif
 
@@ -61,7 +61,7 @@ endif
 
 #Do all make tasks here so that nothing happens if up to date and not cleaned.
 $(EXE): $(OBJS_C)
-	$(CPP) -o $(EXE) $(LIBS) $(OBJS_C)
+	$(CPP) $(OPT_GPU) -o $(EXE) $(LIBS) $(OBJS_C)
 	$(MAKE) install
 	$(MAKE) check_diff
 

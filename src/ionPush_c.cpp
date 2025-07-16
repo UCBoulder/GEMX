@@ -2,6 +2,12 @@
 
 using namespace std;
 
+#pragma acc routine seq
+inline double my_fmod(double x, double y) {
+    return x - y * floor(x / y);
+}
+
+
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //       Ion pre-push
 //
@@ -14,26 +20,23 @@ void ppush_c_(const int &n) {
     double x = 0;
     double xt = 0,zt = 0,xdot = 0,zdot = 0,zetadot = 0,pzdot = 0,edot = 0;
     double dbdxp = 0,dbdzp = 0,bfldp = 0,bfldxp = 0,bfldzp = 0,bfldzetap = 0,dbdzetap=0;
-    double rhox[4], rhoy[4], curlbp[3], Bstar3[3];
+    double rhox[4], rhoy[4], BStar3[3], curlbp[3];
 //     fill(rhox,  rhox+3, 0.0);
 //     fill(rhoy,  rhoy+3, 0.0);
 //     fill(curlbp,  curlbp+2, 0.0);
-//     fill(Bstar3,  Bstar3+2, 0.0);
-    //real(8),dimension(3)::curlbp,Bstar3
+//     fill(BStar3,  BStar3+2, 0.0);
+    //real(8),dimension(3)::curlbp,BStar3
     start_ppush_tm = MPI_Wtime();
 
     nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)* 4.7140e-8* 1.e-6;
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
 
-//     // #pragma acc parallel loop gang vector \
-//     private(exp1, ezp, ezetap, delbxp, delbzp, energy, energy0, wx0, wx1, wy0, wy1, wz0, wz1, dum1, \
-//                 i, j, k, l, k_plus_1, rhog, vfac, kapxp, kapzp, vpar, kaptxp, kapnxp, kaptzp, kapnzp, xnp, \
-//                 b, enerb, ter, z, zeta, bstar, x, xt, zt, xdot, zdot, zetadot, pzdot, edot, \
-//                 dbdxp, dbdzp, bfldp, bfldxp, bfldzp, bfldzetap, dbdzetap, \
-//                 rhox, rhoy, curlbp, Bstar3) \
-//     present() \
-//     copy(rand_table)
+    prepareDeviceData();
+    #pragma acc data \
+    copyin(x2[0:mmx], z2[0:mmx], zeta2[0:mmx], rand_table[0:10007]) \
+    copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx])
+    #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox)
     for(m = 0; m < mm[0]; ++m){
         x = x2[m];
         i = static_cast<int>(x/dxeq);
@@ -49,6 +52,7 @@ void ppush_c_(const int &n) {
 
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
+        #pragma loop seq
         for(j = 0; j <= 2; ++j){
             curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
               +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
@@ -131,8 +135,8 @@ void ppush_c_(const int &n) {
     delbzp=0;
 
 //  4 pt. avg. done explicitly for vectorization...
-        // // #pragma acc parallel
-        // // #pragma acc loop seq
+        
+        #pragma acc loop seq 
         for(l = 0; l <= lr[0]; ++l){
 
             xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
@@ -205,13 +209,13 @@ void ppush_c_(const int &n) {
          vpar = u2[m];
          enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
 
-         Bstar3[0]=bfldxp +mims[0]*vpar*curlbp[0]/q[0]+delbxp;
-         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp;
-         Bstar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
+         BStar3[0]=bfldxp +mims[0]*vpar*curlbp[0]/q[0]+delbxp;
+         BStar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp;
+         BStar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
 
 
          //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
-         bstar=(bfldxp*Bstar3[0]+bfldzp*Bstar3[1]+bfldzetap*Bstar3[2])/bfldp;
+         bstar=(bfldxp*BStar3[0]+bfldzp*BStar3[1]+bfldzetap*BStar3[2])/bfldp;
          //  write(*,*)bstar-b-mims(1)*vpar*bdcurlbp/q(1), b-bfldp
          //  vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
          
@@ -230,9 +234,9 @@ void ppush_c_(const int &n) {
 
 
 //         write(*,*) dbdzetap
-         xdot = (vpar*Bstar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-         zdot = (vpar*Bstar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-         zetadot = (vpar*Bstar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
+         xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
+         zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
+         zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
 
 
          
@@ -244,7 +248,7 @@ void ppush_c_(const int &n) {
           //pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3[0]*(q[0]*exp1-mu[m]*dbdxp)+Bstar3[1]*(q[0]*ezp-mu[m]*dbdzp)+Bstar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
+         pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
           
          
          edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
@@ -271,13 +275,14 @@ void ppush_c_(const int &n) {
           w3[m]=0;
         }
     }
-//     // #pragma acc wait
+    #pragma acc wait
+    freeDeviceData();
     end_ppush_tm = MPI_Wtime();
     ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
 }
 
 //!-------------- End of subroutine ppush --------------------------------
-void cpush_c_(const int &n){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
+void cpush_c_(const int &timestep){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
         double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,T_center;                          //nudi=0,energy,rrr,energy0
         double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum
         int m,i,j,k,l,k_plus_1=0;                                                             //p_m,
@@ -285,9 +290,9 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
         double b,enerb,ter,x,z,zeta;                                                          //th,r,qr
         double xt,zt,xdot,zdot,zetadot,pzdot,edot;                                            //xs,xdt,ydt,pzd0,vp0,vcurlbdotE
         double dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0;
-        double rhox[4], rhoy[4], curlbp[3], Bstar3[3];
+        double rhox[4], rhoy[4], curlbp[3], BStar3[3];
 
-        //real(8),dimension(3)::curlbp,Bstar3
+        //real(8),dimension(3)::curlbp,BStar3
         start_cpush_tm = MPI_Wtime();
         nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
         //write(*,*)t0i(200,201)
@@ -295,7 +300,11 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
         //write(*,*)T_center*e
         //write(*,*)nudi0
         
-        // // #pragma acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
+        prepareDeviceData();
+        #pragma acc data \
+        copyin(rand_table[0:10007]) \
+        copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx], x2[0:mmx], z2[0:mmx],w2[0:mmx] ,zeta2[0:mmx])
+        #pragma acc parallel loop gang vector private(BStar3,rhoy,rhox)
         for(m = 0; m < mm[0]; ++m){
             x=x3[m];
             i = static_cast<int>(x/dxeq);
@@ -316,6 +325,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
            // bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
                              //+wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
+            #pragma loop seq
             for(j = 0; j <= 2; ++j){
                 curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
                 +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
@@ -369,8 +379,8 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          delbxp=0.;
          delbzp=0.;
 
-        // // #pragma acc parallel
-        // // #pragma acc loop seq
+
+        #pragma acc loop seq
         for(l = 0; l < lr[0]; ++l){
 
 //SP            xs=x3(m)+rhox(l) !rwx(1,l)*rhog
@@ -380,7 +390,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 //   particle can go out of bounds during gyroavg...
             if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
             if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
-            zeta = fmod(zeta3[m], pi2);
+            zeta = my_fmod(zeta3[m], pi2);
             if(zeta < 0) zeta += pi2;
             i=static_cast<int>(xt/dx);
             j=static_cast<int>(zt/dz);
@@ -428,11 +438,11 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
-         exp1 = exp1/4.; //proabably could use bitwise here if we wanted to
-         ezp = ezp/4.;
-         ezetap = ezetap/4.;
-         delbxp = delbxp/4.;
-         delbzp = delbzp/4.;
+         exp1 = exp1*0.25;
+         ezp = ezp*0.25;
+         ezetap = ezetap*0.25;
+         delbxp = delbxp*0.25;
+         delbzp = delbzp*0.25;
        
          vfac = 0.5*(mims[0]*pow(u2[m],2) + 2.*mu[m]*b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
@@ -441,13 +451,13 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
          vpar = u3[m];
          enerb=(mu[m]+mims[0]*vpar*vpar/b)/q[0]*tor;
        
-         Bstar3[0]=bfldxp+mims[0]*vpar*curlbp[0]/q[0]+delbxp;
-         Bstar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp; 
-         Bstar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
+         BStar3[0]=bfldxp+mims[0]*vpar*curlbp[0]/q[0]+delbxp;
+         BStar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp; 
+         BStar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
                 
        //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
        
-         bstar=(bfldxp*Bstar3[0]+bfldzp*Bstar3[1]+bfldzetap*Bstar3[2])/bfldp;
+         bstar=(bfldxp*BStar3[0]+bfldzp*BStar3[1]+bfldzetap*BStar3[2])/bfldp;
 
 
         //vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
@@ -471,9 +481,9 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 
 
 // !         write(*,*)dbdzetap
-         xdot = (vpar*Bstar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-         zdot = (vpar*Bstar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-         zetadot = (vpar*Bstar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
+         xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
+         zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
+         zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
 
 // !        pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 // !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*q(1)/mims(1)*nonlin
@@ -481,7 +491,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 // !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3[0]*(q[0]*exp1-mu[m]*dbdxp)+Bstar3[1]*(q[0]*ezp-mu[m]*dbdzp)+Bstar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
+         pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
  
 
          edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
@@ -497,7 +507,7 @@ void cpush_c_(const int &n){  //all warnings from this function are vars used in
 // !         vxdum = eyp+vpar/b*delbxp
 // !         w3(m)=w2(m) + dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-         zeta3[m]= fmod(zeta3[m],pi2);
+         zeta3[m]= my_fmod(zeta3[m],pi2);
          if(zeta3[m] < 0) zeta3[m] = zeta3[m] + pi2;
 
 
@@ -544,7 +554,86 @@ if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) )
         //          close(19)
         //       end if  
   }
-//   // #pragma acc wait
+  #pragma acc wait
+  freeDeviceData();
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
+}
+
+inline void prepareDeviceData() {
+    curlb.todev();
+    ex.todev();  //potentially not needed since sequential loop
+    ez.todev();
+    ezeta.todev();
+    dbdx.todev();
+    dbdz.todev();
+    b0.todev();
+    b0x.todev();
+    b0z.todev();
+    b0zeta.todev();
+    captix.todev();
+    captiz.todev();
+    capnix.todev();
+    capniz.todev();
+    xn0i.todev();
+    delbx.todev();
+    delbz.todev();
+    t0i.todev();
+
+//     // Grid-based fields
+//     curlb.updatedev();
+//     ex.updatedev();
+//     ez.updatedev();
+//     ezeta.updatedev();
+//     dbdx.updatedev();
+//     dbdz.updatedev();
+//     b0.updatedev();
+//     b0x.updatedev();
+//     b0z.updatedev();
+//     b0zeta.updatedev();
+//     captix.updatedev();
+//     captiz.updatedev();
+//     capnix.updatedev();
+//     capniz.updatedev();
+//     xn0i.updatedev();
+//     delbx.updatedev();
+//     delbz.updatedev();
+//     t0i.updatedev();
+}
+
+inline void freeDeviceData() {
+    curlb.fromdev();
+    ex.fromdev();
+    ez.fromdev();
+    ezeta.fromdev();
+    dbdx.fromdev();
+    dbdz.fromdev();
+    b0.fromdev();
+    b0x.fromdev();
+    b0z.fromdev();
+    b0zeta.fromdev();
+    captix.fromdev();
+    captiz.fromdev();
+    capnix.fromdev();
+    capniz.fromdev();
+    xn0i.fromdev();
+    delbx.fromdev();
+    delbz.fromdev();
+    t0i.fromdev();
+}
+
+//as a note: copyin will copy an array to gpu/cpu kernels.
+//           Using copy will tell openacc to update the host arrays without this function. 
+void updateHost1DArrays() {
+    #pragma acc update self(x3[0:mmx])
+    #pragma acc update self(z3[0:mmx])
+    #pragma acc update self(zeta3[0:mmx])
+    #pragma acc update self(u3[0:mmx])
+    #pragma acc update self(w3[0:mmx])
+
+    #pragma acc update self(x2[0:mmx])
+    #pragma acc update self(z2[0:mmx])
+    #pragma acc update self(zeta2[0:mmx])
+    #pragma acc update self(u2[0:mmx])
+    #pragma acc update self(w2[0:mmx])
 }

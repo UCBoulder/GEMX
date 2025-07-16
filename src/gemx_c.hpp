@@ -1,6 +1,7 @@
 #include "MultiArraysC.hpp"
 // #include <petscsys.h>
-// #include <petsc.h>
+#include <petsc.h>
+#include <petscmat.h>
 // #include <petscvec.h>
 // #include <petscmat.h>
 #include <petscksp.h>
@@ -9,12 +10,11 @@
 
 #pragma once
 
-extern "C" {
 void parperp_c_(double& vpar, double& vperp2, const int& m, const int& cnt);
 void loadi_c_();
 double ran2_c_(int& idum);
 void gradu_c_(CArray3D<double> &u, CArray3D<double> &ux, CArray3D<double> &uz);
-void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in);
+void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output);
 void efieldcalc_c_(CArray3D<double> &phi_input);
 void growthdiag_c_(CArray3D<double> &input_phi); 
 void BoltzSolve_c_(CArray3D<double> &input_phi);
@@ -34,4 +34,3 @@ void init();
 PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void);
 PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy);
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* k);
-}

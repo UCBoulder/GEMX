@@ -19,7 +19,7 @@ using namespace std;
 
 int main() {
    ofstream file;
-   void* kval; //used for compute rhs
+   PetscInt kval; //used for compute rhs
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
@@ -30,7 +30,7 @@ int main() {
    PetscInt is,js,iw,jw,idx;//,n_in_porcs;
    PetscInt one,three,vec_start,vec_end;
    //PetscErrorCode petsc_ierr;
-   const PetscScalar* phi_array;
+   const PetscScalar* phi_array = nullptr;
    KSP ksp;
    DM dm;
    //PetscObject  vec;
@@ -54,7 +54,6 @@ int main() {
    if(eBoltzmann == 0) {
 
       PETSC_COMM_WORLD = PETSC_COMM;
-      //note: try to comment out all petsc code to see if this is causing the problems
       PetscCall(PetscInitialize(nullptr, nullptr, nullptr, nullptr));  
       
       PetscCall(KSPCreate(PETSC_COMM_WORLD,&ksp));
@@ -64,8 +63,8 @@ int main() {
       PetscCall(DMSetFromOptions(dm));
       PetscCall(DMSetUp(dm));
       PetscCall(KSPSetDM(ksp,dm));
-      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,nullptr)); 
-      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,nullptr));    	
+      PetscCall(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,0)); 
+      PetscCall(KSPSetComputeOperators(ksp,ComputeMatrix,0));    	
       PetscCall(DMDAGetCorners(dm,&is,&js,nullptr,&iw,&jw,nullptr));
       PetscCall(KSPSetFromOptions(ksp));
       PetscCall(KSPSetUp(ksp)); 
@@ -76,10 +75,11 @@ int main() {
    if(myid == 0) {
       
       file.open("testden", ios::app);
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j) {
-            file << den2d2(i,j) << "   \n";
+      for(int j = 0; j <= jmx; ++j) {
+         for(int i = 0; i <= imx; ++i) {
+            file << den2d2(i,j) << "   ";
          }
+         file << "\n";
       }
       file.close();
    }
@@ -179,11 +179,11 @@ int main() {
    }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
-   if(ifield_solver == 1) {ncurr=1;}
+   if(ifield_solver == 1) ncurr=1;
       
    start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
-      for(int randTabInd = 0; randTabInd <=10006; ++randTabInd){
+      for(int randTabInd = 0; randTabInd <= 10006; ++randTabInd){
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[randTabInd]=1;
          } else {
@@ -198,39 +198,35 @@ int main() {
    //    field(timestep-1,0)
 
 
-      if(ifield_solver == 1) {
-         phi.Clear();
-         phiavg.Clear();
-         denes=dene;
+   if(ifield_solver == 1) {
+      phi.Clear();
+      phiavg.Clear();
+      denes=dene;
 
+      if(i3D != 0) {
+         for(int k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
 
+            for(iter = 0; iter<=iterations; ++iter){
+               fluxavg_c_(phi, phiavg);
+               if(eBoltzmann == 1){
+                  BoltzSolve_c_(phi);
+               } else {
+                  kval = (PetscInt)k;
+                  PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
+                  PetscCall(KSPSolve(ksp,nullptr,nullptr));
+                  PetscCall(KSPGetSolution(ksp,&petsc_phi));
+                  PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
+                  PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
 
-         if(i3D != 0) {
-            for(int k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-
-               for(iter = 0; iter<=iterations; ++iter){
-                  fluxavg_c_(phi, phiavg);
-                  if(eBoltzmann == 1){
-                     BoltzSolve_c_(phi);
-                  } else {
-                     kval = (void*)k;
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
-                     PetscCall(KSPSolve(ksp,nullptr,nullptr));
-                     PetscCall(KSPGetSolution(ksp,&petsc_phi));
-                     PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
-                     PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-
-
-                     for(idx = 1; idx < (vec_end-vec_start); ++idx) {
-                        i=((idx-1)%iw)+is;
-                        j=(idx-1)/(iw)+js;
-                        phi(i,j,k)=phi_array[idx];//*mask(i,j);  //right here officer
-                     }
-                     PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+                  for(idx = 0; idx < (vec_end-vec_start); ++idx) {
+                     i=((idx)%iw)+is;
+                     j=(idx)/(iw)+js;
+                     phi(i,j,k)=phi_array[idx];//*mask(i,j); 
                   }
+                  PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
                }
             }
+         }
 
          MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else {
@@ -241,171 +237,109 @@ int main() {
             if(eBoltzmann == 1) {
                BoltzSolve_c_(phi);
             } else {
-               kval = (void*)k;
-               PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
+               kval = (PetscInt)k;
+               PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
                PetscCall(KSPSolve(ksp,NULL,NULL));
                PetscCall(KSPGetSolution(ksp,&petsc_phi));
                PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
                PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
-               for(idx = 1; idx <=(vec_end-vec_start); ++idx) {
-                  i=idx-1%(iw)+is;
-                  j=(idx-1)/(iw)+js;
+               for(idx = 0; idx < (vec_end-vec_start); ++idx) {
+                  i=((idx)%(iw))+is;
+                  j=(idx)/(iw)+js;
                   phi(i,j,k)=phi_array[idx];//*mask(i,j);
                }
 
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-               //MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
                for(int i = 0; i <= imx; ++i){
                   for(int j = 0; j <= jmx; ++j){
-                     for(int k = 1; k <= kmx; ++k){
-                        phi(i,j,k) = phi(i,j,0);
+                     for(int kk = 1; kk <= kmx; ++kk){
+                        phi(i,j,kk) = phi(i,j,0);
                      }
                   }
                }
             }
          }
       }
-   }
+   
       efieldcalc_c_(phi);
-
-
-
-   //             if (Myid==0) then
-   //                open(unit=11, file = 'testphis',status='unknown',action='write')
-   //                do j=0,jmx
-                     
-   //                   write(11,*) phi(:,j,outk)-phi(:,j,outk+1)
-   //                   enddo
-   //                   close(11)
-   //              endif
-
-   //               open(unit=11, file = 'testphis1',status='unknown',action='write')
-   //               do j=0,jmx
-                     
-   //                  write(11,*) phi(:,j,outk+1)
-   //                  enddo
-   //               close(11)
-      
-
       get_apar_(-1);
       //smooth(apars,2);
       get_jpar_(apars);
       //smooth(jpar,3)
       get_ne_c_(-1);
-   // !           if(myid==0)then
-   // !               open(unit=11, file = 'testapars',status='unknown',action='write')
-   // !               do j=0,jmx
-                     
-   // !                  write(11,*) apars(:,j,outk)-apars(:,j,outk+1)
-   // !                  enddo
-   // !                  close(11)
 
-   // !               open(unit=11, file = 'testjpars',status='unknown',action='write')
-   // !               do j=0,jmx
-                     
-   // !                  write(11,*) jpar(:,j,outk)-jpar(:,j,outk+1)
-   // !                  enddo
-   // !               close(11)   
-
-
-   //  !              open(unit=11, file = 'testnes',status='unknown',action='write')
-   //  !              do j=0,jmx
-                     
-   //  !                 write(11,*) denes(:,j,outk)-denes(:,j,outk+1)
-   //  !                 enddo
-   //  !                 close(11)
-
-   //  !              open(unit=11, file = 'testBR',status='unknown',action='write')
-   //  !              do j=0,jmx
-                     
-   //  !                 write(11,*) b0x(:,j)
-   //  !                 enddo
-   //  !                 close(11)
-   //  !              end if
       if(ision==1) ppush_c_(timestep);
-      if(ifluid==1){ 
-         integ_c_(0);
-      } else {
+      if(ifluid==1) integ_c_(0);
+   } else {
          if(ision==1) ppush_c_(timestep);
-                  //if(ifluid==1)call pintef
+         //if(ifluid==1)call pintef
          if(ifluid==1) integ_c_(0);
-   // !             if(myid==0)then
-   // !                open(unit=11, file = 'testden',status='unknown',action='write')
-   // !                do j=0,jmx                 
-   // !                  write(11,*) den2d2(:,j)
-   // !                enddo
-   // !                  close(11)
-   // !              end if
-      }  
-   // ! write(*,*)'dx=', dx, 'dz=',dz
+   }  
 
+    // !	   call accumulate(timestep,1)
+    // !	   call ezamp
+    // !	   call gkps
+    // !	   call field(timestep,1)
+   if(ifield_solver == 1) {
+      phi.Clear();
 
-   // !	   call accumulate(timestep,1)
-   // !	   call ezamp
-   // !	   call gkps
-   // !	   call field(timestep,1)
-      if(ifield_solver == 1) {
-         phi.Clear();
+      if(i3D != 0){
+         for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
 
-         if(i3D != 0){
-            for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-
-               for(iter = 0; iter<=iterations; ++iter){
-                  fluxavg_c_(phi, phiavg);
-                  if(eBoltzmann == 1){
-                     BoltzSolve_c_(phi);
-                  } else {
-                     kval = (void*)k;
-                     PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,kval));
-                     PetscCall(KSPSolve(ksp,NULL,NULL));
-                     PetscCall(KSPGetSolution(ksp,&petsc_phi));
-                     PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-                     PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
-                     for(idx=1; idx < (vec_end-vec_start); ++idx) {
-                        i=((idx-1)%(iw))+is;
-                        j=(idx-1)/(iw)+js;
-                        phi(i,j,k)=phi_array[idx];//*mask(i,j);
-                     }
-                     PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
-                  }
-               }
-            }
-
-            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-         } else {
-
-            k = 0;
-
-            for(iter = 0; iter <= iterations; ++iter) {
+            for(iter = 0; iter<=iterations; ++iter){
                fluxavg_c_(phi, phiavg);
                if(eBoltzmann == 1){
                   BoltzSolve_c_(phi);
                } else {
-                  kval = (void*)k;
-                  PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,nullptr));
-                  PetscCall(KSPSolve(ksp,nullptr,nullptr));
+                  kval = (PetscInt)k;
+                  PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
+                  PetscCall(KSPSolve(ksp,NULL,NULL));
                   PetscCall(KSPGetSolution(ksp,&petsc_phi));
+                  PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
                   PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
-
-                  for(idx=1; idx <= (vec_end-vec_start); ++idx) {
-                     i=(idx-1%(iw))+is;
-                     j=(idx-1)/(iw)+js;
+                  for(idx=0; idx < (vec_end-vec_start); ++idx) {
+                     i=((idx)%(iw))+is;
+                     j=(idx)/(iw)+js;
                      phi(i,j,k)=phi_array[idx];//*mask(i,j);
                   }
-
-
-
                   PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+               }
+            }
+         }
 
-                  MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+         MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+      } else {
 
-                  for(int i = 0; i <= imx; ++i){
-                     for(int j = 0; j <= jmx; ++j){
-                        for(int k = 1; k <= kmx; ++k){
-                           phi(i,j,k) = phi(i,j,0);
-                        }
+         k = 0;
+
+         for(iter = 0; iter <= iterations; ++iter) {
+            fluxavg_c_(phi, phiavg);
+            if(eBoltzmann == 1){
+               BoltzSolve_c_(phi);
+            } else {
+               kval = (PetscInt)k;
+               PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
+               PetscCall(KSPSolve(ksp,nullptr,nullptr));
+               PetscCall(KSPGetSolution(ksp,&petsc_phi));
+               PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
+
+               for(idx=0; idx < (vec_end-vec_start); ++idx) {
+                  i=(idx%(iw))+is;
+                  j=(idx)/(iw)+js;
+                  phi(i,j,k)=phi_array[idx];//*mask(i,j);
+               }
+
+               PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+
+               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+
+               for(int i = 0; i <= imx; ++i){
+                  for(int j = 0; j <= jmx; ++j){
+                     for(int kk = 1; kk <= kmx; ++kk){
+                        phi(i,j,kk) = phi(i,j,0); 
                      }
                   }
                }
@@ -413,67 +347,67 @@ int main() {
          }
       }
 
-      efieldcalc_c_(phi);
-      if(i3D == 1){
-         growthdiag_c_(phi);
-      }
+   efieldcalc_c_(phi);
+   if(i3D == 1){
+      growthdiag_c_(phi);
+   }
 
 
-      if(myid == 0 && (timestep%10)==0){
-         cout << "outk=" << outk << "\n";
+   if(myid == 0 && (timestep%1)==0){
+      cout << "outk=" << outk << "\n";
 
-         file.open("testphi");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j) {
-               file << phi(i,j,outk) << "    \n";
-            }
+      file.open("testphi");
+      for(int j = 0; j <= jmx; ++j)  {
+         for(int i = 0; i <= imx; ++i) {
+            file << phi(i,j,outk) << "    ";
          }
-         file.close();
+         file << "\n";
       }
+      file.close();
+   }
 
-      get_apar_(1);
-      //  !call smooth_c(apar,2)   !testing
-      // !call get_jpar(apar)
-      get_jpar_(apar);
-      //call smooth(jpar,3)   !testing
-      get_ne_c_(1);
+   get_apar_(1);
+   //  !call smooth_c(apar,2)   !testing
+   // !call get_jpar(apar)
+   get_jpar_(apar);
+   //call smooth(jpar,3)   !testing
+   get_ne_c_(1);
 
-      if(myid == 0 && (timestep%10) == 0) {
-         file.open("testphiavg");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-               file << phiavg(i,j) << "   \n";
-            }
+   if(myid == 0 && (timestep%10) == 0) {
+      file.open("testphiavg");
+      for(int i = 0; i <= nx; ++i){
+         for(int j = 0; j <= nz; ++j){
+            file << phiavg(i,j) << "   \n";
          }
-         file.close();
-
-         file.open("testER");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-               file << ex(i,j,0) << "   \n";
-            }
-         }
-         file.close();
-
-         file.open("testEZ");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-               file << ez(i,j,0) << "   \n";
-            }
-         }
-         file.close();
       }
+      file.close();
 
-      if(ision==1) cpush_c_(timestep); //<------ Right here officer
-      //cintef(timestep);
-      if(ifluid==1){
-         integ_c_(1);
-      } else {
-         if(ision==1) cpush_c_(timestep);
-         //if(ifluid==1) cintef(timestep)
-         if(ifluid==1) integ_c_(1);
-         //MPI_BARRIER(MPI_COMM_WORLD)
+      file.open("testER");
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            file << ex(i,j,0) << "   \n";
+         }
       }
+      file.close();
+
+      file.open("testEZ");
+      for(int i = 0; i <= imx; ++i){
+         for(int j = 0; j <= jmx; ++j){
+            file << ez(i,j,0) << "   \n";
+         }
+      }
+      file.close();
+   }
+
+   if(ision==1) cpush_c_(timestep); 
+   //cintef(timestep);
+   if(ifluid==1) integ_c_(1);
+   } else {
+      if(ision==1) cpush_c_(timestep);
+      //if(ifluid==1) cintef(timestep)
+      if(ifluid==1) integ_c_(1);
+      //MPI_BARRIER(MPI_COMM_WORLD)
+   }
 
       if(myid == 0 && (timestep%10)==0){
          file.open("testden2");
@@ -976,7 +910,7 @@ void loadi_c_(){
    //avex=avex+x2(i)
    //end do
    //write(*,*)avex/mmx
-   if(myid==0){ 
+   if(myid==0){
       std::ofstream myFile;
       std::string fileName = "testdepo_posi"; 
       myFile.open(fileName, std::ios::app);
@@ -1122,18 +1056,28 @@ void integ_c_(int iflag) {
    double zeta = 0;
    double R_major_over_R = 0;
    double R_major_over_R1 = 0;
+
    int start_integ_tm = MPI_Wtime();
+
+   ofstream file;
+      file.open("integDen.out");
+      for(int j = 0; j <= jmx; ++j)  {
+         for(int i = 0; i <= imx; ++i) {
+            file << den(1,i,j,0) << "    ";
+         }
+         file << "\n";
+      }
+   file.close();
+
    for(int l = 0; l <= imx; l = l +1) {
       for (int r = 0; r <= jmx; r = r+1) {
          for(int n = 0; n <= kmx; n = n+1) {
-            //cout << l << " " << r << " " << n << " " << "\n";
+            den(iflag, i, j, k) = 0;
          }
       }
    }
    upar.Clear(); 
    
-   //if I can't fix before I leave: something weird going on ith x3 and z3, second call in new timestep produceses nan values at max index
-   //actually happens at m = 0 for that error. Need to find where error occurs and why it happens
    // #pragma acc parallel loop gang vector
    for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
@@ -1157,7 +1101,7 @@ void integ_c_(int iflag) {
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      // #pragma acc atomic update 
+      // #pragma acc atomic update
       den(iflag,i,j,k)=den(iflag,i,j,k)+w3[m]*wx0*wy0*wzeta0*R_major_over_R;
       // #pragma acc atomic update
       den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
@@ -1191,7 +1135,7 @@ void integ_c_(int iflag) {
          upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
          // #pragma acc atomic update
          upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-   } else {
+      } else {
          // #pragma acc atomic update
          den(iflag,i,j,0)=den(iflag,i,j,0)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
          // #pragma acc atomic update
@@ -1226,11 +1170,7 @@ void integ_c_(int iflag) {
    }
 
 
-   for(int i = 0; i <= imx; ++i) {
-      for(int j = 0; j <= jmx; ++j) {
-         den2d2(i,j) = 0;
-      }
-   }
+   den2d2.Clear();
    
    for(int i = 0 ; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
@@ -1241,9 +1181,14 @@ void integ_c_(int iflag) {
       }
    }
 
+   for(int i = 0; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
+         den2d2(i,j)=den2d2(i,j)/(kmx+1);
+      }
+   }
+
    for(i = 0; i <= imx; ++i) {
       for(j = 0; j <= jmx; ++j) {
-         den2d2(i,j) = den2d2(i,j)/(kmx+1);
          if(i3D == 0) {
             upar(i,j,0) = upar(i,j,0)/(kmx+1);
             for(k = 1; k <= kmx; ++k) {
@@ -1460,13 +1405,11 @@ PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void) {
 PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    DM dm;
    //int ii,jj;
-   dummy = static_cast<int*>(dummy);
    PetscInt i,j,mx,my,xm;
    PetscInt    ym,xs,ys,i1, i5; 
    PetscScalar  v[5],Hx,Hy;
    PetscScalar  Hx2,Hy2; //tmp_r,a_value
-   MatStencil   row[1],col[5]; 
-
+   MatStencil   row,col[5]; 
    PetscInt ncols = 0;
 
    i1 = 1;
@@ -1485,12 +1428,14 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
    for(j=ys; j < ys+ym; ++j){
       for(i=xs; i < xs+xm; ++i) {
+         std::fill(std::begin(v), std::end(v), 0.0);
+         std::fill(std::begin(col), std::end(col), MatStencil{0, 0, 0, 0});
          ncols = 0;
-         row[0].i = i;
-         row[0].j = j;
+         row.i = i;
+         row.j = j;
          if(mask(i,j)<0.99){
             v[0] = c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2);
-            ierr = MatSetValuesStencil(BB,i1,row,i1,row,v,INSERT_VALUES); CHKERRQ(ierr);
+            ierr = MatSetValuesStencil(BB,i1,&row,i1,&row,v,INSERT_VALUES); CHKERRQ(ierr);
          } else {
             if(j > 0) {
                if(j == jmx) {
@@ -1519,7 +1464,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
             col[ncols].j = j;
             //  write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-            if(eBoltzmann != 0) {
+            if(iBoltzmann != 0) {
                v[ncols]-= xn0e(i,j)*mu0*e*e/t0e(i,j);
             }
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -1547,7 +1492,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
                ncols++;
             }
    
-            ierr = MatSetValuesStencil(BB, i1, row, ncols, col, v, INSERT_VALUES); CHKERRQ(ierr);
+            ierr = MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES); CHKERRQ(ierr);
          }
       }
    }
@@ -1574,7 +1519,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    PetscScalar tmp_value = 0.0;
    // PetscScalar a_value,tmp_r;
 
-   PetscInt k = (PetscInt)ctx; 
+   PetscInt k = *(PetscInt*)ctx; 
    tmp_value = 0;
    
    PetscCall(KSPGetDM(ksp,&dm));
@@ -1586,6 +1531,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
       for(i = xs; i < xs+xm; ++i) {
+         tmp_value = 0;
          idx+=1;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
@@ -1607,7 +1553,9 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
                }
 
                if(eAdiabatic != 0){
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);
+                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));// (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);   //phiavg currently messed up. phi ok according to Zichen. feedback loop? Something with fluxavg and growthdiag
+                  // cout << iterations << endl;
+                  //if(i == imx/2 && j == jmx/2) tmp_value = 1;
                } else {
                   tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
                }
@@ -1625,44 +1573,49 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in){
-   //Currently only good for 2D case
-   
+void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
    //Local Variables
    double phiavg1d[102];
    double psi1d[102];
+   double psi1d_private[102];
    double phiavg1d_private[102];
-   int gi = 0, xix, yjy, miw, psi_zero, store, k; 
-   double weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1;
+
+   int line_large, line_small;
+   int gi = 0, xix=0, yjy=0, miw=0, psi_zero=0, store=0, k=0; 
+   double weightinput=0,weightinput3D=0, phiavggi=0, psival=0, wmx0=0, wmx1=0, psi_private_min = 0.0;
 
    // //set all arrays to zero here.
-   std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0);
-   std::fill(std::begin(psi1d), std::end(psi1d), 0);
-   std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0);
+   std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0.0);
+   std::fill(std::begin(psi1d), std::end(psi1d), 0.0);
+   std::fill(std::begin(psi1d_private), std::end(psi1d_private), 0.0);
+   std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0.0);
 
-   psi_zero = 1;
+   line_large = 1;
+   line_small = 0;
+   psi_zero   = 1;
+   //input     = 1;
 
    //Computation
    for (int line = 1; line <= 101; ++line) {
-      phiavggi = 0;
+      phiavggi = 0.0;
       store = 0;
       for(gi = 0; gi < num_lines; ++gi) {
          if(gindex[gi] == line-1) {
-            weightinput = (weight00[gi]*phi(iarray[gi], jarray[gi], 0) + 
-                           weight10[gi]*phi(iarray[gi]+1, jarray[gi], 0) + 
-                           weight01[gi]*phi(iarray[gi], jarray[gi]+1, 0) + 
-                           weight11[gi]*phi(iarray[gi]+1, jarray[gi]+1, 0));
+            weightinput = (weight00[gi]*input(iarray[gi], jarray[gi], 0) + 
+                           weight10[gi]*input(iarray[gi]+1, jarray[gi], 0) + 
+                           weight01[gi]*input(iarray[gi], jarray[gi]+1, 0) + 
+                           weight11[gi]*input(iarray[gi]+1, jarray[gi]+1, 0));
 
             if(i3D == 0) {
                phiavggi += (weightinput*jacobian[gi])/deno[gi]; 
             } else {
                for(k = 1; k <= kmx; ++k) {
-                  weightinput3D = (weight00[gi]*phi(iarray[gi], jarray[gi],k) + 
-                           weight10[gi]*phi(iarray[gi]+1, jarray[gi],k) + 
-                           weight01[gi]*phi(iarray[gi], jarray[gi]+1,k) + 
-                           weight11[gi]*phi(iarray[gi]+1, jarray[gi]+1,k));
+                  weightinput3D = (weight00[gi]*input(iarray[gi], jarray[gi],k) + 
+                                    weight10[gi]*input(iarray[gi]+1, jarray[gi],k) + 
+                                    weight01[gi]*input(iarray[gi], jarray[gi]+1,k) + 
+                                    weight11[gi]*input(iarray[gi]+1, jarray[gi]+1,k));
+                   weightinput += weightinput3D;
                }
-               weightinput += weightinput3D;
                phiavggi += (weightinput*jacobian[gi])/(deno[gi]*(kmx+1)); 
             }
 
@@ -1670,25 +1623,29 @@ void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in){
                store = gi;
             }
          }
+
          //Remove redundancy from closed loop integration process
          if(phiavggi != 0) {
             if(gindex[gi] != line-1) {
                if(i3D == 0){
                   phiavggi -= (weightinput*jacobian[gi-1])/deno[gi-1]; 
                }else{
-                  phiavggi -= (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));               
+                  phiavggi -= (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));
                }
                break;
             }
          }
       }
       if(store != 0) {
-            phiavg1d[line] = phiavggi;
+            phiavg1d[psi_zero] = phiavggi;
             psi1d[psi_zero] = psitab[store];
             psi_zero += 1;
-         } else {
-            phiavg1d_private[line] = phiavggi; 
-         }
+      } else {
+         if(line_small == 0) {psi_private_min = psitab[line];}
+         phiavg1d_private[line_small] = phiavggi;
+         psi1d_private[line_small] = psitab[gi];
+         line_small = line_small + 1;
+      }
    }
    phiavg1d[0] = phiavg1d[1];
    //  phiavg1d(0) = input(268,254,0) //phiavg1d[0] = phi(268,254,0);
@@ -1705,25 +1662,30 @@ void fluxavg_c_(CArray3D<double> &phi, CArray2D<double> &phiavg_in){
    //  close(11)
 
    // Initialize output to zero
+   output(xix,yjy) = 0.0; //only sets output(0,0) to 0, not sure if that was intended
 
    //INTERPOLATION
    for(xix = 0; xix <= nx; ++xix) {
       for(yjy = 0; yjy <= nz; ++yjy) {
          psival = psi_p(xix, yjy);
          if(mask(xix,yjy) < 0.99) { 
-            phiavg(xix,yjy) = 0;
+            output(xix,yjy) = 0;
          } else {
-            miw  = int(psival/(psi1d[2]-psi1d[1]));
-            wmx0 = ((miw+1)*(psi1d[2]-psi1d[1])-psival)/(psi1d[2]-psi1d[1]);
-            wmx1 = 1-wmx0;
-            if (yjy < 75 && xix < 150 && psival > 0.29 && psival < 0.31) { //Private region under X-point
-               phiavg(xix,yjy) = wmx0*phiavg1d_private[miw] + wmx1*phiavg1d_private[miw+1];
+            if (yjy < 75 && xix < 150 && psival > 0.29 && psival<0.31) {
+               miw  = static_cast<int>((psival-psi_private_min)/(psi1d[2]-psi1d[1]));
+               wmx0 = ((miw+1)*(psi1d_private[2]-psi1d_private[1])-psival)/(psi1d[2]-psi1d[1]);
+               wmx1 = 1.-wmx0;
+               output(xix,yjy) = wmx0*phiavg1d_private[miw] + wmx1*phiavg1d_private[miw+1];
             } else {
-               phiavg(xix,yjy) = wmx0*phiavg1d[miw] + wmx1*phiavg1d[miw+1]; 
+               miw  = static_cast<int>(psival/(psi1d[2]-psi1d[1]));
+               wmx0 = ((miw+1)*(psi1d[2]-psi1d[1])-psival)/(psi1d[2]-psi1d[1]);
+               wmx1 = 1.-wmx0;
+               output(xix,yjy) = wmx0*phiavg1d[miw] + wmx1*phiavg1d[miw+1];
             }
          }
       }
    }
+   // output = output*32 (won't work for current arrays, maybe need a *= operator)
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -1766,7 +1728,7 @@ void growthdiag_c_(CArray3D<double> &input_phi){
    phiavggi = 0.0;
    store    = 0;
 
-   for(gi = 21759; gi < 22540; ++gi){ //offset by one for gindex ptr indexing starting at 0 -Dom
+   for(gi = 21759; gi <= 22539; ++gi){ //all 1d arrays in ftn 1-indexed. 
       if(gindex[gi] == peak){
          for(k = 0; k <= kmx; ++k){
             weightinput = (weight00[gi]*input_phi(iarray[gi], jarray[gi],k)*input_phi(iarray[gi], jarray[gi],k) + 
@@ -1774,7 +1736,7 @@ void growthdiag_c_(CArray3D<double> &input_phi){
                            weight01[gi]*input_phi(iarray[gi], jarray[gi]+1,k)*input_phi(iarray[gi], jarray[gi]+1,k) + 
                            weight11[gi]*input_phi(iarray[gi]+1, jarray[gi]+1,k)*input_phi(iarray[gi]+1, jarray[gi]+1,k));
          }
-         phiavggi = phiavggi + (weightinput*jacobian[gi])/(deno[gi]*(kmx+1));
+         phiavggi += (weightinput*jacobian[gi])/(deno[gi]*(kmx+1));
 
          if(priv[gi] == 0){
             store = gi;
@@ -1783,12 +1745,12 @@ void growthdiag_c_(CArray3D<double> &input_phi){
 
       if(phiavggi != 0){
          if(gindex[gi] != peak){
-            phiavggi = phiavggi - (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));
+            cout << gi << endl;
+            phiavggi -= (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));
             break;
          }
       }
    }
-
    if(store != 0){
       phiavgsq = phiavggi;
    }
