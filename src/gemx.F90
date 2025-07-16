@@ -1741,7 +1741,7 @@ end subroutine field
                  else
                     v(1) = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
                  end if
-             end if
+          end if
              col(MatStencil_i, 1) = i
              col(MatStencil_j, 1) = j - 1    
 

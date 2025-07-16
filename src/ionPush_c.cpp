@@ -115,7 +115,7 @@ void ppush_c_(const int &n) {
 
 
 
-        rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;
+        rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr; //iflr never set?
 
         rhox[0] = rhog;
         rhoy[0] = 0;
@@ -360,7 +360,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
          b=1.-tor+tor*bfldp;
 
-         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;
+         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;//looks like this is never set?
 
          rhox[0] = rhog;
          rhoy[0] = 0.;
@@ -404,7 +404,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
             wz1=1.-wz0;
 
                 k_plus_1=k+1;
-              if(k==kmx) {k_plus_1=0;}
+              if(k==kmx) k_plus_1=0;
             exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k)
             + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
             wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
@@ -513,7 +513,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
 //         write(*,*)energy, nudi
         
-if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ){
+        if( (x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq) ){
             //energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
             //energy =  max(energy0,0.1*T_center)
             //if (icollision==1) then

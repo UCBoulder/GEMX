@@ -754,7 +754,9 @@ void get_jpar_(CArray3D<double> &matrix){
    for(k = 0; k <= kmx; ++k){     
       for(i = 2; i <= imx-2; ++i){
          for(j = 2; j <= jmx-2; ++j){
-            if(mask3(i,j)>=2.99){ 
+            if(mask3(i,j) < 2.99){
+               continue;
+            } else { 
                jpar(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)     
                                  -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)  
                                  -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*Rgrid[i]/xu))  
@@ -1069,10 +1071,11 @@ void integ_c_(int iflag) {
       }
    file.close();
 
-   for(int l = 0; l <= imx; l = l +1) {
-      for (int r = 0; r <= jmx; r = r+1) {
-         for(int n = 0; n <= kmx; n = n+1) {
-            den(iflag, i, j, k) = 0;
+   //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag?
+   for(int ii = 0; ii <= imx; ++ii) {
+      for (int jj = 0; jj <= jmx; ++jj) {
+         for(int kk = 0; kk <= kmx; ++kk) {
+            den(iflag, ii, jj, kk) = 0;
          }
       }
    }
@@ -1080,6 +1083,7 @@ void integ_c_(int iflag) {
    
    // #pragma acc parallel loop gang vector
    for(m = 0; m < mm[0]; ++m) {
+
       x = x3[m];
       if(x < 0 || x > lx) cout << "x=" <<x << "\n";
       i = static_cast<int>(x/dxeq);
@@ -1172,7 +1176,7 @@ void integ_c_(int iflag) {
 
    den2d2.Clear();
    
-   for(int i = 0 ; i <= imx; ++i) {
+   for(int i = 0; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
          for(int k = 0; k <= kmx; ++k) {
             den2d2(i,j)=den2d2(i,j)+den(iflag,i,j,k);
@@ -1230,7 +1234,7 @@ void get_apar_(const int &flagnumber) {
       for(int i = 0; i <= imx; ++i){
          for(int j = 0; j <= jmx; ++j){
             for(int k = 0; k <= kmx; ++k){
-               apar(i,j,k) = apar(i,j,k)-0.5*dt*(gradPar(i,j,k));
+               apar(i,j,k) = apar(i,j,k) -dt*(gradPar(i,j,k));  //!+0.04*(jpar+q(1)*mu0*upar)) !+Epar)
             }
          }
       }
@@ -1333,6 +1337,7 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
          }
       }
    }
+
    for(int i = 2; i <= imx-2; ++i){
       for(int j = 2; j <= jmx-2; ++j){
             if(!(mask2(i,j)<1.99)){
@@ -1342,6 +1347,7 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
          }
       }
    }
+
    for(int i = 2; i <= imx-2; ++i){
       for(int j = 2; j <= jmx-2; ++j){
          if(!(mask2(i,j)<1.99)){
@@ -1410,7 +1416,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    PetscScalar  v[5],Hx,Hy;
    PetscScalar  Hx2,Hy2; //tmp_r,a_value
    MatStencil   row,col[5]; 
-   PetscInt ncols = 0;
 
    i1 = 1;
    i5 = 5;
@@ -1428,70 +1433,62 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
    for(j=ys; j < ys+ym; ++j){
       for(i=xs; i < xs+xm; ++i) {
-         std::fill(std::begin(v), std::end(v), 0.0);
-         std::fill(std::begin(col), std::end(col), MatStencil{0, 0, 0, 0});
-         ncols = 0;
+         // std::fill(std::begin(v), std::end(v), 0.0);
+         // std::fill(std::begin(col), std::end(col), MatStencil{0, 0, 0, 0});
          row.i = i;
          row.j = j;
          if(mask(i,j)<0.99){
             v[0] = c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2);
-            ierr = MatSetValuesStencil(BB,i1,&row,i1,&row,v,INSERT_VALUES); CHKERRQ(ierr);
+            ierr = MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES); CHKERRQ(ierr);
          } else {
             if(j > 0) {
                if(j == jmx) {
-                  v[ncols] = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
+                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
                } else {
-                  v[ncols] = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                }
-               col[ncols].i = i;
-               col[ncols].j = j - 1;
-               ncols++;
             }
-            
+            col[0].i = i;
+            col[0].j = j - 1;
+
             if(i > 0) {
                if(i == imx) {
-                  v[ncols] =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
+                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
                } else {
-                  v[ncols] =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                }
-               col[ncols].i = i - 1;
-               col[ncols].j = j;
-               ncols++;
             }
+            col[1].i = i - 1;
+            col[1].j = j;
 
-            v[ncols] = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2;
-            col[ncols].i = i;
-            col[ncols].j = j;
-            //  write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
+            v[2] = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2;
+            col[2].i = i;
+            col[2].j = j;
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
             if(iBoltzmann != 0) {
-               v[ncols]-= xn0e(i,j)*mu0*e*e/t0e(i,j);
+               v[2]-= xn0e(i,j)*mu0*e*e/t0e(i,j);
             }
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-            ncols++;
 
             if(i < imx){
                if(i == 0){
-                  v[ncols] = c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
+                  v[3] = c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
                } else {
-                  v[ncols] =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[3] =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                }
-               col[ncols].i = i + 1;
-               col[ncols].j = j;
-               ncols++;
             }
+            col[3].i = i + 1;
+            col[3].j = j;
             
             if(j < jmx) {
                if(j == 0){
-                  v[ncols] =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
+                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
                } else {
-                  v[ncols] =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
-               }
-               col[ncols].i = i;
-               col[ncols].j = j + 1;
-               ncols++;
+                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+               } 
             }
-   
+            col[4].i = i;
+            col[4].j = j + 1;   
             ierr = MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES); CHKERRQ(ierr);
          }
       }
@@ -1553,7 +1550,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
                }
 
                if(eAdiabatic != 0){
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));// (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);   //phiavg currently messed up. phi ok according to Zichen. feedback loop? Something with fluxavg and growthdiag
+                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);   //phiavg currently messed up. phi ok according to Zichen. feedback loop? Something with fluxavg and growthdiag
                   // cout << iterations << endl;
                   //if(i == imx/2 && j == jmx/2) tmp_value = 1;
                } else {
@@ -1584,7 +1581,7 @@ void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
    int gi = 0, xix=0, yjy=0, miw=0, psi_zero=0, store=0, k=0; 
    double weightinput=0,weightinput3D=0, phiavggi=0, psival=0, wmx0=0, wmx1=0, psi_private_min = 0.0;
 
-   // //set all arrays to zero here.
+   // set all arrays to zero here. 
    std::fill(std::begin(phiavg1d), std::end(phiavg1d), 0.0);
    std::fill(std::begin(psi1d), std::end(psi1d), 0.0);
    std::fill(std::begin(psi1d_private), std::end(psi1d_private), 0.0);
@@ -1745,7 +1742,6 @@ void growthdiag_c_(CArray3D<double> &input_phi){
 
       if(phiavggi != 0){
          if(gindex[gi] != peak){
-            cout << gi << endl;
             phiavggi -= (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));
             break;
          }
