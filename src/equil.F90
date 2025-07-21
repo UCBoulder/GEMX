@@ -2,6 +2,7 @@ MODULE equil
       IMPLICIT NONE
       real :: mimp=2,chgi=1
       real :: beta,rmaj0,a,q0,r0,q0p,q0abs,shat0
+      real :: phi_diag,phi_diag_freq,weight_diag
       real :: dR,dth,mu0,e,proton
       integer :: nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n
       real :: psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647
@@ -9,11 +10,11 @@ MODULE equil
 !     GEM-X
       !integer :: cont=259002 !Calder Edit
 
-      integer :: nx=449,nz=433,nzeta=32
+      integer :: nx=257,nz=257,nzeta=64 !Hard Coded????
       real :: xdim,zdim,xctr,zctr,dxeq,dzeq
       
-      real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2
-      real,dimension(:,:),allocatable :: t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez
+      real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2,rho_i
+      real,dimension(:,:),allocatable :: t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez,dpsi_dr,dpsi_dz
       
       real,dimension(:),allocatable :: psi,f,psip,sf, &
                                       vpari,vparip, &
@@ -37,6 +38,11 @@ MODULE equil
       real,dimension(:,:),allocatable :: phiavg
       real,dimension(:),allocatable :: psitab,weight00,weight10,weight01,weight11,jacobian,deno !Calder Edits
       integer, dimension(:), allocatable :: gindex,iarray,jarray,priv
+
+      !To be deleted: Fourier Tests
+      ! real,dimension(:),allocatable :: xarray,testfunction, f_filtered
+      ! complex, dimension(:), allocatable :: f_hat
+
        
 
 contains
@@ -70,12 +76,12 @@ contains
       allocate(b0(0:nx,0:nz),b0x(0:nx,0:nz),b0z(0:nx,0:nz),b0zeta(0:nx,0:nz),dbdx(0:nx,0:nz),dbdz(0:nx,0:nz))
       allocate(t0i(0:nx,0:nz),t0e(0:nx,0:nz),xn0i(0:nx,0:nz),xn0e(0:nx,0:nz), &
                capnix(0:nx,0:nz),capnex(0:nx,0:nz),captix(0:nx,0:nz),captex(0:nx,0:nz), &
-               capniz(0:nx,0:nz),capnez(0:nx,0:nz),captiz(0:nx,0:nz),captez(0:nx,0:nz))      
+               capniz(0:nx,0:nz),capnez(0:nx,0:nz),captiz(0:nx,0:nz),captez(0:nx,0:nz),dpsi_dr(0:nx,0:nz),dpsi_dz(0:nx,0:nz))      
 
       allocate(curlb(0:nx,0:nz,3))
       
       allocate(Rgrid(0:nx),Zgrid(0:nz),bdcrvb(0:nx,0:nz))
-      allocate(psi_p(0:nx,0:nz),mask(0:nx,0:nz),c2_over_vA2(0:nx,0:nz),mask2(0:nx,0:nz),mask3(0:nx,0:nz),mask4(0:nx,0:nz))
+      allocate(psi_p(0:nx,0:nz),mask(0:nx,0:nz),c2_over_vA2(0:nx,0:nz),rho_i(0:nx,0:nz),mask2(0:nx,0:nz),mask3(0:nx,0:nz),mask4(0:nx,0:nz))
 
  
       
@@ -97,9 +103,12 @@ contains
         !Calder Edits Start
         !character(len=100) :: line_buffer
          ! Open the dataset file
-      open(unit=10, file='jacodata.dat', status='old', action='read')
+      ! open(unit=10, file='jacodata.dat', status='old', action='read')
+      open(unit=10, file='jacodata_cbc.dat', status='old', action='read')
+
       ! Determine the number of lines in the dataset file
-      num_lines = 80817
+      ! num_lines = 80817 
+      num_lines = 53782 ! CBC Specific
       ! do
       !     read(10, '(A)')!,end=100)! line_buffer
       !     num_lines = num_lines + 1
@@ -107,12 +116,12 @@ contains
       ! rewind(10)
 
       ! Allocate arrays based on number of lines
-      allocate(gindex(num_lines), psitab(num_lines), iarray(num_lines), jarray(num_lines), &
-               weight00(num_lines), weight10(num_lines), weight01(num_lines), weight11(num_lines), &
-               jacobian(num_lines), deno(num_lines), priv(num_lines))
+      allocate(gindex(0:num_lines), psitab(0:num_lines), iarray(0:num_lines), jarray(0:num_lines), &
+               weight00(0:num_lines), weight10(0:num_lines), weight01(0:num_lines), weight11(0:num_lines), &
+               jacobian(0:num_lines), deno(0:num_lines), priv(0:num_lines))
   
       ! Read data from the dataset file into arrays
-      do line = 1, num_lines
+      do line = 0, num_lines
           read(10, *) gindex(line), psitab(line), iarray(line), jarray(line), &
                       weight00(line), weight10(line), weight01(line), weight11(line), &
                        jacobian(line), deno(line), priv(line)
@@ -164,8 +173,6 @@ contains
       end do 
 
 
-
-
       e = 1.6e-19
       mu0 = 1.25663706212e-6
       proton = 1.67e-27
@@ -197,55 +204,93 @@ contains
 
       !Calder Edit: realistic profilies for ITG runs
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 
+!       open(unit=10, file = 'ti0_cbc.dat',status='old',action='read')
+!       read(10,*) t0i
+!       close(10)
+! ! 
+!       open(unit=10, file = 'te0_cbc.dat',status='old',action='read')
+!       read(10,*) t0e
+!       close(10)
+!       open(unit=10, file = 'ti0_fvdf.dat',status='old',action='read')
+!       read(10,*) t0i
+!       close(10)
+! ! 
+!       open(unit=10, file = 'te0_fvdf.dat',status='old',action='read')
+!       read(10,*) t0e
+!       close(10)
 
-      ! open(unit=10, file = 'Profiles/ti0_profile.dat',status='old',action='read')
-      ! read(10,*) t0i
-      ! close(10)
-
-      ! open(unit=10, file = 'Profiles/te0_profile.dat',status='old',action='read')
-      ! read(10,*) t0e
-      ! close(10)
-
-      ! open(unit=10, file = 'Profiles/ni0_profile.dat',status='old',action='read')
+      ! open(unit=10, file = 'ni0_cbc.dat',status='old',action='read')
       ! read(10,*) xn0i
       ! close(10)
 
-      ! open(unit=10, file = 'Profiles/ne0_profile.dat',status='old',action='read')
+      ! open(unit=10, file = 'ne0_cbc.dat',status='old',action='read')
       ! read(10,*) xn0e
       ! close(10)
+      
+      ! open(unit=10, file = 'tif_profile.dat',status='old',action='read')
+      ! read(10,*) t0i
+      ! close(10)
 
-      !Manufactured Temperature Profiles: 0.5*(-np.tanh(5*np.array(profiles['psinorm'])-2.5)+1)*np.max(np.array(profiles['ti']))
-      open(unit=10, file = 'tif_profile.dat',status='old',action='read')
+      ! open(unit=10, file = 'tef_profile.dat',status='old',action='read')
+      ! read(10,*) t0e
+      ! close(10)
+
+
+      !!!!!! Gorler Profiles
+      open(unit=10, file = 'ni0_gorler.dat',status='old',action='read')
+      read(10,*) xn0i
+      close(10)
+
+      open(unit=10, file = 'ne0_gorler.dat',status='old',action='read')
+      read(10,*) xn0e
+      close(10)
+      
+      open(unit=10, file = 'ti0_gorler.dat',status='old',action='read')
       read(10,*) t0i
       close(10)
 
-      open(unit=10, file = 'tef_profile.dat',status='old',action='read')
+      open(unit=10, file = 'te0_gorler.dat',status='old',action='read')
       read(10,*) t0e
       close(10)
 
-      !Put into SI units
+      ! !Put in SI Gorler
       t0i  = t0i*Tu
       t0e  = t0e*Tu
+      xn0i = xn0i*1e19
+      xn0e = xn0e*1e19
+      ! !!!!
+
+      !Put into SI units
+      ! t0i  = t0i*Tu
+      ! t0e  = t0e*Tu
       ! xn0i = xn0i*1.0e21
       ! xn0e = xn0e*1.0e21
       ! xn0i = xn0e
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      ! open(unit=10, file = 'ne0.dat',status='old',action='read')
+	! read(10,*) xn0e
+      ! close(10)
+! 
+      ! open(unit=10, file = 'Te0.dat',status='old',action='read')
+      ! read(10,*) t0e
+      ! close(10)
+! 
+      ! open(unit=10, file = 'Ti0.dat',status='old',action='read')
+	! read(10,*) t0i
+      ! close(10)
 
 
-      open(unit=10, file = 'ne0.dat',status='old',action='read')
-	read(10,*) xn0e
-      close(10)
- 
+   !!!!!!!!!!!!!!!!!!!!11 UNIFORM PROFILES
+      ! xn0e=xn0e*nu
+      ! t0i=t0i*Tu
+      ! t0e  = t0e*Tu
+      
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! xn0i=xn0e
 
-      open(unit=10, file = 'ti0.dat',status='old',action='read')
-	read(10,*) t0i
-      close(10)
-
-      xn0e=xn0e*nu
-      t0i=t0i*Tu
-      xn0i=xn0e
-
+      ! rho_i = sqrt(2*t0i((nx+1)/2,(nz+1)/2)/(2*proton))*(2*proton)/(e*b0((nx+1)/2,(nz+1)/2)) !Assuming symmetric equilibrium in poloidal plane
 
       do i=0,nx
          do j=0,nz
@@ -254,7 +299,7 @@ contains
             else
                c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)**2)*vu**2!2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
             end if
-            
+            rho_i(i,j) = sqrt(2*t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j))
            ! if (c2_over_vA2(i,j)<1.0e-19) c2_over_vA2(i,j)=0.01*mu0*2*proton*xn0e(i/2,j/2)/(b0(i/2,j/2)**2)*vu**2
          end do
       end do
@@ -397,6 +442,27 @@ contains
       captez = 0.
       capniz = 0.
       capnez = 0.
+      
+      dpsi_dr = 0.
+      dpsi_dz = 0.
+
+      !!!!!!!!!!! CALDER EDIT 05/13/2025!!!!!!!!!!!!!!!!!!
+      do i=1,nx-1
+         do j=1,nz-1
+            captix(i,j) = (-1/t0i(i,j))*(t0i(i+1,j)-t0i(i-1,j))/(2*dxeq)
+            captex(i,j) = (-1/t0e(i,j))*(t0e(i+1,j)-t0e(i-1,j))/(2*dxeq)
+            captiz(i,j) = (-1/t0i(i,j))*(t0i(i,j+1)-t0i(i,j-1))/(2*dzeq)
+            captez(i,j) = (-1/t0e(i,j))*(t0e(i,j+1)-t0e(i,j-1))/(2*dzeq)
+            capnix(i,j) = (-1/xn0i(i,j))*(xn0i(i+1,j)-xn0i(i-1,j))/(2*dxeq)
+            capnex(i,j) = (-1/xn0e(i,j))*(xn0e(i+1,j)-xn0e(i-1,j))/(2*dxeq)
+            capniz(i,j) = (-1/xn0i(i,j))*(xn0i(i,j+1)-xn0i(i,j-1))/(2*dzeq)
+            capnez(i,j) = (-1/xn0e(i,j))*(xn0e(i,j+1)-xn0e(i,j-1))/(2*dzeq)
+
+            dpsi_dr(i,j) = (psi_p(i+1,j)-psi_p(i-1,j))/(2*dxeq)
+            dpsi_dz(i,j) = (psi_p(i,j+1)-psi_p(i,j-1))/(2*dzeq)
+         end do
+      end do
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       dbdx = 0.
       dbdz = 0.

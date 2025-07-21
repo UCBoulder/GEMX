@@ -16,7 +16,8 @@ INTERFACE
   end function en3
 END INTERFACE
 
-integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations
+integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,CST,weightscheme,modes,filtering_iterations,cold_start,eAdiabatic,iterations
+integer :: checkpoint,PADE
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm
@@ -39,11 +40,12 @@ REAL(8) :: lx,lz
 INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision
 REAL(8) :: cut,amp,tor,amie,emass,qel,rneu
 INTEGER :: iput,iget,idg,ision,isham,peritr,iadi
-real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, l_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
+real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, rk_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
+
 
 
 REAL(8) :: vcut
-integer :: nonlin,nonline,iflut,ifluid,ipara
+integer :: nonlin,iflut,ifluid,ipara
 COMPLEX(8) :: IU
 
 REAL(8),DIMENSION(:,:,:,:),allocatable :: den
@@ -77,7 +79,7 @@ integer,dimension(:,:),allocatable :: ileft,jleft,iright,jright
 REAL(8),DIMENSION(:),allocatable :: mu
 REAL(8),DIMENSION(:),allocatable :: x2,zeta2,z2,u2
 REAL(8),DIMENSION(:),allocatable :: x3,zeta3,z3,u3
-REAL(8),DIMENSION(:),allocatable :: w2,w3
+REAL(8),DIMENSION(:),allocatable :: w2,w3,gw
 
 
 !              Various diagnostic arrays and scalars
@@ -154,7 +156,7 @@ allocate(ileft(0:imx,0:jmx),jleft(0:imx,0:jmx),iright(0:imx,0:jmx),jright(0:imx,
 ! Boltzmann Electron subroutine arrays for Newton solve
 allocate(phi_k(0:imx,0:jmx,0:kmx),dphidr(0:imx,0:jmx,0:kmx),dphi_kdr(0:imx,0:jmx,0:kmx),d2phidr2(0:imx,0:jmx,0:kmx),d2phi_kdr2(0:imx,0:jmx,0:kmx),d2phidz2(0:imx,0:jmx,0:kmx),d2phi_kdz2(0:imx,0:jmx,0:kmx))
 allocate(dphidz(0:imx,0:jmx,0:kmx),dphi_kdz(0:imx,0:jmx,0:kmx))
-allocate(OPPphi(0:imx,0:jmx,0:kmx),OPPphik(0:imx,0:jmx,0:kmx),l_hand(0:imx,0:jmx,0:kmx),r_hand(0:imx,0:jmx,0:kmx))
+allocate(OPPphi(0:imx,0:jmx,0:kmx),OPPphik(0:imx,0:jmx,0:kmx),rk_hand(0:imx,0:jmx,0:kmx),r_hand(0:imx,0:jmx,0:kmx))
 
 
 
@@ -162,7 +164,7 @@ allocate(OPPphi(0:imx,0:jmx,0:kmx),OPPphik(0:imx,0:jmx,0:kmx),l_hand(0:imx,0:jmx
 allocate( mu(1:mmx))
 allocate( x2(1:mmx),zeta2(1:mmx),z2(1:mmx),u2(1:mmx))
 allocate( x3(1:mmx),zeta3(1:mmx),z3(1:mmx),u3(1:mmx))
-allocate( w2(1:mmx),w3(1:mmx))
+allocate( w2(1:mmx),w3(1:mmx),gw(1:mmx))
 
 
 ALLOCATE( ke(nsmx,0:nmx),fe(0:nmx),te(0:nmx))

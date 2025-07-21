@@ -6,7 +6,8 @@
       use gemx_com
       use equil
       implicit none
-      REAL(8) :: exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp
+
+      REAL(8) :: exp1,ezp,ezetap,delbxp,delbzp,energy, energy0,nudi0,nudi,T_center,ni_temp,ti_temp
       REAL(8) :: wx0,wx1,wy0,wy1,wz0,wz1,dum,vxdum,vzdum,dum1,vzetadum
       INTEGER :: m,i,j,k,l,n,k_plus_1
       REAL(8) :: rhog,vfac,kapxp,kapzp,vpar,pidum,kaptxp,kapnxp,kaptzp,kapnzp,xnp,bdcurlbp
@@ -19,11 +20,13 @@
 
 
        nudi0 = 1/sqrt(2.0)*18.4*e**1.5*4.7140d-8*1.d-6
+       nudi  = 0
 !      write(*,*)t0i(200,201)
        T_center = t0i(imx/2,jmx/2)
 
+!$acc parallel loop gang vector private(rhoy,bstar3,rhox,curlbp) copy(rand_table)
+!!$acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table)
        
-!$acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table)
       do m=1,mm(1)
          x=x2(m)
          i = int(x/dxeq)
@@ -36,9 +39,6 @@
          k = min(k,nz-1)
          wz0 = (k+1)-z/dzeq
          wz1 = 1-wz0
-
-
-
 
  !        bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
  !                         +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
@@ -78,18 +78,22 @@
 
          b=1.-tor+tor*bfldp
 
+        !  write(*,*) w2(m), w3(m)
+         ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1)
+
+         ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
+
+         energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+         energy =  max(energy0,0.1*T_center)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-         ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
-                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
-         energy0 = (mu(m)*b+0.5*mims(1)*u3(m)**2)
-         energy =  max(energy0,0.1*T_center)
          if (icollision==1) then
                   nudi=nudi0*ni_temp/(energy)**1.5
                         ! call random_number(rrr)
                         ! p_m = int(2*rrr-1)
-         end if
+        !  end if
 
 !         write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
 
@@ -99,17 +103,10 @@
 !         write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
 
          mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
-
-         
-
-
+         end if
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!         
         
-
-
-
-          
-         rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b)*iflr
+         rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b) * iflr
 
          rhox(1) = rhog
          rhoy(1) = 0.
@@ -142,10 +139,10 @@
             zeta=zeta2(m)
 !            xt=modulo(xs,xdim)
 !            zt=modulo(zt,zdim)
-                       i=int(xt/dx)
+
+            i=int(xt/dx)
             j=int(zt/dz)
             k=int(zeta/dzeta)
-
 
             wx0=float(i+1)-xt/dx
             wx1=1.-wx0
@@ -153,6 +150,15 @@
             wy1=1.-wy0
             wz0=float(k+1)-zeta/dzeta
             wz1=1.-wz0
+
+        !     if (FLE==0) then
+        !         wx0 = 1
+        !         wx1 = 0
+        !         wy0 = 1
+        !         wy1 = 0
+        !         wz0 = 1
+        !         wz1 = 0
+        !     end if
 
               k_plus_1=k+1
               if(k==kmx) k_plus_1=0
@@ -189,12 +195,12 @@
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  &
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1)
  200     continue
-         exp1 = exp1/4.
-         ezp = ezp/4.
+         exp1   = exp1/4.
+         ezp    = ezp/4.
          ezetap = ezetap/4.
          delbxp = delbxp/4.
          delbzp = delbzp/4.
-!
+
          vfac = 0.5*(mims(1)*u2(m)**2 + 2.*mu(m)*b)
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp         
@@ -205,7 +211,6 @@
          Bstar3(1)=bfldxp +mims(1)*vpar*curlbp(1)/q(1)+delbxp
          Bstar3(2)=bfldzp+mims(1)*vpar*curlbp(2)/q(1)+delbzp
          Bstar3(3)=bfldzetap+mims(1)*vpar*curlbp(3)/q(1)
-
 
 !         bstar=b+mims(1)*vpar*bdcurlbp/q(1)
          bstar=(bfldxp*Bstar3(1)+bfldzp*Bstar3(2)+bfldzetap*Bstar3(3))/bfldp
@@ -224,14 +229,11 @@
 !         vzetadum= (exp1*bfldzp-ezp*bfldxp)/b**2
 !         zetadot = vzetadum/x*nonlin + vpar*bfldzetap/(x*b)+enerb/(x*b*b)*(bfldxp*dbdzp-bfldzp*dbdxp)
 
-
-
 !         write(*,*) dbdzetap
-         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
-         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
-         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
 
-
+         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar
+         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar
+         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2(m)+(xctr-0.5*xdim))
          
 !         pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 !         write(*,*)
@@ -240,11 +242,13 @@
 
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
-
-         pzdot = (Bstar3(1)*(q(1)*exp1-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
-          
+         pzdot = (Bstar3(1)*(q(1)*exp1*nonlin-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp*nonlin-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap*nonlin-mu(m)*dbdzetap))/(mims(1)*bstar)          
          
-         edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
+         edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)
+        !  write(*,*) q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)/ti_temp, ((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp)
+        !  edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
+        !  write(*,*) q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)/ti_temp, q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)/ti_temp
+        !  write(*,*) ((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp),q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)/ti_temp, q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)/ti_temp
 
          x3(m) = x2(m) + 0.5*dt*xdot
          z3(m) = z2(m) + 0.5*dt*zdot
@@ -256,7 +260,19 @@
 !        vzdum = (-exp1/b+vpar/b*delbzp)*dum1
 !         vxdum = eyp+vpar/b*delbxp
 !         w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
-         
+        if (weightscheme == 1) then
+        !linear weight equation
+        if (nonlin == 0) then
+        w3(m) = w2(m) + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) &
+         + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+        else
+        w3(m) = w2(m) + 0.5*dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)))
+
+        ! write(*,*) (xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+        end if
+        ! write(*,*) w3(m)
+        end if
+        
       if( (x3(m)>2*dxeq).and.(x3(m)<lx-2*dxeq).and.(z3(m)>2*dzeq).and.(z3(m)<lz-2*dzeq) ) then
       else
           u3(m)=u2(m)
@@ -284,10 +300,11 @@
       use gemx_com
       use equil
       implicit none
-      REAL(8) :: exp1,ezp,ezetap,delbxp,delbzp,nudi0,nudi=0,ni_temp,energy,rrr,T_center,energy0
+      REAL(8) :: exp1,ezp,ezetap,delbxp,delbzp,nudi0,nudi=0,ni_temp,ti_temp,energy,rrr,T_center,energy0
+      REAL(8) :: Q_flux,G_flux,P_flux
       REAL(8) :: wx0,wx1,wy0,wy1,wz0,wz1,dum,vxdum,vzdum,dum1,vzetadum
       INTEGER :: m,i,j,k,l,n,k_plus_1=0,p_m
-      REAL(8) :: rhog,vfac,kapxp,kapzp,vpar,pidum,kaptxp,kapnxp,kaptzp,kapnzp,xnp,bdcurlbp
+      REAL(8) :: rhog,vfac,kapxp,kapzp,vpar,pidum,kaptxp,kapnxp,kaptzp,kapnzp,xnp,bdcurlbp,dpsidxp,dpsidzp
       REAL(8) :: b,th,r,enerb,qr,ter,x,z,zeta
       REAL(8) :: xt,xs,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0,vcurlbdotE
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0
@@ -299,9 +316,12 @@
       T_center = t0i(imx/2,jmx/2)
 !      write(*,*)T_center*e
       !      write(*,*)nudi0
-
+        Q_flux = 0
+        G_flux = 0
+        P_flux = 0
       
-!$acc parallel loop gang vector private(bstar3,rhoy,rhox) copy(rand_table)
+!$acc parallel loop gang vector private(bstar3,rhoy,rhox,curlbp) copy(rand_table)
+! $acc parallel loop gang vector private(rhoy,bstar3,rhox) copy(rand_table)
       do m=1,mm(1)
          x=x3(m)
          i = int(x/dxeq)
@@ -315,8 +335,11 @@
          wz0 = (k+1)-z/dzeq
          wz1 = 1-wz0
 
-         ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
+        ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
+
+        ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
 
  !        write(*,*) xn0i(i,k)
 
@@ -348,14 +371,19 @@
          kaptzp = wx0*wz0*captiz(i,k)+wx0*wz1*captiz(i,k+1) &
                  +wx1*wz0*captiz(i+1,k)+wx1*wz1*captiz(i+1,k+1) 
          kapnzp = wx0*wz0*capniz(i,k)+wx0*wz1*capniz(i,k+1) &
-                 +wx1*wz0*capniz(i+1,k)+wx1*wz1*capniz(i+1,k+1) 
+                 +wx1*wz0*capniz(i+1,k)+wx1*wz1*capniz(i+1,k+1)
+
+         dpsidxp = wx0*wz0*dpsi_dr(i,k)+wx0*wz1*dpsi_dr(i,k+1) &
+                 +wx1*wz0*dpsi_dr(i+1,k)+wx1*wz1*dpsi_dr(i+1,k+1) 
+         dpsidzp = wx0*wz0*dpsi_dz(i,k)+wx0*wz1*dpsi_dz(i,k+1) &
+                 +wx1*wz0*dpsi_dz(i+1,k)+wx1*wz1*dpsi_dz(i+1,k+1)
 
          xnp = wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1) 
 
          b=1.-tor+tor*bfldp
 
-         rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b)*iflr
+         rhog = sqrt(2.*b*mu(m)*mims(1))/(q(1)*b) * iflr
 
          rhox(1) = rhog
          rhoy(1) = 0.
@@ -433,8 +461,8 @@
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  &
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1)
  200     continue
-         exp1 = exp1/4.
-         ezp = ezp/4.
+         exp1   = exp1/4.
+         ezp    = ezp/4.
          ezetap = ezetap/4.
          delbxp = delbxp/4.
          delbzp = delbzp/4.
@@ -454,8 +482,9 @@
 !        bstar=b+mims(1)*vpar*bdcurlbp/q(1)
 
          bstar=(bfldxp*Bstar3(1)+bfldzp*Bstar3(2)+bfldzetap*Bstar3(3))/bfldp
-         
 
+         energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+         
 !         vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
 
 
@@ -477,11 +506,13 @@
 
 
 !         write(*,*)dbdzetap
-         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
-         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
-         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar
+        !  xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar
+        !  zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar
+        !  zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar/(x2(m)+(xctr-0.5*xdim))
 
-
+         xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar
+         zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar
+         zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2(m)+(xctr-0.5*xdim))
          
  !        pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
          !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*q(1)/mims(1)*nonlin
@@ -489,10 +520,13 @@
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-         pzdot = (Bstar3(1)*(q(1)*exp1-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap-mu(m)*dbdzetap))/(mims(1)*bstar)
+         pzdot = (Bstar3(1)*(q(1)*exp1*nonlin-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp*nonlin-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap*nonlin-mu(m)*dbdzetap))/(mims(1)*bstar)
           
 
-         edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
+         edot = q(1)*(xdot*exp1 + zdot*ezp + zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)
+        !  edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)
+        !  write(*,*) ((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp),q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)/ti_temp, q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)/ti_temp
+        ! write(*,*) ((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp)+((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp), edot/(ti_temp), (q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)/(ti_temp))
 
          x3(m) = x2(m) + dt*xdot
          z3(m) = z2(m) + dt*zdot
@@ -525,7 +559,20 @@
           x2(m)=x3(m)
           z2(m)=z3(m)
           zeta2(m)=zeta3(m)
+
+          if (weightscheme == 1) then
+          !linear weight equation
+          if (nonlin == 0) then
+        w3(m) = w2(m) + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) &
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+          else
+                w3(m) = w2(m) + dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)))
+          end if
+          ! write(*,*) w3(m)
+          end if
+
           w2(m)=w3(m)
+
           !write(*,*)rand_table(globle_integer-1),mu(m),(energy0-0.5*mims(1)*u3(m)**2)/b
          ! mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
           else
@@ -537,26 +584,27 @@
           w3(m)=0.
       endif
 
+      !Temporary Flux Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !No volume averaging currently
+      Q_flux = Q_flux + w3(m)*(0.5*mims(1)*u3(m)**2)*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(dpsidxp**2 + dpsidzp**2)*b*bstar)
+      G_flux = G_flux + w3(m)*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(dpsidxp**2 + dpsidzp**2)*b*bstar)
+      P_flux = P_flux + w3(m)*(mims(1)*u3(m))*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(dpsidxp**2 + dpsidzp**2)*b*bstar)
 
-
-      !if(Myid==0)then
-!  open(935, file='flag_debug',status='unknown',position='append')
-!  write(935,*)'before PETSc sovling'
-!  close(935)
-!end if
-      !if(myid==0 .and. m==1)then
-      !     open(93, file='test_energy',status='unknown',position='append')
-      !     write(93,*) mu(m)*b+0.5*mims(1)*u2(m)**2-q(1)*z2(m)*ez(i,j,k)
-      !     close(93)
-        !       write(*,*) mu(m)*b+0.5*mims(1)*u2(m)**2-q(1)*z2(m)*ez(i,j,k)
-        ! close(19)
-      !end if
-      
-
-
-      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    enddo
+
+   open(unit=11, file = 'test_fluxdiag',status='unknown',position='append')
+   write(11,*) timestep, Q_flux, G_flux!, P_flux
+   close(11)
+
+        ! open(unit=11, file = 'testweights',status='unknown',position='append')
+        !         weight_diag = 0
+        !         do m=1,mm(1)         
+        !                 weight_diag =+ w2(m)/mm(1)
+        !         enddo
+        !         write(11,*) timestep, weight_diag
+        ! close(11)
 
 !!  !$acc wait
 

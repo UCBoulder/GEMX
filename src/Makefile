@@ -7,8 +7,9 @@ SCRIPTDIR := $(ROOT)/scripts
 
 SRCS := $(wildcard *.F90)
 OBJS := $(SRCS:.F90=.o)
-LIBS := -L${PETSC_PATH}/lib -lpetsc
-INCS := -I${PETSC_PATH}/include
+LIBS := -L${PETSC_PATH}/lib -lpetsc -lfftw3 #-lrfftw -lrfftw3
+# LIBS := -L${PETSC_PATH}/lib -L${FFT_PATH}/lib -lpetsc -lfftw3
+INCS := -I${PETSC_PATH}/include -I${FFTW_ROOT}/include #-I${FFT_PATH}
 SHELLS := $(wildcard *.sh)
 SCRIPTS := $(wildcard $(SCRIPTDIR)/*)
 DIFF := $(BINDIR)/codeChanges.txt

@@ -43,7 +43,7 @@ CONTAINS
         end if
         
            p_color= int(me*(n_tor_planes)/npp)
-           p_rank = mod(me,npp/(kmx+1))
+           p_rank = mod(me,1) !   p_rank = mod(me,npp/(kmx+1))
            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,p_color,p_rank,PETSC_COMM,ierr)
            petsc_color=p_color
            petsc_rank=p_rank

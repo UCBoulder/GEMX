@@ -1,0 +1,19 @@
+/var/spool/slurmd/job35390311/slurm_script: line 27: ./storeChanges.sh: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+slurmstepd: error: execve(): /pscratch/sd/h/haubrich/CBC_GEMX/jobs/./gemx: No such file or directory
+srun: error: nid001285: tasks 0-15: Exited with exit code 2
+srun: Terminating StepId=35390311.0

@@ -6,14 +6,16 @@
       use petsc
       use petscdmda
       use petscksp
+      ! #include "fftw3.f"
 !      use para_com
+
 
 
       implicit none
 
        integer :: status,mid_i,mid_j
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68
-       integer :: iter !Calder Edit
+       integer :: iter, filter_int !Calder Edit
 
        real::random
        real :: tmp
@@ -30,9 +32,10 @@
        external ComputeRHS,ComputeMatrix,ComputeInitialGuess
 
 
-
+         
 !       call init
        call initialize
+      
 
 
        
@@ -64,12 +67,8 @@
        PetscCallA(KSPSetUp(ksp,petsc_ierr))
       end if !Calder Edit
 
-
-  
-
 !  include "Initialize_petsc.h"
      
-
 
        if(iget.eq.0)call loadi
        call integ(2)
@@ -91,14 +90,16 @@
         starttm=MPI_WTIME()
         upar=0
 
-        mid_i=imx/2
-        mid_j=jmx/2
-        mid_i=257
-        mid_j=257
-
+      !   mid_i=imx/2
+      !   mid_j=jmx/2
+      !   mid_i=257
+      !   mid_j=257
+      mid_i = (imx+1)/2
+      mid_j = (jmx+1)/2
         tor_n=1
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!initialize perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (checkpoint == 0) then
         do k=0,kmx
               do i=0,imx
                  do j=0,jmx
@@ -126,10 +127,43 @@
                      dene(i,j,k)=0!ran(-0.5)
                      phi(i,j,k)=0!-j*0.01
                      ez(i,j,k)=0!0.01/dz
+                     
+                     ex(i,j,k)=0 !Calder Edits 1/9/25
+                     ezeta(i,j,k)=0 !Calder Edits 1/9/25
                  enddo
               enddo
            enddo
-           
+         else
+            open(unit=10, file = 'out/checkpoint_apar',status='old',action='read')
+            read(10,*) apars
+            close(10)
+            
+            open(unit=10, file = 'out/checkpoint_jpar',status='old',action='read')
+            read(10,*) jpar
+            close(10)
+
+            open(unit=10, file = 'out/checkpoint_ne',status='old',action='read')
+            read(10,*) dene
+            close(10)
+
+            open(unit=10, file = 'out/checkpoint_phi',status='old',action='read')
+            read(10,*) phi
+            close(10)
+
+            open(unit=10, file = 'out/checkpoint_ex',status='old',action='read')
+            read(10,*) ex
+            close(10)
+
+            open(unit=10, file = 'out/checkpoint_ez',status='old',action='read')
+            read(10,*) ez
+            close(10)
+
+            open(unit=10, file = 'out/checkpoint_ezeta',status='old',action='read')
+            read(10,*) ezeta
+            close(10)
+         end if
+
+
            phiavg=0 !Calder Edit
 
            call get_jpar(apar)
@@ -178,7 +212,11 @@
                close(11)
             end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-
+         ! do i=0,imx
+            ! do j=0,jmx
+            ! write(*,*)   -(xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2+c2_over_vA2(i,j)
+            ! end do
+         ! end do
  if (ifield_solver .eq. 1) then         
                  ncurr = 1                      
  end if
@@ -199,6 +237,15 @@
 !	   call ezamp
 !	   call gkps
 !     call field(timestep-1,0)
+   
+
+   open(unit=11, file = 'testweights',status='unknown',position='append')
+      weight_diag = 0
+      do m=1,mm(1)         
+         weight_diag =+ w2(m)/mm(1)
+      enddo
+      write(11,*) timestep, weight_diag
+   close(11)
 
 
       if(ifield_solver .eq. 1 ) then
@@ -207,19 +254,26 @@
        phiavg = 0.0
        denes=dene
 
-
-       
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
-                 
+      if (eBoltzmann == 1) then
+         k = 0
          do iter=0, iterations
-            call fluxavg(phi,phiavg)
-               if (eBoltzmann == 1) then
-                  call boltzsolve(phi)
-               else
+            ! do iter=0, iterations
+               ! call fluxavg(phi,phiavg)
+            ! end do
+            call boltzsolve(phi)
+         end do
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
 
-          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+      else if (i3D /= 0) then
+         phi=0
+      do iter=0, iterations 
+       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
+         ! do iter=0, iterations
+            call fluxavg(phi,phiavg) !Uses previous time step phi
+               ! phi = 0 
+
+         !  PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -233,75 +287,89 @@
             phi(i,j,k)=phi_array(idx)!*mask(i,j)
          enddo
           PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-            end if
          enddo
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call fluxavg(phi,phiavg) !Turned off for CBC
        enddo
             
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
    else   
        k=0
-
+       phi = 0
        do iter=0, iterations
-         call fluxavg(phi,phiavg)
-         if (eBoltzmann == 1) then
-            call boltzsolve(phi)
-         else
+         call fluxavg(phi,phiavg) !Turned off for CBC
+         ! phi = 0
+
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
          PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
          PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+
          do idx=1, vec_end-vec_start
             i=mod(idx-1,(iw))+is
             j=(idx-1)/(iw)+js
             phi(i,j,k)=phi_array(idx)!*mask(i,j)
          enddo
 
-
         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
        
-        
-
          call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
-         do k=1,kmx
+      end do !Calder Edit
+      ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)   
+         do k=1,kmx !Put outside Calder Loops
             phi(:,:,k)=phi(:,:,0)
          end do
-
-       end if !Calder Edit
-      end do !Calder Edit
-               
       end if
       
-         
-      call efieldcalc(phi)
-   
+      ! do iter=0, iterations 
+         ! call fluxavg(phi,phiavg)
+      ! end do
 
-          
+      !PING Function
+      if (timestep <= 10 .and. nonlin /= 1) then
+         do i=0, imx
+            do j=0, jmx
+               do k=0, kmx
+                  ! phi(i,j,k) = 100
+                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))))* &
+                  exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))!*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+                  ! phi(i,j,k) = 1e-5*cos(modes*(-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+                  ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+                  if (mask(i,j) < 0.99) then
+                     phi(i,j,k) = 0
+                  end if
+               end do
+            end do
+         end do
+      end if
 
-!            if (Myid==0) then
-!               open(unit=11, file = 'testphis',status='unknown',action='write')
-!               do j=0,jmx
-                  
-!                  write(11,*) phi(:,j,outk)-phi(:,j,outk+1)
-!                  enddo
-!                  close(11)
-!             endif
+      if (modes /= 0) then
+         call fourier_modes(phi,modes)
+      end if
 
- !              open(unit=11, file = 'testphis1',status='unknown',action='write')
- !              do j=0,jmx
-                  
- !                 write(11,*) phi(:,j,outk+1)
- !                 enddo
- !              close(11)
+      ! call binomial_filter(phi)
       
-         
+      if (filtering_iterations /= 0) then
+         do filter_int=1, filtering_iterations !Edit 6/3/2025
+            call poloidal_filter_methods(phi)
+         end do
+      end if
 
-         call get_apar(-1)
+      !EFIELD TESTING
+      if (cold_start == 1) then
+         if (timestep >= 300) then
+            call efieldcalc(phi)
+         end if
+      else
+         call efieldcalc(phi)
+      end if
+
+      call get_apar(-1)
 !         call  smooth(apars,2)
-           call get_jpar(apars)
+      call get_jpar(apars)
 !           call smooth(jpar,3)
-           call get_ne(-1)
+      call get_ne(-1)
 
 !           if(myid==0)then
 !               open(unit=11, file = 'testapars',status='unknown',action='write')
@@ -366,15 +434,27 @@
      if (ifield_solver .eq. 1) then
         phi=0.0
 
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
+        if (eBoltzmann == 1) then
+         k=0
+         do iter=0, iterations
+            ! do iter=0, iterations
+            !    call fluxavg(phi,phiavg)
+            ! end do
+            call boltzsolve(phi)
+         end do
+
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+       else if(i3D /= 0) then
+         phi=0
+      do iter=0,iterations
+         ! call fluxavg(phi,phiavg)
+         ! phi = 0 !Should already be zero 
+         do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
        
-         do iter=0,iterations
-            call fluxavg(phi,phiavg)
-            if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-            else      
-                     
+         ! do iter=0,iterations
+            call fluxavg(phi,phiavg)    
+
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -387,22 +467,22 @@
             phi(i,j,k)=phi_array(idx)!*mask(i,j)
          enddo
          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-         end if
-	enddo
+	      enddo
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call fluxavg(phi,phiavg) !Turned off for CBC
       enddo
 
       
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+      ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
            
    else
 
       k=0
-      
+      phi = 0
          do iter=0, iterations
-            call fluxavg(phi,phiavg)
-            if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-            else
+            call fluxavg(phi,phiavg) !Turned off for CBC
+               ! phi = 0
+         
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
          PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
@@ -421,24 +501,88 @@
 
          call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
+     end do !Calder Edit
+   !   call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
          do k=1,kmx
             phi(:,:,k)=phi(:,:,0)
          end do
-      end if !Calder Edit
-     end do !Calder Edit         
+   end if
+
+   ! do iter=0, iterations 
+      ! call fluxavg(phi,phiavg)
+   ! end do
+
+
+   !PING Function
+   if (timestep <= 10 .and. nonlin == 0) then
+      do i=0, imx
+         do j=0, jmx
+            do k=0, kmx
+               phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))))* &
+                  exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))!*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+               ! phi(i,j,k) = 1e-5*cos(modes*(pi2*k-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+               ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+               if (mask(i,j) < 0.99) then
+                  phi(i,j,k) = 0
+               end if
+            end do
+         end do
+      end do
    end if
    
+   if (modes /= 0) then
+      call fourier_modes(phi,modes)
+   end if
 
+   !!!!!!!!!!!!!!!!!!!!!!!
+   ! call ftcamp(phi,timestep)
+   !!!!!!!!!!!!!!!!!!!!!!!
+   ! call binomial_filter(phi)
 
-   call efieldcalc(phi)
-   if (i3D == 1) then
-      call growthdiag(phi)
+   if (filtering_iterations /= 0) then
+      do filter_int=1, filtering_iterations !Edit
+         call poloidal_filter_methods(phi)
+      end do
    end if
 
 
+   !EFIELD TESTING
+   if (cold_start == 1) then
+      if (timestep >= 300) then
+         call efieldcalc(phi)
+      end if
+   else
+      call efieldcalc(phi)
+   end if
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PHI DIAGNOSTIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   phi_diag = 0.0
+   phi_diag_freq = 0.0
+
+   do i = 0, imx
+      do j = 0, jmx
+         do k = 0, kmx
+            phi_diag = phi_diag + (abs(phi(i,j,k))**2)/(imx*jmx*kmx)
+            phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx)
+         end do
+      end do
+   end do
+
+   open(unit=11, file = 'testPhiDiag',status='unknown',position='append')
+   write(11,*) timestep, phi_diag
+   close(11)
+
+   open(unit=11, file='testPhiFreq',status='unknown',position='append')
+   write(11,*) timestep, phi_diag_freq
+   close(11)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   if (i3D == 1) then
+      ! call growthdiag(phi)
+   end if
 
                if(MyId==0 .and. mod(timestep,10)==0)then
                   write(*,*)'outk=',outk
+                  ! write(*,*) phi(:,:,outk)
 
                open(unit=11, file = 'testphi',status='unknown',action='write')
                do j=0,jmx
@@ -450,9 +594,6 @@
 
                end if
             
- 
-                  
-     
 
     call get_apar(1)
 !    call smooth(apar,2)
@@ -461,7 +602,7 @@
       call get_ne(1)
 
 
-      if(MyId==0 .and. mod(timestep,10)==0)then
+      if(MyId==0 .and. mod(timestep,1)==0)then
 
       open(unit=11, file = 'testphiavg',status='unknown',action='write')
       do j=0,jmx
@@ -473,11 +614,13 @@
       do j=0, jmx
          write(11,*) ex(:,j,0)
       end do
+      close(11)
 
       open(unit=11,file='testEZ', status='unknown',action='write')
       do j=0,jmx
          write(11,*) ez(:,j,0)
       end do
+      close(11)
       end if
 
       
@@ -515,7 +658,7 @@
 
      call outd(timestep)
 
-         if(MyId==0 .and. ifield_solver==1 .and. mod(timestep,10)==0) then    
+         if(MyId==0 .and. ifield_solver==1 .and. mod(timestep,10)==0) then    !5/30/25
                open(unit=11, file = 'testapar',status='unknown',action='write')
                do j=0,jmx
                   
@@ -560,12 +703,16 @@
            end if
 
            if(myid.eq.master .and. ifield_solver.eq.1)then
-              open(unit=11, file = 'testAtPhitrhotjt',status='unknown',position='append')                
-              write(11,*)apar(387,256,outk),phi(387,256,outk),dene(387,256,outk),jpar(387,256,outk)
-              close(11)
+            !   open(unit=11, file = 'testAtPhitrhotjt',status='unknown',position='append')                
+            ! !   write(11,*)apar(387,256,outk),phi(387,256,outk),dene(387,256,outk),jpar(387,256,outk)
+            !   close(11)
+
               if(mod(timestep,100)==0)then
                  open(unit=11, file = 'testPhit',status='unknown',position='append')
                  write(11,*)phi(:,:,outk)
+                 
+               !   open(unit=11, file = 'testPhi_major_diagnostic',status='unknown',position='append')
+               !    write(11,*)phi(:,:,k)
               end if
               
                  
@@ -600,7 +747,108 @@ total_tm = total_tm + end_total_tm - start_total_tm
          PetscCallA(PetscFinalize(petsc_ierr))
       end if !Calder Edit
 
+      !Set Checkpoints
+      write(*,*) "Last timestep reached, writing checkpoints."
 
+      open(unit=11, file = 'out/checkpoint_apar',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) apar(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_jpar',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) jpar(i,j,k)
+            end do
+         end do
+      end do
+      close(11)   
+
+      open(unit=11, file = 'out/checkpoint_ne',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) dene(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_phi',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) phi(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_ex',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) ex(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_ez',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) ez(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_ezeta',status='unknown',action='write')
+      do i=0,imx
+         do j=0,jmx
+            do k=0,kmx
+               write(11,*) ezeta(i,j,k)
+            end do
+         end do
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_x3',status='unknown',action='write')
+      do m=1,mm(1)
+         write(11,*) x3(m)
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_z3',status='unknown',action='write')
+      do m=1,mm(1)
+         write(11,*) z3(m)
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_zeta3',status='unknown',action='write')
+      do m=1,mm(1)
+         write(11,*) zeta3(m)
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_u3',status='unknown',action='write')
+      do m=1,mm(1)
+         write(11,*) u3(m)
+      end do
+      close(11)
+
+      open(unit=11, file = 'out/checkpoint_w3',status='unknown',action='write')
+      do m=1,mm(1)
+         write(11,*) w3(m)
+      end do
+      close(11)
 
  100     call MPI_FINALIZE(ierr)
          end program gemx
@@ -622,7 +870,6 @@ total_tm = total_tm + end_total_tm - start_total_tm
       IU=cmplx(0.,1.)
       pi=4.0*atan(1.0)
       pi2 = pi*2.
-
       open(115,file='gemx.in')
       read(115,*) dumchar
       read(115,*) imx,jmx,kmx,mmx,nmx,nsmx,ntube
@@ -639,17 +886,29 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) ifluid,amie,rneu
       read(115,*) dumchar
-      read(115,*) beta,nonlin,nonline,vcut
+      read(115,*) beta,nonlin,vcut
       read(115,*) dumchar
       read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,eAdiabatic,iterations,icollision
       read(115,*) dumchar    !Calder Edit: eBoltzmann
       read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
+      read(115,*) iflr,PADE
+      read(115,*) dumchar
+      read(115,*) CST !Load CST
+      read(115,*) dumchar
+      read(115,*) weightscheme !Option for full-f or delta-f
+      read(115,*) dumchar
+      read(115,*) modes,filtering_iterations !input as integer
+      read(115,*) dumchar
+      read(115,*) cold_start
+      read(115,*) dumchar
       read(115,*) psi_max,psi_min,R_min,Z_min, Z_internal, psi_div,psi_a
+      read(115,*) dumchar
+      read(115,*) checkpoint
       close(115)
       
       nsm=1
-      
+
       call new_gemx_com()
       ns = 1
       tmm(ns)=mmx!ntracer
@@ -858,7 +1117,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
 
          b=1.-tor+tor*bfldp
 
-         rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b)*iflr
+         rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b) * iflr
 
          rhox(1) = rhog
          rhoy(1) = 0.
@@ -1311,8 +1570,19 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       avgw = 0.
       myavgw = 0.
 
+      if (CST /= 0) then
+         open(unit=10,file='rdata.dat',status='old',action='read')
+         read(10,*) x2
+         close(10)
+   
+         open(unit=10,file='zdata.dat',status='old',action='read')
+         read(10,*) z2
+         close(10)
+      end if 
+
       m=1
       do while(m<=mm(1))
+
 !     load a slab of ions...
 
 !         dumx=xdim*(ran2(iseed)+0.01)*0.9
@@ -1325,6 +1595,11 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
 
 !         dumx=dxeq+(xdim-2*dxeq)*m/((mm(1)))
+
+         if (CST /= 0) then
+            dumx = x2(m)-xctr+xdim/2
+            dumy = z2(m)-zctr+zdim/2
+         end if
          
          r = xctr-xdim/2+dumx
          jacp = r/(xctr+xdim/2)
@@ -1360,29 +1635,51 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
 !    LINEAR: perturb w(m) to get linear growth...
 !            w2(m)=2.*amp*ran2(iseed)
-            w2(m)= (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
-                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
-!            w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
- 
-               
-
             
+               w2(m)= (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) &
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
+               gw(m) = 1
+!            w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+            if (weightscheme == 1) then
+               if (nonlin == 1) then 
+               w2(m) = 0
+                  ! w2(m) = 1e-12
+                  ! w2(m) = 1e-12*cos(modes*(zeta2(m)-1.3*atan2(dumy+Zgrid(0)-Zgrid(jmx/2),dumx+Rgrid(0)-Rgrid(imx/2)))) * &
+                  ! exp(-((sqrt((dumx+Rgrid(0)-Rgrid(imx/2))**2+(dumy+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.05)**2))
+               else
+                  ! w2(m) = 1e-12 
+               !Initilizing weight as w_0 = A_i \cos{n(\zeta - q \arctan{z/r})} \exp{-\frac{(\sqrt{r^2+z^2}-a/2)^2}{2\Delta r^2}}
+               w2(m) = 1e-12*cos(modes*(zeta2(m)-1.3*atan2(dumy+Zgrid(0)-Zgrid(jmx/2),dumx+Rgrid(0)-Rgrid(imx/2)))) * &
+               exp(-((sqrt((dumx+Rgrid(0)-Rgrid(imx/2))**2+(dumy+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.05)**2))
+               end if
+               gw(m) =  (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
+            end if
+ 
             myavgw=myavgw+w2(m)
             m = m+1            
          end do
 
+         if (CST /= 0) then
+            open(unit=12, file = 'testinitialv_par',status='unknown',action='write')
+            write(12,*) u2
+            close(12)
+   
+            open(unit=14, file = 'testenergeez',status='unknown',action='write')
+            write(14,*) mu*bfldp + 0.5*mims(1)*u2**2
+            close(14)
+         end if 
 !             do i=1,mmx
 !                avex=avex+x2(i)
 !             end do
 !         write(*,*)avex/mmx
              if (MyId==0) then
 
-         open(unit=11, file = 'testdepo_posi',status='unknown',action='write')
-               do j=mmx-10000,mmx
+         ! open(unit=11, file = 'testdepo_posi',status='unknown',action='write')
+         !       do j=mmx-10000,mmx
                   
-                  write(11,*) x2(j),z2(j),zeta2(j)
-               enddo
-               close(11)
+         !          write(11,*) x2(j),z2(j),zeta2(j)
+         !       enddo
+         !       close(11)
              end if
 
       
@@ -1506,9 +1803,9 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !        complex(8),dimension(0:1) :: x,y
         real(8),dimension(0:1) :: x,y
 	integer :: n,i,j,k,ip
-        
-        call ppinit(MyId,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank)
 
+        call ppinit(MyId,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank)
+         
 !     reset timestep counter.
          Last=numprocs-1
          timestep=0
@@ -1518,7 +1815,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             if (MyId.eq.i) call init
             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
          enddo
-         
+      
          dum = 0.
          do i = 0,imx-1
             dum = dum+(jac(i)+jac(i+1))/2
@@ -1528,7 +1825,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
              tube_comm,ierr)
          totvol = lx*lz*pi2*xctr    
          n0=float(tmm(1))/totvol
-
+         
 
 !         do k=0,kmx
 !            den_pre(:,:,k)=xn0i
@@ -1792,7 +2089,8 @@ end subroutine field
 
       Hx =dx! (Rgrid(imx)-Rgrid(0)) / real(imx)
       Hy =dz!(Zgrid(jmx)-Zgrid(0)) / real(jmx)
-
+      ! rho_i = sqrt(2*t0i(mid_i,mid_j)/mims(1))*mims(1)/(q(1)*b0(mid_i,mid_j))
+      ! write(*,*) rho_i
       Hx2 = Hx**2
       Hy2 = Hy**2
       PetscCall(DMDAGetCorners(dm,xs,ys,PETSC_NULL_INTEGER,xm,ym,PETSC_NULL_INTEGER,ierr))
@@ -1801,14 +2099,16 @@ end subroutine field
           row(MatStencil_i) = i
           row(MatStencil_j) = j
           if (mask(i,j) <0.99) then
-             v(1)=c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2)
+             v(1)=(c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))*(-2.0/Hx2-2.0/Hy2)
              PetscCall(MatSetValuesStencil(BB,i1,row,i1,row,v(1),INSERT_VALUES,ierr))
           else
              if (j > 0) then
                  if (j == jmx) then
-                    v(1) = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1))
+                    v(1) = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1))
+                    v(1) = v(1) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2
                  else
-                    v(1) = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
+                    v(1) = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
+                    v(1) = v(1) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2)
                  end if
              end if
              col(MatStencil_i, 1) = i
@@ -1816,30 +2116,35 @@ end subroutine field
 
              if (i > 0) then
                  if (i == imx) then
-                    v(2) =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j))
+                    v(2) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j))
+                    v(2) = v(2) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2
                  else
-                    v(2) =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
+                    v(2) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
+                    v(2) = v(2) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2)
                  end if
              end if
              col(MatStencil_i, 2) = i - 1
              col(MatStencil_j, 2) = j
 
-             v(3) = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2
+             v(3) = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2
              col(MatStencil_i, 3) = i
              col(MatStencil_j, 3) = j
 
  !            write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
              if(iBoltzmann/=0) then
-                v(3)=v(3)-xn0e(i,j)*mu0*e*e/t0e(i,j)
+                v(3)=v(3)-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*rho_i(i,j)**2)*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + &
+                (xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2)
              end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!             
 
              if (i < imx) then
                  if (i == 0) then
-                    v(4) =  c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j))
+                    v(4) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j))
+                    v(4) = v(4) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i,j)/t0e(i,j))/Hx2
                  else
-                    v(4) =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
+                    v(4) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
+                    v(4) = v(4) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2)
                  end if
              end if
              col(MatStencil_i, 4) = i + 1
@@ -1847,9 +2152,11 @@ end subroutine field
 
              if (j < jmx) then
                  if (j == 0) then
-                    v(5) =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j))
+                    v(5) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j))
+                    v(5) = v(5) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2
                  else
-                    v(5) =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
+                    v(5) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
+                    v(5) = v(5) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2)
                  end if
              end if
              col(MatStencil_i, 5) = i
@@ -1909,31 +2216,85 @@ end subroutine field
              if (mask(i,j) <0.99) then
                 tmp_value = 0
              else
+               if (weightscheme == 0) then
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2D ni noly now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                 if(i3D==0)then
                    if (iBoltzmann==0) then
                       tmp_value = denes(i,j,k)-q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
-                   else
-                      tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
+                   else if (eAdiabatic/=0) then
+                     tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  &
+                              PADE*(mu0*q(1)*rho_i(i,j)**2)*(((den2d2(i-1,j)-xn0i(i-1,j))+(den2d2(i+1,j)-xn0i(i+1,j))-2*(den2d2(i,j)-xn0i(i,j)))/dx**2 + &
+                               ((den2d2(i,j-1)-xn0i(i,j-1))+(den2d2(i,j+1)-xn0i(i,j+1))-2*(den2d2(i,j)-xn0i(i,j)))/dz**2) + PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                               (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                               (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                               (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                               ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))                  
+                   else 
+                     tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
                    end if
                 
                    !                 tmp_value = 1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 else
+
                 if (iBoltzmann==0) then
                 tmp_value = denes(i,j,k)-q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
-                endif
                         
-                if (eAdiabatic/=0) then
-                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j)
+                else if (eAdiabatic/=0) then
+                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + &
+                  PADE*(mu0*q(1)*rho_i(i,j)**2)*(((den(2,i-1,j,k)-xn0i(i-1,j))+(den(2,i+1,j,k)-xn0i(i+1,j))-2*(den(2,i,j,k)-xn0i(i,j)))/dx**2 + &
+                  ((den(2,i,j-1,k)-xn0i(i,j-1))+(den(2,i,j+1,k)-xn0i(i,j+1))-2*(den(2,i,j,k)-xn0i(i,j)))/dz**2) + PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                  (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                  (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                  (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                  ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
                 else 
                   tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
                 endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
                 endif
+               else
+                  if(i3D==0)then
+                     if (iBoltzmann==0) then
+                        tmp_value = denes(i,j,k)-q(1)*mu0*(den2d2(i,j))
+                     else if (eAdiabatic/=0) then
+                        tmp_value = -q(1)*mu0*(den2d2(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  &
+                        PADE*(mu0*q(1)*rho_i(i,j)**2)*((den2d2(i-1,j)+den2d2(i+1,j)-2*den2d2(i,j))/dx**2 + &
+                        (den2d2(i,j-1)+den2d2(i,j+1)-2*den2d2(i,j))/dz**2) + PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                        (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                        (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                        (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                        ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))                     
+                     else 
+                        tmp_value = -q(1)*mu0*(den2d2(i,j))
+                     end if
+                  
+                  else
+
+                  if (iBoltzmann==0) then
+                     tmp_value = denes(i,j,k)-q(1)*mu0*(den(2,i,j,k))
+                          
+                  else if (eAdiabatic/=0) then
+                     tmp_value = -q(1)*mu0*(den(2,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + &
+                     PADE*(mu0*q(1)*rho_i(i,j)**2)*((den(2,i-1,j,k)+den(2,i+1,j,k)-2*den(2,i,j,k))/dx**2 + &
+                     (den(2,i,j-1,k)+den(2,i,j+1,k)-2*den(2,i,j,k))/dz**2) + PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                     (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                     (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                     (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                     ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
+
+                     ! write(*,*) -q(1)*mu0*(den(2,i,j,k)), -(xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j), PADE*(mu0*q(1)*rho_i(i,j)**2)*((den(2,i-1,j,k)+den(2,i+1,j,k)-2*den(2,i,j,k))/dx**2 + (den(2,i,j-1,k)+den(2,i,j+1,k)-2*den(2,i,j,k))/dz**2), PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                     ! (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                     ! (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                     ! (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                     ! ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
+                  else 
+                     tmp_value = -q(1)*mu0*(den(2,i,j,k))
+                  endif      
+                  endif
+               end if
                 
              end if
              PetscCall(VecSetValues(bbb,1,idx, tmp_value, INSERT_VALUES, ierr))
@@ -2002,7 +2363,6 @@ end subroutine field
        upar=0
        !$acc parallel loop gang vector
        do m=1,mm(1)
-
          x=x3(m)
          i = int(x/dxeq)
          wx0 = (i+1)-x/dxeq
@@ -2021,58 +2381,60 @@ end subroutine field
          wzeta0=(k+1)-zeta/dzeta
          wzeta1=1.-wzeta0
 
+         ! if (weightscheme == 0) then
+
          !$acc atomic update 
-         den(iflag,i,j,k)=den(iflag,i,j,k)+w3(m)*wx0*wy0*wzeta0*R_major_over_R
+         den(iflag,i,j,k)=den(iflag,i,j,k)+gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R
          !$acc atomic update
-         den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3(m)*wx1*wy0*wzeta0*R_major_over_R1
+         den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1
          !$acc atomic update
-         den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+w3(m)*wx0*wy1*wzeta0*R_major_over_R
+         den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R
          !$acc atomic update
-         den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+w3(m)*wx1*wy1*wzeta0*R_major_over_R1
+         den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1
          !$acc atomic update 
-         upar(i,j,k)=upar(i,j,k)+u3(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R
+         upar(i,j,k)=upar(i,j,k)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R
          !$acc atomic update
-         upar(i+1,j,k)=upar(i+1,j,k)+u3(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1
+         upar(i+1,j,k)=upar(i+1,j,k)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1
          !$acc atomic update
-         upar(i,j+1,k)=upar(i,j+1,k)+u3(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R
+         upar(i,j+1,k)=upar(i,j+1,k)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R
          !$acc atomic update
-         upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1
+         upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1
          
          if(k/=kmx)then
             !$acc atomic update
-            den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+w3(m)*wx0*wy0*wzeta1*R_major_over_R
+            den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
             !$acc atomic update
-            den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+w3(m)*wx1*wy0*wzeta1*R_major_over_R1
+            den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
             !$acc atomic update
-            den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+w3(m)*wx0*wy1*wzeta1*R_major_over_R
+            den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
             !$acc atomic update
-            den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+w3(m)*wx1*wy1*wzeta1*R_major_over_R1
+            den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
             !$acc atomic update
-            upar(i,j,k+1)=upar(i,j,k+1)+u3(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
+            upar(i,j,k+1)=upar(i,j,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
             !$acc atomic update
-            upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
+            upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
             !$acc atomic update
-            upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
+            upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
             !$acc atomic update
-            upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
+            upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
             
          else
             !$acc atomic update
-            den(iflag,i,j,0)=den(iflag,i,j,0)+w3(m)*wx0*wy0*wzeta1*R_major_over_R
+            den(iflag,i,j,0)=den(iflag,i,j,0)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
             !$acc atomic update
-            den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+w3(m)*wx1*wy0*wzeta1*R_major_over_R1
+            den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
             !$acc atomic update
-            den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+w3(m)*wx0*wy1*wzeta1*R_major_over_R
+            den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
             !$acc atomic update
-            den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+w3(m)*wx1*wy1*wzeta1*R_major_over_R1
+            den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
             !$acc atomic update
-            upar(i,j,0)=upar(i,j,0)+u3(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
+            upar(i,j,0)=upar(i,j,0)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
             !$acc atomic update
-            upar(i+1,j,0)=upar(i+1,j,0)+u3(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
+            upar(i+1,j,0)=upar(i+1,j,0)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
             !$acc atomic update
-            upar(i,j+1,0)=upar(i,j+1,0)+u3(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
+            upar(i,j+1,0)=upar(i,j+1,0)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
             !$acc atomic update
-            upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
+            upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
 
          end if
       end do
@@ -2112,7 +2474,7 @@ end subroutine field
     
     
 !     !!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine fluxavg(input,output) !Currently only good for 2D case
+  subroutine fluxavg(input,output)
    use gemx_com
    use equil
 
@@ -2124,107 +2486,123 @@ end subroutine field
    real(8), dimension(0:imx, 0:jmx) :: output ! 2D interpolated array
 
    ! Local variables
-   real(8), dimension(:), allocatable :: phiavg1d, psi1d, phiavg1d_private
-   integer :: gi, xix, yjy, miw, psi_zero, store, k
-   real(8) :: weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1
-   allocate(phiavg1d(0:101),psi1d(0:101),phiavg1d_private(0:101))
+   real(8), dimension(:), allocatable :: phiavg1d, psi1d, psi1d_private,phiavg1d_private
+   integer :: gi, xix, yjy, miw, psi_zero, store, k, line_small, line_marker, priv_mark
+   integer :: i, j
+   real(8) :: weightinput,weightinput3D, phiavggi, psival, wmx0, wmx1, psi_private_min
+   allocate(phiavg1d(0:99),psi1d(0:99),psi1d_private(0:99),phiavg1d_private(0:99))
+   
+   !!!!REMEMBER TO TURN OFF
+!    do i = 0, imx
+!         do j=0,jmx     
+!                 do k=0,kmx
+!                    input(i,j,k) = 100*psi_p(i,j)
+!               end do
+!        end do
+!   end do
+!!!!!!!!!
 
-   phiavg1d = 0
-   psi1d = 0
+   phiavg1d         = 0
    phiavg1d_private = 0
+   psi1d            = 0
+   psi1d_private    = 0
    
-   psi_zero = 1
+   line_small = 0
+   psi_zero   = 1 !Start at one, sets zeroeth index later
 
-   !Computation
-   do line = 1, 101
-       phiavggi = 0.0d0 
-       store = 0
-       do gi = 1, num_lines
-         if (gindex(gi) == line-1) then
-               weightinput = (weight00(gi)*input(iarray(gi), jarray(gi),0) + &
-                           weight10(gi)*input(iarray(gi)+1, jarray(gi),0) + &
-                           weight01(gi)*input(iarray(gi), jarray(gi)+1,0) + &
-                           weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,0))
-   
-               if (i3D == 0) then                  
-                  phiavggi = phiavggi + (weightinput*jacobian(gi))/deno(gi)
-               else
-                  do k=1, kmx
-                     weightinput3D = (weight00(gi)*input(iarray(gi), jarray(gi),k) + &
-                                    weight10(gi)*input(iarray(gi)+1, jarray(gi),k) + &
-                                    weight01(gi)*input(iarray(gi), jarray(gi)+1,k) + &
-                                    weight11(gi)*input(iarray(gi)+1, jarray(gi)+1,k))
-                  enddo
-                  weightinput = weightinput3D + weightinput
-                  phiavggi = phiavggi +(weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
-               end if
+   !Revised Computation!!!!!!!!!!!!!!!!
+   line_marker = 0
 
-            if (priv(gi) == 0) then
-               store = gi
-            end if
-         end if
-
-         !Remove redundancy from closed loop integration process
-         if (phiavggi /= 0) then
-            if (gindex(gi) /= line-1) then
-               if (i3D == 0) then
-                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/deno(gi-1)
-               else
-                  phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
-               end if
-               exit
-            end if
-         end if
-      end do
-
-      if (store /= 0) then
-         phiavg1d(line) = phiavggi
-         psi1d(psi_zero) = psitab(store)
-         psi_zero = psi_zero + 1
-      else 
-         phiavg1d_private(line) = phiavggi
-      end if
-   end do
-   
-   phiavg1d(0) = phiavg1d(1)
-   ! phiavg1d(0) = input(268,254,0)
-   
-   !Save psi1d and timesteps of phiavg1d to understand convergence
-   ! if (timestep == 10) then
-   !    open(unit=11, file = 'psi1d',status='unknown',action='write')
-   !                write(11,*) psi1d(:)
-   !             close(11)
-   ! endif
-
-   ! open(unit=11, file = 'phiavg1d',status='unknown',position='append')                
-   ! write(11,*) phiavg1d(:)
-   ! close(11)
-
-   !Initialize output to zero
-   output = 0.0
-   
-   !INTERPOLATION
-   do xix = 0, nx
-       do yjy = 0, nz
-           psival = psi_p(xix,yjy)
-           if (mask(xix,yjy) < 0.99) then 
-               output(xix,yjy) = 0
-           else
-               miw  = int(psival/(psi1d(2)-psi1d(1)))
-               wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
-               wmx1 = 1.-wmx0
-               if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) then !Private region under X-point
-                  output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
-               else   
-                  output(xix,yjy) = wmx0*phiavg1d(miw) + wmx1*phiavg1d(miw+1)
-               end if
+   do gi = 0, 99
+      weightinput = 0.0d0
+      phiavggi    = 0.0d0 
+      store       = 0
+      priv_mark   = 0
+      do line = line_marker, num_lines
+        if (gindex(line) == gi) then
+              weightinput = (weight00(line)*input(iarray(line), jarray(line),0) + &
+                          weight10(line)*input(iarray(line)+1, jarray(line),0) + &
+                          weight01(line)*input(iarray(line), jarray(line)+1,0) + &
+                          weight11(line)*input(iarray(line)+1, jarray(line)+1,0))
+              if (i3D == 0) then                  
+                 phiavggi = phiavggi + (weightinput*jacobian(line))/deno(line)
+              else
+                 do k=1, kmx
+                    weightinput3D = (weight00(line)*input(iarray(line), jarray(line),k) + &
+                                   weight10(line)*input(iarray(line)+1, jarray(line),k) + &
+                                   weight01(line)*input(iarray(line), jarray(line)+1,k) + &
+                                   weight11(line)*input(iarray(line)+1, jarray(line)+1,k))
+                    weightinput = weightinput3D + weightinput
+                 enddo
+                 phiavggi = phiavggi +(weightinput*jacobian(line))/(deno(line)*(kmx+1))
+              end if
+              store = line
+           if (priv(line) == 0) then
+              priv_mark = 1
            end if
-       enddo
-    enddo
+        end if
+        !Remove redundancy from closed loop integration process
+        if (phiavggi /= 0) then
+           if (gindex(line) /= gi) then
+              if (i3D == 0) then
+                 phiavggi = phiavggi - (weightinput*jacobian(line-1))/deno(line-1)
+              else
+                 phiavggi = phiavggi - (weightinput*jacobian(line-1))/(deno(line-1)*(kmx+1))
+              end if
+              line_marker = line
+              exit !Leave contour loop after removing redundancy
+           end if
+        end if
+     end do
+     
+     if (priv_mark /= 0) then
+        phiavg1d(psi_zero) = phiavggi
+        psi1d(psi_zero)    = psitab(store)
+        psi_zero = psi_zero + 1
+     else 
+        phiavg1d_private(gi) = phiavggi
+        if (line_small == 0) then
+           psi_private_min = psitab(store)
+        end if
+      !   phiavg1d_private(line_small) = phiavggi
+      !   psi1d_private(line_small) = psitab(store)
+        line_small = line_small + 1
+     end if
+  end do
+  
+  !Initialize output to zero
+  phiavg1d(0) = phiavg1d(1)
+  output = 0.0
+  !QUICK FIX
+!   phiavg1d_private = 0
+  !!
+  !INTERPOLATION
+  do xix = 0, nx
+      do yjy = 0, nz
+          psival = psi_p(xix,yjy)
+          if (mask(xix,yjy) < 0.99) then 
+              output(xix,yjy) = 0
+          else
+            !   if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) then !Private region under X-point
+            !      miw  = int((psival-psi_private_min)/(psi1d(2)-psi1d(1)))
+            !    !   wmx0 = ((miw+1)*(psi1d_private(2)-psi1d_private(1))-psival)/(psi1d(2)-psi1d(1))
+            !      wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
+            !      wmx1 = 1.-wmx0
+            !      output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
+            !   else 
+                 miw  = int(psival/(psi1d(2)-psi1d(1)))
+                 wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
+                 wmx1 = 1. - wmx0  
+                 output(xix,yjy) = wmx0*phiavg1d(miw) + wmx1*phiavg1d(miw+1)
+            !   end if
+          end if
+      enddo
+   enddo
+   ! output = 0.0
+
 end subroutine fluxavg
             
-       
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine efieldcalc(phi_input)
    use gemx_com
    use equil
@@ -2244,8 +2622,7 @@ subroutine efieldcalc(phi_input)
             if (k==0) then
                kminus = kmx
                ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,kminus))/(2*Rgrid(i)*(2*pi/(kmx+1)))
-            end if
-            if (k==kmx) then
+            else if (k==kmx) then
                kplus = 0
                ezeta(i,j,k) = -(phi_input(i,j,kplus) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
             else
@@ -2256,60 +2633,6 @@ subroutine efieldcalc(phi_input)
    end do
 
 end subroutine efieldcalc
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Growth Rate Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine growthdiag(input_phi)
-   use gemx_com
-   use equil
-
-   implicit none 
-
-   ! Input
-   real(8), dimension(0:imx,0:jmx,0:kmx) :: input_phi !3D input phi array
-
-   ! Local variables
-   integer :: store, k, gi, peak
-   real(8) :: phiavgsq, weightinput, phiavggi
-
-   phiavgsq = 0
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   peak     = 45 !Manually set contour number of peak temperature gradient
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   phiavggi = 0.0d0
-   store    = 0
-
-   do gi = 21760, 22540
-      if (gindex(gi) == peak) then
-         do k = 0, kmx
-            weightinput = (weight00(gi)*input_phi(iarray(gi), jarray(gi),k)*input_phi(iarray(gi), jarray(gi),k) + &
-                           weight10(gi)*input_phi(iarray(gi)+1, jarray(gi),k)*input_phi(iarray(gi)+1, jarray(gi),k) + &
-                           weight01(gi)*input_phi(iarray(gi), jarray(gi)+1,k)*input_phi(iarray(gi), jarray(gi)+1,k) + &
-                           weight11(gi)*input_phi(iarray(gi)+1, jarray(gi)+1,k)*input_phi(iarray(gi)+1, jarray(gi)+1,k))
-         end do
-         phiavggi = phiavggi + (weightinput*jacobian(gi))/(deno(gi)*(kmx+1))
-
-         if (priv(gi)==0) then
-            store = gi
-         end if
-      end if
-
-      if (phiavggi /= 0) then
-         if (gindex(gi) /= peak) then
-            phiavggi = phiavggi - (weightinput*jacobian(gi-1))/(deno(gi-1)*(kmx+1))
-            exit
-         end if
-      end if
-   end do
-
-   if (store /= 0) then
-      phiavgsq = phiavggi
-   end if
-
-   open(unit=11, file = 'testphiavgsq',status='unknown',position='append')                
-   write(11,*) timestep, phiavgsq
-   close(11)
-
-end subroutine
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann-Poisson Electron Solver!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine boltzsolve(input_phi)
    use gemx_com
@@ -2321,53 +2644,61 @@ subroutine boltzsolve(input_phi)
 
    ! Local Variables
    integer :: i, j, k
+   !Need to solve \phi_{k+1} = \phi{k} - \frac{R^k \Delta \phi^k}{R^{k+1}-R^k}
 
+
+   !Define phi_{k+1}
    do i=0, imx
       do j=0, jmx
          do k=0, kmx
             if (input_phi(i,j,k) == 0) then
                phi_k(i,j,k) = 0.005+(ran2(iseed)*0.005)
             else
-               phi_k(i,j,k) = 1.01*input_phi(i,j,k)
+               phi_k(i,j,k) = 1.001*input_phi(i,j,k)
             end if
          end do
       end do
    end do
-
-   do i=0,imx
-      do j=0,jmx
+   
+   do i=2,imx-1
+      do j=2,jmx-1
          do k=0,kmx
-            dphidr(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i+1,j,k)-input_phi(i-1,j,k))/(2*dx)
-            dphi_kdr(i,j,k) = c2_over_vA2(i,j)*(phi_k(i+1,j,k)-phi_k(i-1,j,k))/(2*dx)
+            dphidr(i,j,k)   = Rgrid(i)*(input_phi(i+1,j,k)-input_phi(i-1,j,k))/(2*dx)
+            dphi_kdr(i,j,k) = Rgrid(i)*(phi_k(i+1,j,k)-phi_k(i-1,j,k))/(2*dx)
 
-            dphidz(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i,j+1,k)-input_phi(i,j-1,k))/(2*dz)
-            dphi_kdz(i,j,k) = c2_over_vA2(i,j)*(phi_k(i,j+1,k)-phi_k(i,j-1,k))/(2*dz)
+            dphidz(i,j,k)   = (input_phi(i,j+1,k)-input_phi(i,j-1,k))/(2*dz)
+            dphi_kdz(i,j,k) = (phi_k(i,j+1,k)-phi_k(i,j-1,k))/(2*dz)
          end do
       end do
    end do
 
-   do i=0,imx
-      do j=0,jmx
+   do i=2,imx-1
+      do j=2,jmx-1
          do k=0,kmx
-            d2phidr2(i,j,k)      = (dphidr(i+1,j,k)-dphidr(i-1,j,k))/(2*dx)
-            d2phi_kdr2(i,j,k)    = (dphi_kdr(i+1,j,k)-dphi_kdr(i-1,j,k))/(2*dx)
+            d2phidr2(i,j,k)      = c2_over_vA2(i,j)*(dphidr(i+1,j,k)-dphidr(i-1,j,k))/(2*dx*Rgrid(i))
+            d2phi_kdr2(i,j,k)    = c2_over_vA2(i,j)*(dphi_kdr(i+1,j,k)-dphi_kdr(i-1,j,k))/(2*dx*Rgrid(i))
 
-            d2phidz2(i,j,k)      = (dphidz(i,j+1,k)-dphidz(i,j-1,k))/(2*dz)
-            d2phi_kdz2(i,j,k)    = (dphi_kdz(i,j+1,k)-dphi_kdz(i,j-1,k))/(2*dz)
+            d2phidz2(i,j,k)      = c2_over_vA2(i,j)*(dphidz(i,j+1,k)-dphidz(i,j-1,k))/(2*dz)
+            d2phi_kdz2(i,j,k)    = c2_over_vA2(i,j)*(dphi_kdz(i,j+1,k)-dphi_kdz(i,j-1,k))/(2*dz)
             
             OPPphi(i,j,k)  = (d2phidr2(i,j,k)+d2phidz2(i,j,k))
             OPPphik(i,j,k) = (d2phi_kdr2(i,j,k)+d2phi_kdz2(i,j,k))
-   
-            l_hand(i,j,k) = (OPPphik(i,j,k)-OPPphi(i,j,k))/(phi_k(i,j,k)-input_phi(i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j)*exp(input_phi(i,j,k)*e/t0e(i,j)))
 
             if (i3D == 0) then
-               r_hand(i,j,k) = (OPPphi(i,j,k)+q(1)*mu0*den2d2(i,j)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k))))
+               r_hand(i,j,k)  = OPPphi(i,j,k) + q(1)*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k))
+               rk_hand(i,j,k) = OPPphik(i,j,k) + q(1)*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k))
             else 
-               r_hand(i,j,k) = (OPPphi(i,j,k)+q(1)*mu0*den(2,i,j,k)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k))))
+               r_hand(i,j,k)  = OPPphi(i,j,k) + q(1)*mu0*den(2,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k))
+               rk_hand(i,j,k) = OPPphik(i,j,k) + q(1)*mu0*den(2,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k))
             end if
 
-            input_phi(i,j,k) = phi_k(i,j,k) - (r_hand(i,j,k)/l_hand(i,j,k))
+            input_phi(i,j,k) = phi_k(i,j,k) - (input_phi(i,j,k)-phi_k(i,j,k))*r_hand(i,j,k)/(rk_hand(i,j,k)-r_hand(i,j,k))
+            ! write(*,*) (r_hand(i,j,k)/l_hand(i,j,k))
             ! input_phi(i,j,k) = OPPphik(i,j,k)
+
+            if (input_phi(i,j,k) == 0) then
+               write(*,*) 'working'
+            end if
 
             if (mask(i,j)<0.99) then
                input_phi(i,j,:) = 0
@@ -2376,18 +2707,358 @@ subroutine boltzsolve(input_phi)
       end do
    end do
 
-   ! if (timestep == 1) then
-   !    open(unit=11, file = 'testboltzmann',status='unknown',action='write')
-   !    do j=0, jmx
+   ! if(MyId==0 .and. timestep == 5)then
+
+   ! open(unit=11, file = 'testphi_boltzmann',status='unknown',action='write')
+   ! do j=0,jmx
+      
    !    write(11,*) input_phi(:,j,0)
-   !    end do
-   !    close(11)
+   ! enddo
+   
+   ! close(11)
+
    ! end if
 
 end subroutine
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Fourier Solve!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    
-    
-           
-       
+!Toroidal Direction
+subroutine fourier_modes(input_phi, modes)
+   use gemx_com
+   use equil
+
+   implicit none
+   #include "fftw3.f"
+
+   ! Input
+   real(8), dimension(0:imx, 0:jmx, 0:kmx) :: input_phi  ! 3D input phi array
+   integer :: modes
+   ! integer, dimension(:), intent(in) :: modes  ! Array of modes to keep
+
+   ! Local Variables
+
+   double complex, dimension(:), allocatable :: phi_hat!f_hat!,f_filtered
+   real, dimension(:), allocatable :: f_filtered
+   real, allocatable :: omega_r, gamma
+   !!!
+   integer :: i, j, k
+   integer*8 :: plan_forward, plan_backward
+   allocate(phi_hat(0:((kmx+1)/2 + 1)),f_filtered(0:kmx))
+ 
+   
+   do i = 0, imx
+      do j = 0, jmx
+         !Perform forward FFT
+         call dfftw_plan_dft_r2c_1d(plan_forward,kmx+1,input_phi(i,j,:),phi_hat,FFTW_ESTIMATE)
+         call dfftw_execute_dft_r2c(plan_forward, input_phi(i,j,:), phi_hat)
+         call dfftw_destroy_plan(plan_forward)
+
+         ! if (mod(timestep,10)==0) then
+         !    if (j = jmidplane .and. i = grad_peak) then            
+         !       ! Calculate real frequency and growth rate
+         !       do k = 0, ((kmx+1)/2 + 1)
+         !          ! Real frequency: omega_r = 2 * pi * k / L
+         !          omega_r = real(k) / R(grad_peak)
+   
+         !          ! Growth rate: look at imaginary part of phi_hat(k)
+         !          gamma = aimag(phi_hat(k))  ! Extract the imaginary part (growth rate)
+   
+         !          ! Print or store the frequency and growth rate
+         !          if (k == 8) then  ! For the selected mode, print values
+         !             print*, 'Mode ', k, ' - Frequency: ', omega_r, ' - Growth rate: ', gamma
+         !          end if
+         !       end do
+         !    end if
+         ! end if
+
+
+         ! Zero out unwanted modes
+         do k = 0, ((kmx+1)/2 + 1)
+            phi_hat(k) = phi_hat(k)/(kmx+1)
+            if (k /= modes) then !n toroidal modes
+               phi_hat(k) = (0.0,0.0)
+            end if
+         end do
+
+         ! Perform inverse FFT to reconstruct the input_phi
+         call dfftw_plan_dft_c2r_1d(plan_backward, kmx+1, phi_hat, f_filtered, FFTW_ESTIMATE)
+         call dfftw_execute_dft_c2r(plan_backward, phi_hat, f_filtered)
+         call dfftw_destroy_plan(plan_backward)
+
+         do k = 0, kmx
+            input_phi(i,j,k) = f_filtered(k)
+            ! if (timestep==10 .and. f_filtered(k)/=0) then
+            !    write(*,*) input_phi(i,j,k)
+            ! end if
+         end do
+
+      end do
+   end do
+
+   if(MyId==0 .and. mod(timestep,10)==0)then
+      ! write(*,*) phi(:,:,outk)
+
+   open(unit=11, file = 'testphi_fourier',status='unknown',action='write')
+   do j=0,jmx
+      
+      write(11,*) input_phi(:,j,0)
+   enddo
+   
+   close(11)
+
+   end if
+
+   
+
+   ! Deallocate phi_hat if necessary
+   deallocate(phi_hat,f_filtered)
+
+end subroutine fourier_modes
+
+
+
+! !Poloidal Direction
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! subroutine poloidal_fourier_filter(input_phi)
+!    use gemx_com
+!    use equil
+
+!    implicit none
+!    #include "fftw3.f"
+
+!    ! Input
+!    real(8), dimension(0:imx, 0:jmx, 0:kmx) :: input  ! 3D input phi array
+! ! 
+!    ! Local Variables
+!    real(8), dimension(:), allocatable :: contour_phi
+
+!    double complex, dimension(:), allocatable :: phi_hat!f_hat!,f_filtered
+!    real, dimension(:), allocatable :: f_filtered
+!    !!!
+!    integer :: i, j, k
+!    integer*8 :: plan_forward, plan_backward
+!    allocate(phi_hat(0:((kmx+1)/2 + 1)),f_filtered(0:kmx))
+
+!    line_marker = 0
+
+!    do gi = 0, 101
+!       !first reallocate contour phi for each contour group
+!       weightinput = 0.0d0
+!       phiavggi    = 0.0d0 
+!       store       = 0
+!       priv_mark   = 0
+
+!       !Calculate length of contour for filtering
+!       do line = linemarker, num_lines
+!          if (gindex(line) /= gi) then
+!             size = gindex(line) - linemarker
+!             write(*,*) size
+!             exit !Leave loop once contour length has been found
+!          end if
+!       end do
+
+!       !Allocate contour, fourier transformed contour, and filtered contour arrays using contour length
+!       allocate(contour_phi(0:size),contour_hat(0:(size/2)+1),contour_filtered(0:size))
+      
+!       !Uses jaco.dat to interpolate contour onto psi grid correctly
+!       do line = line_marker, num_lines
+!         if (gindex(line) == gi) then
+!               weightinput = (weight00(line)*input(iarray(line), jarray(line),0) + &
+!                           weight10(line)*input(iarray(line)+1, jarray(line),0) + &
+!                           weight01(line)*input(iarray(line), jarray(line)+1,0) + &
+!                           weight11(line)*input(iarray(line)+1, jarray(line)+1,0))
+!              contour_phi(line_marker-line) = weightinput
+!         elseif (gindex(line) /= gi) then
+!          line_marker = line 
+!          exit
+!         end if 
+!       end do
+
+!       !Now Fourier Filter
+!       call dfftw_plan_dft_r2c_1d(plan_forward,size,contour_phi(:),contour_hat,FFTW_ESTIMATE)
+!       call dfftw_execute_dft_r2c(plan_forward,contour_phi(:),contour_hat)
+!       call dfftw_destroy_plan(plan_forward)
+
+!       ! Zero out unwanted modes
+!       do point = 0, (size/2 + 1)
+!          contour_hat(point) = contour_hat(point)/size !normalize
+!          if (point/=0 .and. point/=1) then
+!             contour_hat(point) = 0.0
+!          end if
+!       end do
+
+!       !Perform inverse FFT to reconstruct the filtered contour line
+!       call dfftw_plan_dft_c2r_1d(plan_backward,size,contour_hat,contour_filtered,FFTW_ESTIMATE)
+!       call dfftw_execute_dft_c2r(plan_backward,contour_hat,contour_filtered)
+!       call dfftw_destroy_plan(plan_backward)
+
+!       !Now replace contour with filtered contour on phi grid
+      
+
+!    end do
+
+
+
+! end subroutine poloidal_fourier_filter
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!111
+! !!!!GRID FILTERING
+subroutine binomial_filter(input_phi)
+   use gemx_com
+   use equil
+
+   implicit none
+
+   ! Input
+   real(8), dimension(0:imx, 0:jmx, 0:kmx) :: input_phi  ! 3D input phi array
+
+   ! Local variables
+   integer :: i, j, k, kmin, kmax
+   real(8), dimension(:,:,:), allocatable :: Filter
+   allocate(Filter(1:imx-1,1:jmx-1,0:kmx))
+
+   !Binomial Filter
+   do i = 1, imx-1
+      do j = 1, jmx-1
+         do k = 0, kmx
+            if (k == 0) then
+               kmin = kmx
+            else
+               kmin = k-1
+            end if
+
+            if (k == kmx) then
+               kmax = 0
+            else
+               kmax = k+1
+            end if
+
+            Filter(i,j,k) = (1.0d0 / 64.0d0) * (input_phi(i-1,j-1,kmin) + 2*input_phi(i,j-1,kmin) + input_phi(i+1,j-1,kmin) + &
+                           2*input_phi(i-1,j,kmin) + 4*input_phi(i,j,kmin) + 2*input_phi(i+1,j,kmin) + &
+                           input_phi(i-1,j+1,kmin) + 2*input_phi(i,j+1,kmin) + input_phi(i+1,j+1,kmin) + &
+                           2*input_phi(i-1,j-1,k) + 4*input_phi(i,j-1,k) + 2*input_phi(i+1,j-1,k) + &
+                           4*input_phi(i-1,j,k) + 8*input_phi(i,j,k) + 4*input_phi(i+1,j,k) + &
+                           2*input_phi(i-1,j+1,k) + 4*input_phi(i,j+1,k) + 2*input_phi(i+1,j+1,k) + &
+                           input_phi(i-1,j-1,kmax) + 2*input_phi(i,j-1,kmax) + input_phi(i+1,j-1,kmax) + &
+                           2*input_phi(i-1,j,kmax) + 4*input_phi(i,j,kmax) + 2*input_phi(i+1,j,kmax) + &
+                           input_phi(i-1,j+1,kmax) + 2*input_phi(i,j+1,kmax) + input_phi(i+1,j+1,kmax))
+         end do
+      end do
+   end do
+
+   do i = 0, imx
+      do j = 0, jmx
+         do k = 0, kmx
+            if (mask(i,j)<0.99) then
+               input_phi(i,j,k) = 0
+            else
+               input_phi(i,j,k) = Filter(i,j,k)
+            end if
+         end do
+      end do
+   end do
+
+end subroutine binomial_filter
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+subroutine poloidal_filter_methods(input_phi)
+   use gemx_com
+   use equil
+
+   implicit none
+
+   ! Input
+   real(8), dimension(0:imx, 0:jmx, 0:kmx) :: input_phi  ! 3D input phi array
+
+   ! Local variables
+   integer :: i, j, k, kmin, kmax
+   real(8), dimension(:,:,:), allocatable :: Filter
+   allocate(Filter(1:imx-1,1:jmx-1,0:kmx))
+
+   !!!!!!!!!!!!!!!!Binomial Filter in the poloidal plane !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   do k = 0, kmx
+      do i =1, imx-1
+         do j = 1, jmx-1
+            ! write(*,*) input_phi(i,j,k)
+            Filter(i,j,k) = (1.0d0/16.0d0) * (input_phi(i-1,j-1,k) + 2*input_phi(i,j-1,k) + input_phi(i+1,j-1,k) + &
+                           2*input_phi(i-1,j,k) + 4*input_phi(i,j,k) + 2*input_phi(i+1,j,k) + &
+                           input_phi(i-1,j+1,k) + 2*input_phi(i,j+1,k) + input_phi(i+1,j+1,k))
+         end do
+      end do
+   end do
+
+   do i = 0, imx
+      do j = 0, jmx
+         do k = 0, kmx
+            if (mask(i,j)<0.99) then
+               input_phi(i,j,k) = 0
+            else
+               ! write(*,*) Filter(i,j,k)
+               input_phi(i,j,k) = Filter(i,j,k)
+            end if
+         end do
+      end do
+   end do   
+
+end subroutine poloidal_filter_methods
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! subroutine ftcamp(input_phi,timestep)
+
+!    use gemx_com
+!    use equil
+
+!    implicit none
+!    #include "fftw3.f"
+
+!    ! Input
+!    real(8), dimension(0:imx, 0:jmx, 0:kmx) :: input_phi  ! 3D input phi array
+!    integer :: timestep
+!    ! integer, dimension(:), intent(in) :: modes  ! Array of modes to keep
+
+!    ! Local Variables
+!    double complex, dimension(:,:,:), allocatable :: phi_hat
+!    real, allocatable :: omega_r, gamma
+!    !!!
+!    integer :: i, j, k
+!    integer*8 :: plan_forward, plan_backward
+!    ! allocate(phi_hat(0:((imx+1)/2 + 1),0:((jmx+1)/2 + 1),0:((kmx+1)/2 + 1)))
+!    allocate(phi_hat(0:((imx+1)/2 + 1),0:jmx,0:kmx))
+!    ! write(*,*) 'test placement'
+!    !Perform forward FFT
+!    call dfftw_plan_dft_r2c_3d(plan_forward, imx+1,jmx+1,kmx+1, input_phi, phi_hat, FFTW_FORWARD,FFTW_ESTIMATE)
+!    write(*,*) 'test placement 2'
+!    call dfftw_execute_dft_r2c(plan_forward, input_phi, phi_hat)
+!    call dfftw_destroy_plan(plan_forward)
+
+!    write(*,*) 'made it'
+
+!    do i=0, imx
+!       do j=0, jmx
+!          do k=0, ((kmx+1)/2 + 1)
+!             write(*,*) phi_hat(i,j,k)
+!          end do
+!       end do
+!    end do
+!    ! write(*,*) phi_hat
+
+!    ! if (mod(timestep,10)==0) then
+!          !    if (j = jmidplane .and. i = grad_peak) then            
+!          !       ! Calculate real frequency and growth rate
+!          !       do k = 0, ((kmx+1)/2 + 1)
+!          !          ! Real frequency: omega_r = 2 * pi * k / L
+!          !          omega_r = real(k) / R(grad_peak)
+   
+!          !          ! Growth rate: look at imaginary part of phi_hat(k)
+!          !          gamma = aimag(phi_hat(k))  ! Extract the imaginary part (growth rate)
+   
+!          !          ! Print or store the frequency and growth rate
+!          !          if (k == 8) then  ! For the selected mode, print values
+!          !             print*, 'Mode ', k, ' - Frequency: ', omega_r, ' - Growth rate: ', gamma
+!          !          end if
+!          !       end do
+!          !    end if
+!          ! end if
+
+
+! end subroutine ftcamp
