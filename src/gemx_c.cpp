@@ -30,7 +30,7 @@ int main() {
    PetscInt is,js,iw,jw,idx;//,n_in_porcs;
    PetscInt one,three,vec_start,vec_end;
    //PetscErrorCode petsc_ierr;
-   const PetscScalar* phi_array = nullptr;
+   const PetscScalar* phi_array;
    KSP ksp;
    DM dm;
    //PetscObject  vec;
@@ -144,8 +144,9 @@ int main() {
       file.open("testj0");
       for(int i = 0 ; i <= imx; ++i){
          for(int j = 0; j <= jmx; ++j){
-            file << jpar(i,j,outk) << "   \n";
+            file << jpar(i,j,outk);
          }
+         file << "\n";
       }
       file.close();
 
@@ -217,11 +218,17 @@ int main() {
                   PetscCall(KSPGetSolution(ksp,&petsc_phi));
                   PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
                   PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-
+                  
                   for(idx = 0; idx < (vec_end-vec_start); ++idx) {
                      i=((idx)%iw)+is;
                      j=(idx)/(iw)+js;
-                     phi(i,j,k)=phi_array[idx];//*mask(i,j); 
+                     phi(i,j,k)=phi_array[idx];//*mask(i,j);
+                     // //DEGBUG-----------------------------------------------
+                     // if (iter == 0 && k == (myid+1)*(kmx+1)/(numprocs)-1) {
+                     //    cout << k << endl;
+                     //    cout << fixed << setprecision(15) << phi_array[idx] << endl;
+                     // }
+                     // //DEGBUG-----------------------------------------------
                   }
                   PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
                }
@@ -263,15 +270,32 @@ int main() {
             }
          }
       }
-   
       efieldcalc_c_(phi);
       get_apar_(-1);
       //smooth(apars,2);
       get_jpar_(apars);
       //smooth(jpar,3)
       get_ne_c_(-1);
-
       if(ision==1) ppush_c_(timestep);
+      // //-------------------------------------------------------------------------
+      // if(myid==0){
+      // std::ofstream myFile;
+      // std::string fileName = "AAPARTICLETRACKER"; 
+      // myFile.open(fileName);
+
+      //    j = mmx-10001;
+      //    while(j < mmx){
+      //       myFile << std::setprecision(16) << x2[j] << "      ";
+      //       myFile << std::setprecision(16) << x3[j] << "      ";
+      //       myFile << std::setprecision(16) << z2[j] << "      " << "\n";
+      //       myFile << std::setprecision(16) << z3[j] << "      ";
+      //       myFile << std::setprecision(16) << u2[j] << "      ";
+      //       myFile << std::setprecision(16) << u3[j] << "      " << "\n";
+      //       j++;
+      //    }
+      //    myFile.close();
+      // }
+      // //---------------------------------------------------------------------------
       if(ifluid==1) integ_c_(0);
    } else {
          if(ision==1) ppush_c_(timestep);
@@ -479,8 +503,8 @@ int main() {
       
       if(myid == master && ifield_solver == 1) {
          cout << "time_step=" << timestep << "\n";
-         cout << "dx=" << dx << "dz=" << dz << "dzeta=" << dzeta << "omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << "\n";
-         cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << "\n";
+         cout << "dx=" << dx << "dz=" << dz << "   dzeta=" << dzeta << "   omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << "\n";
+         cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "  Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << "\n";
       }
    }
    end_total_tm = MPI_Wtime();
@@ -1040,6 +1064,201 @@ void smooth_c_(CArray3D<double> &matrix_c, int &mk){
    matrix_c = temp_c;
 }
 
+//helper functions for integ parallelization
+#pragma acc routine seq
+inline double my_fmod(double a, double p) {
+    double q = floor(a / p);
+    double r = a - p * q;
+    return (r < 0.0) ? r + p : r;
+}
+
+#pragma acc routine seq
+inline size_t get4DIndex(size_t i, size_t j, size_t k, size_t l,
+                  size_t ny, size_t nz, size_t nq) {
+    return i * (ny * nz * nq) + j * (nz * nq) + k * nq + l;
+}
+#pragma acc routine seq
+inline size_t get3DIndex(size_t i, size_t j, size_t k,
+                  size_t ny, size_t nz) {
+    return i * (ny * nz) + j * nz + k;
+}
+
+// void integ_c_(int iflag) { //non parallelized
+//    int i = 0;
+//    int j = 0;
+//    int k = 0;
+//    int m = 0;
+
+//    double wx0 = 0;
+//    double wx1 = 0;
+//    double wzeta0 = 0;
+//    double wzeta1 = 0;
+//    double wy0 = 0;
+//    double wy1 = 0;
+//    double x = 0;
+//    double z = 0;
+//    double zeta = 0;
+//    double R_major_over_R = 0;
+//    double R_major_over_R1 = 0;
+
+//    int start_integ_tm = MPI_Wtime();
+
+//    ofstream file;
+//       file.open("integDen.out");
+//       for(int j = 0; j <= jmx; ++j)  {
+//          for(int i = 0; i <= imx; ++i) {
+//             file << den(1,i,j,0) << "    ";
+//          }
+//          file << "\n";
+//       }
+//    file.close();
+
+//    //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag?
+//    for(int ii = 0; ii <= imx; ++ii) {
+//       for (int jj = 0; jj <= jmx; ++jj) {
+//          for(int kk = 0; kk <= kmx; ++kk) {
+//             den(iflag, ii, jj, kk) = 0;
+//          }
+//       }
+//    }
+//    upar.Clear(); 
+   
+//    // #pragma acc parallel loop gang vector
+//    for(m = 0; m < mm[0]; ++m) {
+
+//       x = x3[m];
+//       if(x < 0 || x > lx) cout << "x=" <<x << "\n";
+//       i = static_cast<int>(x/dxeq);
+//       wx0 = (i+1)-x/dxeq;
+//       wx1 = 1-wx0;
+
+//       R_major_over_R=xctr/(xctr-xdim/2+i*dx);
+//       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
+
+//       z = z3[m];
+//       if(z < 0 || z > lz) cout << "z="<< z << "\n";
+//       j = static_cast<int>(z/dzeq);
+//       wy0 = (j+1)-z/dzeq;
+//       wy1 = 1-wy0;
+      
+//       zeta= fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
+//       if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << "\n";
+//       k=static_cast<int>(zeta/dzeta);
+//       wzeta0=(k+1)-zeta/dzeta;
+//       wzeta1=1-wzeta0;
+
+//       // #pragma acc atomic update
+//       den(iflag,i,j,k)=den(iflag,i,j,k)+w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+//       // #pragma acc atomic update
+//       den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+//       // #pragma acc atomic update
+//       den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+//       // #pragma acc atomic update
+//       den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+//       // #pragma acc atomic update 
+//       upar(i,j,k)=upar(i,j,k)+u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+//       // #pragma acc atomic update
+//       upar(i+1,j,k)=upar(i+1,j,k)+u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+//       // #pragma acc atomic update
+//       upar(i,j+1,k)=upar(i,j+1,k)+u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+//       // #pragma acc atomic update
+//       upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+
+//       if(k != kmx) {
+//          // #pragma acc atomic update
+//          den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          upar(i,j,k+1)=upar(i,j,k+1)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+//       } else {
+//          // #pragma acc atomic update
+//          den(iflag,i,j,0)=den(iflag,i,j,0)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          upar(i,j,0)=upar(i,j,0)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          upar(i+1,j,0)=upar(i+1,j,0)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+//          // #pragma acc atomic update
+//          upar(i,j+1,0)=upar(i,j+1,0)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+//          // #pragma acc atomic update
+//          upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+//       }
+//    }
+//    // #pragma acc wait
+   
+  
+//    MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//    MPI_Allreduce(MPI_IN_PLACE, upar.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        
+
+//    for(int i = 0 ; i <= imx; ++i) {
+//       for(int j = 0; j <= jmx; ++j) {
+//          for(int k = 0; k <= kmx; ++k) {
+//             den(1,i,j,k) = den(iflag, i, j, k);
+//          }
+//       }
+//    }
+
+
+//    den2d2.Clear();
+   
+//    for(int i = 0; i <= imx; ++i) {
+//       for(int j = 0; j <= jmx; ++j) {
+//          for(int k = 0; k <= kmx; ++k) {
+//             den2d2(i,j)=den2d2(i,j)+den(iflag,i,j,k);
+//             if (i3D==0 && k != 0) upar(i,j,0) += upar(i,j,k);
+//          }
+//       }
+//    }
+
+//    for(int i = 0; i <= imx; ++i) {
+//       for(int j = 0; j <= jmx; ++j) {
+//          den2d2(i,j)=den2d2(i,j)/(kmx+1);
+//       }
+//    }
+
+//    for(i = 0; i <= imx; ++i) {
+//       for(j = 0; j <= jmx; ++j) {
+//          if(i3D == 0) {
+//             upar(i,j,0) = upar(i,j,0)/(kmx+1);
+//             for(k = 1; k <= kmx; ++k) {
+//                upar(i,j,k) = upar(i,j,0);
+//             }
+//          }
+//       }
+//    }
+
+//    if(iflag==1) {
+//       for(i = 0; i <= imx; ++i) {
+//          for(j = 0; j <= jmx; ++j) {
+//             dden2d(i,j)-=den2d1(i,j);
+//             den2d1(i,j)=den2d2(i,j);
+//             // for(k = 0 ; k <= kmx; ++k){
+//             //    //den_pre=den(2,i,j,k); 
+//             // }
+//          }
+//       }
+//    }
+//    int end_integ_tm = MPI_Wtime();
+//    integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
+// }
+
 void integ_c_(int iflag) {
    int i = 0;
    int j = 0;
@@ -1060,17 +1279,7 @@ void integ_c_(int iflag) {
 
    int start_integ_tm = MPI_Wtime();
 
-   ofstream file;
-      file.open("integDen.out");
-      for(int j = 0; j <= jmx; ++j)  {
-         for(int i = 0; i <= imx; ++i) {
-            file << den(1,i,j,0) << "    ";
-         }
-         file << "\n";
-      }
-   file.close();
-
-   //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag?
+   //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag - like clear 3d, but start at index based on iflag
    for(int ii = 0; ii <= imx; ++ii) {
       for (int jj = 0; jj <= jmx; ++jj) {
          for(int kk = 0; kk <= kmx; ++kk) {
@@ -1080,11 +1289,23 @@ void integ_c_(int iflag) {
    }
    upar.Clear(); 
    
-   // #pragma acc parallel loop gang vector
-   for(m = 0; m < mm[0]; ++m) {
+   // OPENACC "atomic update" is not compatible with user defined objects. So, we need to maneuver around this: 
+   // auto grabs most relavant data type - since den is a double array, auto defines as double. Useful since if den was ever int (for sake of argument), this wouldn't break
 
+   size_t idx = 0;                     // idx used to store index calculated for loop - used in den_ptr and upar_ptr 
+
+   den.todev();                        // prepare device (multicore CPU or GPU) with data from objects explicitly
+   upar.todev();
+   auto* den_ptr = den.start();        // grab starting address of den array object
+   auto* upar_ptr = upar.start();      // grab starting address of upar array object
+   //copy used to copy data info to device and then to host implicitly
+   //copyin used to just copy data into device, no update on host
+   #pragma acc data \
+   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx])
+   #pragma acc parallel loop gang vector present(den_ptr, upar_ptr)
+   for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
-      if(x < 0 || x > lx) cout << "x=" <<x << "\n";
+      if(x < 0 || x > lx) printf("x=%lf\n", x); //debug statements. Need printf since all nvidia gpus should recognize
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
@@ -1093,77 +1314,123 @@ void integ_c_(int iflag) {
       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
 
       z = z3[m];
-      if(z < 0 || z > lz) cout << "z="<< z << "\n";
+      if(z < 0 || z > lz) printf("z=%lf\n", z);
       j = static_cast<int>(z/dzeq);
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
-      zeta= fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
-      if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << "\n";
+      zeta= my_fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
+      if(zeta < 0 || zeta > pi2)printf("zeta=%lf\n", zeta);
       k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      // #pragma acc atomic update
-      den(iflag,i,j,k)=den(iflag,i,j,k)+w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-      // #pragma acc atomic update
-      den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      // #pragma acc atomic update
-      den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-      // #pragma acc atomic update
-      den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
-      // #pragma acc atomic update 
-      upar(i,j,k)=upar(i,j,k)+u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-      // #pragma acc atomic update
-      upar(i+1,j,k)=upar(i+1,j,k)+u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-      // #pragma acc atomic update
-      upar(i,j+1,k)=upar(i,j+1,k)+u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-      // #pragma acc atomic update
-      upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+      idx = get4DIndex(iflag,i,j,k, den.getY(), den.getZ(), den.getQ()); //instead of repeated object function calls, maybe in variable? Faster, maybe harder to read
+      #pragma acc atomic update
+      den_ptr[idx] += w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+
+      idx = get4DIndex(iflag,i+1,j,k, den.getY(), den.getZ(), den.getQ());
+      #pragma acc atomic update
+      den_ptr[idx] += w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+
+      idx = get4DIndex(iflag,i,j+1,k, den.getY(), den.getZ(), den.getQ());
+      #pragma acc atomic update
+      den_ptr[idx] += w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+
+      idx = get4DIndex(iflag,i+1,j+1,k, den.getY(), den.getZ(), den.getQ());
+      #pragma acc atomic update
+      den_ptr[idx] += w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+
+      idx = get3DIndex(i,j,k, upar.getY(), upar.getZ());
+      #pragma acc atomic update 
+      upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+
+      idx = get3DIndex(i+1,j,k, upar.getY(), upar.getZ());
+      #pragma acc atomic update
+      upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+
+      idx = get3DIndex(i,j+1,k, upar.getY(), upar.getZ());
+      #pragma acc atomic update
+      upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+
+      idx = get3DIndex(i+1,j+1,k, upar.getY(), upar.getZ());
+      #pragma acc atomic update
+      upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       if(k != kmx) {
-         // #pragma acc atomic update
-         den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         upar(i,j,k+1)=upar(i,j,k+1)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         idx = get4DIndex(iflag, i, j, k+1, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+
+         idx = get4DIndex(iflag, i+1, j, k+1, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+
+         idx = get4DIndex(iflag, i, j+1, k+1, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+
+         idx = get4DIndex(iflag, i+1, j+1, k+1, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+
+         idx = get3DIndex(i, j, k+1, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+
+         idx = get3DIndex(i+1, j, k+1, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+
+         idx = get3DIndex(i, j+1, k+1, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+
+         idx = get3DIndex(i+1, j+1, k+1, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       } else {
-         // #pragma acc atomic update
-         den(iflag,i,j,0)=den(iflag,i,j,0)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         upar(i,j,0)=upar(i,j,0)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         upar(i+1,j,0)=upar(i+1,j,0)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-         // #pragma acc atomic update
-         upar(i,j+1,0)=upar(i,j+1,0)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-         // #pragma acc atomic update
-         upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         idx = get4DIndex(iflag, i, j, 0, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+
+         idx = get4DIndex(iflag, i+1, j, 0, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+
+         idx = get4DIndex(iflag, i, j+1, 0, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+
+         idx = get4DIndex(iflag, i+1, j+1, 0, den.getY(), den.getZ(), den.getQ());
+         #pragma acc atomic update
+         den_ptr[idx] += w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+
+         idx = get3DIndex(i, j, 0, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+
+         idx = get3DIndex(i+1, j, 0, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+
+         idx = get3DIndex(i, j+1, 0, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+
+         idx = get3DIndex(i+1, j+1, 0, upar.getY(), upar.getZ());
+         #pragma acc atomic update
+         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
-   // #pragma acc wait
+   den.updatehost();
+   den.fromdev();
+   upar.updatehost();
+   upar.fromdev();
    
-  
    MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
    MPI_Allreduce(MPI_IN_PLACE, upar.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
-
    for(int i = 0 ; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
          for(int k = 0; k <= kmx; ++k) {
@@ -1171,7 +1438,6 @@ void integ_c_(int iflag) {
          }
       }
    }
-
 
    den2d2.Clear();
    
@@ -1419,9 +1685,9 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    i1 = 1;
    i5 = 5;
    //a_value = 0.5;
-   ierr = KSPGetDM(ksp,&dm); CHKERRQ(ierr);
-   ierr = DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
-                      nullptr,nullptr,nullptr,nullptr,nullptr,nullptr); CHKERRQ(ierr);
+   PetscCall(KSPGetDM(ksp,&dm)); 
+   PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
+                      nullptr,nullptr,nullptr,nullptr,nullptr,nullptr)); 
 
    Hx = dx;//! (Rgrid(imx)-Rgrid(0)) / real(imx)
    Hy = dz;//(Zgrid(jmx)-Zgrid(0)) / real(jmx)
@@ -1438,7 +1704,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
          row.j = j;
          if(mask(i,j)<0.99){
             v[0] = c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2);
-            ierr = MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES); CHKERRQ(ierr);
+            PetscCall(MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES));
          } else {
             if(j > 0) {
                if(j == jmx) {
@@ -1488,16 +1754,16 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
             }
             col[4].i = i;
             col[4].j = j + 1;   
-            ierr = MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES); CHKERRQ(ierr);
+            PetscCall(MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES));
          }
       }
    }
 
-   ierr = MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-   ierr = MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+   PetscCall(MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY));
+   PetscCall(MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY));
    if(AA != BB) {
-      ierr = MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-      ierr = MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+      PetscCall(MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY));
+      PetscCall(MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY));
    }
    //   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
    //   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
@@ -1505,7 +1771,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
    return 0;
 }
 
-PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
+PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    int ii,jj,iflag;
    //PetscScalar* b_array = new PetscScalar[]; 
    PetscScalar  h,Hx,Hy;
@@ -1527,7 +1793,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
       for(i = xs; i < xs+xm; ++i) {
-         tmp_value = 0;
+         // tmp_value = 0;
          idx+=1;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
@@ -1536,7 +1802,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
 
             if(i3D == 0) {
                if(iBoltzmann == 0){
-                  tmp_value = (denes(i,j,k) - q[0]*mu0*(den2d2(i,j) - xn0i(i,j)));
+                  tmp_value = denes(i,j,k) - q[0]*mu0*(den2d2(i,j) - xn0i(i,j));
                } else {
                   tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j));
                }
@@ -1549,9 +1815,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* ctx) {
                }
 
                if(eAdiabatic != 0){
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);   //phiavg currently messed up. phi ok according to Zichen. feedback loop? Something with fluxavg and growthdiag
-                  // cout << iterations << endl;
-                  //if(i == imx/2 && j == jmx/2) tmp_value = 1;
+                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);
                } else {
                   tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
                }
@@ -1694,7 +1958,7 @@ void efieldcalc_c_(CArray3D<double> &input_phi){
    for(k = 0; k <= kmx; ++k){
       for(i = 2; i <= imx-1; ++i){
          for(j = 2; j <= jmx-1; ++j){
-            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0]));
+            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0])); //input phi incorrect
             ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
             if(k == 0){
                kminus = kmx;

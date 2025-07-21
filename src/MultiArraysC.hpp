@@ -8,6 +8,7 @@
 template<typename T>
 class CArray4D {
     public:
+    //constructor
         CArray4D() {
             data_ = nullptr;
             x_ = 0;
@@ -17,11 +18,13 @@ class CArray4D {
             size_ = 0;
         }
 
+    //destructor
         ~CArray4D() {
             delete[] data_;
             data_ = NULL;
         }
 
+    //OPENACC helper functions
     void todev(){ // move to device
         #pragma acc enter data copyin(this[0:1], data_[0:size_])
     }
@@ -35,7 +38,7 @@ class CArray4D {
         #pragma acc update device( data_[0:size_] )
     }
 
-        //x + y*D1 + z*D1*D2 + t*D1*D2*D3
+    //access data at given index
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
         assert(i < x_ && j < y_ && k < z_ && l < q_ && "Index out of range");
         return data_[i * (y_ * z_ * q_) + j * (z_ * q_) + k * q_ + l];
@@ -51,10 +54,6 @@ class CArray4D {
         std::fill(data_, data_ + (xsize*ysize*zsize*qsize), 0);
     }
 
-    void Clear() {
-        std::fill(data_, data_+size_, T{});//T{} instead of 0 because of complex types where 0 is real
-    }
-
     inline CArray4D& operator=(const CArray4D &arr){
         for(auto i = 0; i < size_; ++i){
             data_[i] = arr.data_[i];
@@ -62,8 +61,29 @@ class CArray4D {
         return *this;
     }
 
+    //helper functions
     T* start() {
         return data_;
+    }
+
+    void Clear() {
+        std::fill(data_, data_+size_, T{});//T{} instead of 0 because of complex types where 0 is real
+    }
+
+    size_t getX() {
+        return x_;
+    }
+
+    size_t getY() {
+        return y_;
+    }
+
+    size_t getZ() {
+        return z_;
+    }
+
+    size_t getQ() {
+        return q_;
     }
 
     private:

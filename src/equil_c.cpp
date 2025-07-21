@@ -313,7 +313,7 @@ void new_equil_c(){
 
     mask.Clear();
     //c2_over_vA2=1
-    for(int i = 2; i <= nx-2; ++i){ //weird indexing since array needed nx+1. Think about
+    for(int i = 2; i <= nx-2; ++i){ 
         for(int j = 2; j <= nz-2; ++j){ 
 //          c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)**2)*vu**2!2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
 //          write(*,*) c2_over_vA2(i,j)

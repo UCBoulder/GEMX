@@ -3,9 +3,12 @@
 using namespace std;
 
 #pragma acc routine seq
-inline double my_fmod(double x, double y) {
-    return x - y * floor(x / y);
+inline double my_fmod(double a, double p) {
+    double q = floor(a / p);
+    double r = a - p * q;
+    return (r < 0.0) ? r + p : r;
 }
+
 
 
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -50,9 +53,10 @@ void ppush_c_(const int &n) {
         wz0 = (k+1)-z/dzeq;
         wz1 = 1.-wz0;
 
+
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
-        #pragma loop seq
+        // #pragma loop seq
         for(j = 0; j <= 2; ++j){
             curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
               +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
@@ -105,7 +109,7 @@ void ppush_c_(const int &n) {
          //write(*,*) rand_table(globle_integer-1), u2(m),u2(m)*(1-nudi*dt)+rand_table(globle_integer)*sqrt((2*energy0/mims(1)-u2(m)**2)*nudi*dt)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
        
          u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-(u2[m]*u2[m]))*nudi*dt);
-         globle_integer = (globle_integer+1) % 10007;
+         globle_integer = (globle_integer+1) % 10006;
          //   write(*,*) rand_table(globle_integer-1), u2(m),u3(m)!,mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
          //    write(*,*) rand_table(globle_integer-1), mu(m),(energy0-0.5*mims(1)*u2(m)**2)/b
 
@@ -128,11 +132,11 @@ void ppush_c_(const int &n) {
     //calculate avg. e-field...
     //do 1,2,4 point average, where lr is the no. of points...
 
-    exp1=0;
-    ezp=0;
-    ezetap=0;
-    delbxp=0;
-    delbzp=0;
+    exp1=0.;
+    ezp=0.;
+    ezetap=0.;
+    delbxp=0.;
+    delbzp=0.;
 
 //  4 pt. avg. done explicitly for vectorization...
         
@@ -196,13 +200,13 @@ void ppush_c_(const int &n) {
             + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
             + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
         }
-        exp1 = exp1/4;
-        ezp = ezp/4;
-        ezetap = ezetap/4;
-        delbxp = delbxp/4;
-        delbzp = delbzp/4;
+        exp1 = exp1*0.25;
+        ezp = ezp*0.25;
+        ezetap = ezetap*0.25;
+        delbxp = delbxp*0.25;
+        delbzp = delbzp*0.25;
 
-         vfac = 0.5*(mims[0] * u2[m] * u2[m] + 2 * mu[m] * b);
+         vfac = 0.5*(mims[0] * (u2[m] * u2[m]) + 2 * mu[m] * b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
 
@@ -249,7 +253,7 @@ void ppush_c_(const int &n) {
 
 
          pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
-          
+        //  if(m==0) printf("%e  %e  %e  %e  %e  %e  %e  %e  %e  %e  %e  %e\n", BStar3[0], exp1, mu[m], dbdxp, BStar3[1], ezp, dbdzp, BStar3[2], ezetap, dbdzetap, mims[0], bstar);
          
          edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
 
@@ -265,17 +269,18 @@ void ppush_c_(const int &n) {
          //vxdum = eyp+vpar/b*delbxp
          //w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-        if( x3[m] <= 2 * dxeq || x3[m] >= lx - 2 * dxeq ||
-            z3[m] <= 2 * dzeq || z3[m] >= lz - 2 * dzeq) 
-        {
-          u3[m]=u2[m];
-          x3[m]=x2[m];
-          z3[m]=z2[m];
-          zeta3[m]=zeta2[m];
-          w3[m]=0;
+        if( x3[m] > 2 * dxeq || x3[m] < lx - 2 * dxeq ||
+            z3[m] > 2 * dzeq || z3[m] < lz - 2 * dzeq) {  
+                continue; 
+        } else { 
+                u3[m]=u2[m];
+                x3[m]=x2[m];
+                z3[m]=z2[m];
+                zeta3[m]=zeta2[m];
+                w3[m]=0;
         }
     }
-    #pragma acc wait
+    //#pragma acc wait
     freeDeviceData();
     end_ppush_tm = MPI_Wtime();
     ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
@@ -325,7 +330,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
            // bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
                              //+wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
-            #pragma loop seq
+        //     #pragma loop seq
             for(j = 0; j <= 2; ++j){
                 curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
                 +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
@@ -360,7 +365,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
          b=1.-tor+tor*bfldp;
 
-         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;//looks like this is never set?
+         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr;
 
          rhox[0] = rhog;
          rhoy[0] = 0.;
@@ -391,7 +396,6 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
             if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
             if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
             zeta = my_fmod(zeta3[m], pi2);
-            if(zeta < 0) zeta += pi2;
             i=static_cast<int>(xt/dx);
             j=static_cast<int>(zt/dz);
             k=static_cast<int>(zeta/dzeta);
@@ -444,7 +448,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
          delbxp = delbxp*0.25;
          delbzp = delbzp*0.25;
        
-         vfac = 0.5*(mims[0]*pow(u2[m],2) + 2.*mu[m]*b);
+         vfac = 0.5*(mims[0]*(u2[m] * u2[m]) + 2.*mu[m]*b);
          kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
          kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
        
@@ -508,7 +512,6 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 // !         w3(m)=w2(m) + dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
          zeta3[m]= my_fmod(zeta3[m],pi2);
-         if(zeta3[m] < 0) zeta3[m] = zeta3[m] + pi2;
 
 
 //         write(*,*)energy, nudi
@@ -602,6 +605,25 @@ inline void prepareDeviceData() {
 }
 
 inline void freeDeviceData() {
+    curlb.updatehost();
+    ex.updatehost();
+    ez.updatehost();
+    ezeta.updatehost();
+    dbdx.updatehost();
+    dbdz.updatehost();
+    b0.updatehost();
+    b0x.updatehost();
+    b0z.updatehost();
+    b0zeta.updatehost();
+    captix.updatehost();
+    captiz.updatehost();
+    capnix.updatehost();
+    capniz.updatehost();
+    xn0i.updatehost();
+    delbx.updatehost();
+    delbz.updatehost();
+    t0i.updatehost();
+
     curlb.fromdev();
     ex.fromdev();
     ez.fromdev();
@@ -624,16 +646,16 @@ inline void freeDeviceData() {
 
 //as a note: copyin will copy an array to gpu/cpu kernels.
 //           Using copy will tell openacc to update the host arrays without this function. 
-void updateHost1DArrays() {
-    #pragma acc update self(x3[0:mmx])
-    #pragma acc update self(z3[0:mmx])
-    #pragma acc update self(zeta3[0:mmx])
-    #pragma acc update self(u3[0:mmx])
-    #pragma acc update self(w3[0:mmx])
+// void updateHost1DArrays() {
+//     #pragma acc update self(x3[0:mmx])
+//     #pragma acc update self(z3[0:mmx])
+//     #pragma acc update self(zeta3[0:mmx])
+//     #pragma acc update self(u3[0:mmx])
+//     #pragma acc update self(w3[0:mmx])
 
-    #pragma acc update self(x2[0:mmx])
-    #pragma acc update self(z2[0:mmx])
-    #pragma acc update self(zeta2[0:mmx])
-    #pragma acc update self(u2[0:mmx])
-    #pragma acc update self(w2[0:mmx])
-}
+//     #pragma acc update self(x2[0:mmx])
+//     #pragma acc update self(z2[0:mmx])
+//     #pragma acc update self(zeta2[0:mmx])
+//     #pragma acc update self(u2[0:mmx])
+//     #pragma acc update self(w2[0:mmx])
+// }
