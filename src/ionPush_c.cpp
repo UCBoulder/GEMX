@@ -39,7 +39,7 @@ void ppush_c_(const int &n) {
     #pragma acc data \
     copyin(x2[0:mmx], z2[0:mmx], zeta2[0:mmx], rand_table[0:10007]) \
     copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx])
-    #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox)
+    #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox,curlbp)
     for(m = 0; m < mm[0]; ++m){
         x = x2[m];
         i = static_cast<int>(x/dxeq);
@@ -57,7 +57,7 @@ void ppush_c_(const int &n) {
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
         // #pragma loop seq
-        for(j = 0; j <= 2; ++j){
+        for(j = 0; j <= 2; ++j) {
             curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
               +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
         }
@@ -217,7 +217,6 @@ void ppush_c_(const int &n) {
          BStar3[1]=bfldzp+mims[0]*vpar*curlbp[1]/q[0]+delbzp;
          BStar3[2]=bfldzetap+mims[0]*vpar*curlbp[2]/q[0];
 
-
          //bstar=b+mims(1)*vpar*bdcurlbp/q(1)
          bstar=(bfldxp*BStar3[0]+bfldzp*BStar3[1]+bfldzetap*BStar3[2])/bfldp;
          //  write(*,*)bstar-b-mims(1)*vpar*bdcurlbp/q(1), b-bfldp
@@ -254,6 +253,7 @@ void ppush_c_(const int &n) {
 
          pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
         //  if(m==0) printf("%e  %e  %e  %e  %e  %e  %e  %e  %e  %e  %e  %e\n", BStar3[0], exp1, mu[m], dbdxp, BStar3[1], ezp, dbdzp, BStar3[2], ezetap, dbdzetap, mims[0], bstar);
+        if(m == 0) printf("%e\n", pzdot);
          
          edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
 
@@ -280,7 +280,7 @@ void ppush_c_(const int &n) {
                 w3[m]=0;
         }
     }
-    //#pragma acc wait
+    #pragma acc wait
     freeDeviceData();
     end_ppush_tm = MPI_Wtime();
     ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
@@ -309,7 +309,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
         #pragma acc data \
         copyin(rand_table[0:10007]) \
         copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx], x2[0:mmx], z2[0:mmx],w2[0:mmx] ,zeta2[0:mmx])
-        #pragma acc parallel loop gang vector private(BStar3,rhoy,rhox)
+        #pragma acc parallel loop gang vector private(BStar3,rhoy,rhox,curlbp)
         for(m = 0; m < mm[0]; ++m){
             x=x3[m];
             i = static_cast<int>(x/dxeq);
