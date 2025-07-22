@@ -65,31 +65,7 @@ $(EXE): $(OBJS_C)
 	$(MAKE) install
 	$(MAKE) check_diff
 
-#Fortran compilation.
-pputil.o: pputil.F90
-	$(F90) -c $(OPT) pputil.F90
-
-gemx_com.o: gemx_com.F90 pputil.o
-	$(F90) -c $(OPT) gemx_com.F90
-
-equil.o: equil.F90 pputil.o gemx_com.o
-	$(F90) -c $(OPT) equil.F90
-
-gemx.o: gemx.F90 pputil.o gemx_com.o equil.o
-	$(F90) -c $(OPT) gemx.F90
-
-ionPush.o: ionPush.F90 gemx_com.o equil.o
-	$(F90) -c $(OPT) ionPush.F90
-
-outd.o: outd.F90 gemx_com.o equil.o
-	$(F90) -c $(OPT) outd.F90
-
-fcnt.o: fcnt.F90
-	$(F90) -c $(OPT) fcnt.F90
-
 #C++ compilation.
-# gemx_externs.o: gemx_externs.cpp
-# 	$(CPP) -c $(OPT_C) gemx_externs.cpp $(INCS) 
 
 pputil_c.o: pputil_c.cpp
 	$(CPP) -c $(OPT_C) pputil_c.cpp $(INCS) 

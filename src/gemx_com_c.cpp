@@ -178,7 +178,7 @@ void new_gemx_com(){
     w3 = new double[mmx]; std::fill(w3, w3+mmx, 0.0);
 
 //      variables for tracing a grid (i,j) along field lien to the neighboring planes
-    ileft.resize(imx+1, jmx+1);
+    ileft.resize(imx+1, jmx+1); 
     jleft.resize(imx+1, jmx+1);
     iright.resize(imx+1, jmx+1);
     jright.resize(imx+1, jmx+1);

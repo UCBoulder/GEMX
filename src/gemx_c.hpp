@@ -1,12 +1,9 @@
 #include "MultiArraysC.hpp"
-// #include <petscsys.h>
+
+
 #include <petsc.h>
 #include <petscmat.h>
-// #include <petscvec.h>
-// #include <petscmat.h>
 #include <petscksp.h>
-// #include <petscerror.h>
-// #include <petscmat.h>
 
 #pragma once
 

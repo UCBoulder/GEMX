@@ -5,28 +5,24 @@
 #include "equil_c.hpp"
 #include "ionPush_c.hpp"
 #include "outd_c.hpp"
-#include "MultiArraysC.hpp"
 
-#include <cmath>
-#include <chrono>
-#include <unistd.h>
-#include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <petsc.h>
+#include <cmath>  //c++ version of math.h in c
+#include <chrono> //used for timing, leaving in case anyone wants to use
+#include <unistd.h>
+#include <iostream>
 
 using namespace std;
 
 int main() {
    ofstream file;
-   PetscInt kval; //used for compute rhs
+   PetscInt kval;
    int status,mid_i,mid_j;
    int n,i,j,k,ip,m,outk,ix=135,jx=68;
    int iter; //Calder Edit
 
-   //double random;
    double tmp;
-   //double retVal;
    PetscInt is,js,iw,jw,idx;//,n_in_porcs;
    PetscInt one,three,vec_start,vec_end;
    //PetscErrorCode petsc_ierr;
@@ -224,8 +220,7 @@ int main() {
                      j=(idx)/(iw)+js;
                      phi(i,j,k)=phi_array[idx];//*mask(i,j);
                      // //DEGBUG-----------------------------------------------
-                     // if (iter == 0 && k == (myid+1)*(kmx+1)/(numprocs)-1) {
-                     //    cout << k << endl;
+                     // if (iter == 0 && k == myid*(kmx+1)/(numprocs)+2) {
                      //    cout << fixed << setprecision(15) << phi_array[idx] << endl;
                      // }
                      // //DEGBUG-----------------------------------------------
@@ -371,61 +366,61 @@ int main() {
          }
       }
 
-   efieldcalc_c_(phi);
-   if(i3D == 1){
-      growthdiag_c_(phi);
-   }
-
-
-   if(myid == 0 && (timestep%1)==0){
-      cout << "outk=" << outk << "\n";
-
-      file.open("testphi");
-      for(int j = 0; j <= jmx; ++j)  {
-         for(int i = 0; i <= imx; ++i) {
-            file << phi(i,j,outk) << "    ";
-         }
-         file << "\n";
+      efieldcalc_c_(phi);
+      if(i3D == 1){
+         growthdiag_c_(phi);
       }
-      file.close();
-   }
 
-   get_apar_(1);
-   //  !call smooth_c(apar,2)   !testing
-   // !call get_jpar(apar)
-   get_jpar_(apar);
-   //call smooth(jpar,3)   !testing
-   get_ne_c_(1);
 
-   if(myid == 0 && (timestep%10) == 0) {
-      file.open("testphiavg");
-      for(int i = 0; i <= nx; ++i){
-         for(int j = 0; j <= nz; ++j){
-            file << phiavg(i,j) << "   \n";
+      if(myid == 0 && (timestep%1)==0){
+         cout << "outk=" << outk << "\n";
+
+         file.open("testphi");
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << phi(i,j,outk) << "    ";
+            }
+            file << "\n";
          }
+         file.close();
       }
-      file.close();
 
-      file.open("testER");
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << ex(i,j,0) << "   \n";
+      get_apar_(1);
+      //  !call smooth_c(apar,2)
+      // !call get_jpar(apar)
+      get_jpar_(apar);
+      //call smooth(jpar,3)
+      get_ne_c_(1);
+
+      if(myid == 0 && (timestep%10) == 0) {
+         file.open("testphiavg");
+         for(int i = 0; i <= nx; ++i){
+            for(int j = 0; j <= nz; ++j){
+               file << phiavg(i,j) << "   \n";
+            }
          }
-      }
-      file.close();
+         file.close();
 
-      file.open("testEZ");
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << ez(i,j,0) << "   \n";
+         file.open("testER");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               file << ex(i,j,0) << "   \n";
+            }
          }
-      }
-      file.close();
-   }
+         file.close();
 
-   if(ision==1) cpush_c_(timestep); 
-   //cintef(timestep);
-   if(ifluid==1) integ_c_(1);
+         file.open("testEZ");
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               file << ez(i,j,0) << "   \n";
+            }
+         }
+         file.close();
+      }
+
+      if(ision==1) cpush_c_(timestep); 
+      //cintef(timestep);
+      if(ifluid==1) integ_c_(1);
    } else {
       if(ision==1) cpush_c_(timestep);
       //if(ifluid==1) cintef(timestep)
@@ -518,7 +513,7 @@ int main() {
    if(myid==0)integ_tm = tmp/std::real(numprocs);
    MPI_Reduce(&total_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)total_tm = tmp/std::real(numprocs);
-   //More writing stuff to files, work on after
+   //More writing stuff to files, work on after (NOW :) )
 
    lasttm=MPI_Wtime();
    tottm=lasttm-starttm;
@@ -535,9 +530,6 @@ int main() {
 
 void initialize_c_(){
    double  dum, jacp; 
-   //double dum1, dum2,  xndum, r, wx0, wx1
-   // double x[2];
-   // double y[2]; //0-1
   
    //reset timestep counter
    last = numprocs-1;
@@ -579,6 +571,7 @@ void init(){
    double bfldp, btorp, bxp, bzp, gt0ip, gt0ep, gn0ip, gn0ep, capnxp, capnzp;
    double upae0p; //??? seems weird to me, not calculated anywhere, maybe old/ got deleted?
    //std::complex<double> IU[2] = {0., 1.};
+
    //read values from gemx.in
    FILE *in_file = fopen("gemx.in", "r");
    if(in_file == NULL)
@@ -1083,182 +1076,6 @@ inline size_t get3DIndex(size_t i, size_t j, size_t k,
     return i * (ny * nz) + j * nz + k;
 }
 
-// void integ_c_(int iflag) { //non parallelized
-//    int i = 0;
-//    int j = 0;
-//    int k = 0;
-//    int m = 0;
-
-//    double wx0 = 0;
-//    double wx1 = 0;
-//    double wzeta0 = 0;
-//    double wzeta1 = 0;
-//    double wy0 = 0;
-//    double wy1 = 0;
-//    double x = 0;
-//    double z = 0;
-//    double zeta = 0;
-//    double R_major_over_R = 0;
-//    double R_major_over_R1 = 0;
-
-//    int start_integ_tm = MPI_Wtime();
-
-//    ofstream file;
-//       file.open("integDen.out");
-//       for(int j = 0; j <= jmx; ++j)  {
-//          for(int i = 0; i <= imx; ++i) {
-//             file << den(1,i,j,0) << "    ";
-//          }
-//          file << "\n";
-//       }
-//    file.close();
-
-//    //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag?
-//    for(int ii = 0; ii <= imx; ++ii) {
-//       for (int jj = 0; jj <= jmx; ++jj) {
-//          for(int kk = 0; kk <= kmx; ++kk) {
-//             den(iflag, ii, jj, kk) = 0;
-//          }
-//       }
-//    }
-//    upar.Clear(); 
-   
-//    // #pragma acc parallel loop gang vector
-//    for(m = 0; m < mm[0]; ++m) {
-
-//       x = x3[m];
-//       if(x < 0 || x > lx) cout << "x=" <<x << "\n";
-//       i = static_cast<int>(x/dxeq);
-//       wx0 = (i+1)-x/dxeq;
-//       wx1 = 1-wx0;
-
-//       R_major_over_R=xctr/(xctr-xdim/2+i*dx);
-//       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
-
-//       z = z3[m];
-//       if(z < 0 || z > lz) cout << "z="<< z << "\n";
-//       j = static_cast<int>(z/dzeq);
-//       wy0 = (j+1)-z/dzeq;
-//       wy1 = 1-wy0;
-      
-//       zeta= fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
-//       if(zeta < 0 || zeta > pi2) cout <<"zeta"<< zeta << "\n";
-//       k=static_cast<int>(zeta/dzeta);
-//       wzeta0=(k+1)-zeta/dzeta;
-//       wzeta1=1-wzeta0;
-
-//       // #pragma acc atomic update
-//       den(iflag,i,j,k)=den(iflag,i,j,k)+w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-//       // #pragma acc atomic update
-//       den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-//       // #pragma acc atomic update
-//       den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-//       // #pragma acc atomic update
-//       den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
-//       // #pragma acc atomic update 
-//       upar(i,j,k)=upar(i,j,k)+u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
-//       // #pragma acc atomic update
-//       upar(i+1,j,k)=upar(i+1,j,k)+u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
-//       // #pragma acc atomic update
-//       upar(i,j+1,k)=upar(i,j+1,k)+u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
-//       // #pragma acc atomic update
-//       upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
-
-//       if(k != kmx) {
-//          // #pragma acc atomic update
-//          den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          upar(i,j,k+1)=upar(i,j,k+1)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-//       } else {
-//          // #pragma acc atomic update
-//          den(iflag,i,j,0)=den(iflag,i,j,0)+w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          upar(i,j,0)=upar(i,j,0)+u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          upar(i+1,j,0)=upar(i+1,j,0)+u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
-//          // #pragma acc atomic update
-//          upar(i,j+1,0)=upar(i,j+1,0)+u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
-//          // #pragma acc atomic update
-//          upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-//       }
-//    }
-//    // #pragma acc wait
-   
-  
-//    MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-//    MPI_Allreduce(MPI_IN_PLACE, upar.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        
-
-//    for(int i = 0 ; i <= imx; ++i) {
-//       for(int j = 0; j <= jmx; ++j) {
-//          for(int k = 0; k <= kmx; ++k) {
-//             den(1,i,j,k) = den(iflag, i, j, k);
-//          }
-//       }
-//    }
-
-
-//    den2d2.Clear();
-   
-//    for(int i = 0; i <= imx; ++i) {
-//       for(int j = 0; j <= jmx; ++j) {
-//          for(int k = 0; k <= kmx; ++k) {
-//             den2d2(i,j)=den2d2(i,j)+den(iflag,i,j,k);
-//             if (i3D==0 && k != 0) upar(i,j,0) += upar(i,j,k);
-//          }
-//       }
-//    }
-
-//    for(int i = 0; i <= imx; ++i) {
-//       for(int j = 0; j <= jmx; ++j) {
-//          den2d2(i,j)=den2d2(i,j)/(kmx+1);
-//       }
-//    }
-
-//    for(i = 0; i <= imx; ++i) {
-//       for(j = 0; j <= jmx; ++j) {
-//          if(i3D == 0) {
-//             upar(i,j,0) = upar(i,j,0)/(kmx+1);
-//             for(k = 1; k <= kmx; ++k) {
-//                upar(i,j,k) = upar(i,j,0);
-//             }
-//          }
-//       }
-//    }
-
-//    if(iflag==1) {
-//       for(i = 0; i <= imx; ++i) {
-//          for(j = 0; j <= jmx; ++j) {
-//             dden2d(i,j)-=den2d1(i,j);
-//             den2d1(i,j)=den2d2(i,j);
-//             // for(k = 0 ; k <= kmx; ++k){
-//             //    //den_pre=den(2,i,j,k); 
-//             // }
-//          }
-//       }
-//    }
-//    int end_integ_tm = MPI_Wtime();
-//    integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
-// }
-
 void integ_c_(int iflag) {
    int i = 0;
    int j = 0;
@@ -1305,7 +1122,7 @@ void integ_c_(int iflag) {
    #pragma acc parallel loop gang vector present(den_ptr, upar_ptr)
    for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
-      if(x < 0 || x > lx) printf("x=%lf\n", x); //debug statements. Need printf since all nvidia gpus should recognize
+      if(x < 0 || x > lx) printf("x=%lf\n", x);
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
@@ -1325,7 +1142,7 @@ void integ_c_(int iflag) {
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      idx = get4DIndex(iflag,i,j,k, den.getY(), den.getZ(), den.getQ()); //instead of repeated object function calls, maybe in variable? Faster, maybe harder to read
+      idx = get4DIndex(iflag,i,j,k, den.getY(), den.getZ(), den.getQ());
       #pragma acc atomic update
       den_ptr[idx] += w3[m]*wx0*wy0*wzeta0*R_major_over_R;
 
@@ -1574,7 +1391,8 @@ void get_ne_c_(int flagnumber){
    }
 }
 
-void gradparz_c_(double *matrix){ //need const values for args, using const int later will work, issue with extern atm  
+//outdated - Needs update for CARRAY's
+void gradparz_c_(double *matrix){
    double *gradparz = new double[(imx+1) * (jmx+1) * (kmx+1)];
    CArray3D<double> gradparz_c;
    CArray3D<double> matrix_c;
@@ -1698,8 +1516,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
    for(j=ys; j < ys+ym; ++j){
       for(i=xs; i < xs+xm; ++i) {
-         // std::fill(std::begin(v), std::end(v), 0.0);
-         // std::fill(std::begin(col), std::end(col), MatStencil{0, 0, 0, 0});
          row.i = i;
          row.j = j;
          if(mask(i,j)<0.99){

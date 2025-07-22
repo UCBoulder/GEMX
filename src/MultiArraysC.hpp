@@ -122,7 +122,7 @@ public:
     void updatedev(){ // update device copy of data
         #pragma acc update device( data_[0:size_] )
     }
-
+    //use jright.resize();
     void resize(size_t xsize, size_t ysize, size_t zsize) { //int flag (idea for future, allow dynamic re-allocation without deleting previous data)
         x_ = xsize;
         y_ = ysize;
@@ -254,6 +254,13 @@ class CArray2D{
     inline T& operator()(const std::size_t i, const std::size_t j) {
         assert(i < x_ && j < y_ && "Index out of range");
         return data_[i * y_ + j];
+    }
+
+    inline CArray2D& operator*=(const CArray2D &arr) {
+        for(auto i = 0; i < size_; ++i) {
+            data_[i] = data_[i] * arr.data_[i];
+        }
+        return *this;
     }
 
     inline CArray2D& operator=(const CArray2D &arr){

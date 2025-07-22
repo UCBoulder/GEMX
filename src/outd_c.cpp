@@ -2,7 +2,6 @@
 using namespace std;
 
 void outd_c_(const int &n) { 
-    int trace = 0;
     ofstream outTracer;
     ofstream testNe;
     ofstream testPhi;
@@ -20,35 +19,26 @@ void outd_c_(const int &n) {
     if(testNe.is_open()) {
         for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j) {  
-                if(trace == 3){
-                    testNe << "\n";
-                    trace = 0;
-                }
-                testNe << "    " << fixed << setprecision(16) << dene(i,j,0) << "         ";
-                trace++;
+                testNe << fixed << setprecision(16) << dene(i,j,0) << "    ";
             }
+            testNe << "\n";
         }
         testNe.close();
     } else {
-        cerr << "Warning testne failed to open/ wasn't created" << "\n";
+        cout << "Warning testne failed to open/ wasn't created" << "\n";
     }
 
     testPhi.open("./out/testphi");
-    trace = 0;
     if(testPhi) {
         for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j) {
-                if(trace == 3){
-                    testPhi << "\n";
-                    trace = 0;
-                }
-                testPhi << "    " << fixed << setprecision(16) << phi(i,j,0) << "         "; 
-                trace++;
+                testPhi << fixed << setprecision(16) << phi(i,j,0) <<  "    "; 
             }
+            testPhi << "\n";
         }
         testPhi.close();
     } else {
-        cerr << "Warning testphi failed to open/ wasn't created" << "\n";
+        cout << "Warning testphi failed to open/ wasn't created" << "\n";
     }
 
 
