@@ -21,7 +21,7 @@ SUPPRESS := --diag_suppress set_but_not_used --diag_suppress declared_but_not_re
 DEBUG ?= 0 #Use 'make DEBUG=1' to build with debug capabilities.
 CPU ?= 0   #Use 'make CPU=1' to build for cpu.
 OPT_COMMON := -r8 -Mfree $(INCS)
-OPT_COMMON_C := $(INCS_C)
+OPT_COMMON_C := $(INCS_C) $(INCS)
 OPT_COMMON_REL := -O4
 OPT_COMMON_DBG := -O0 -g -C -traceback -Mchkptr
 OPT_CPU := -acc=host #Default to serial for cpu. -acc=multicore for parallel but should test against OpenMP on system.
@@ -37,7 +37,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall -fno-omit-frame-pointer $(OPT_COMMON_C) $(INCS) $(SUPPRESS)
 	else
-		OPT_C := -O4 -march=native -Wall $(SUPPRESS) $(OPT_GPU)
+		OPT_C := -O4 $(SUPPRESS) $(OPT_COMMON_C) $(OPT_GPU)
 	endif
 endif
 
@@ -53,9 +53,11 @@ else
 	ifeq ($(CPU),1)
 		JOB := job_cpu
 		OPT := $(OPT_COMMON_REL) $(OPT_COMMON) $(OPT_CPU)
+# 		OPT_C := -O4 $(SUPPRESS) $(OPT_CPU)
 	else
 		JOB := job_gpu
 		OPT := $(OPT_COMMON_REL) $(OPT_COMMON) $(OPT_GPU)
+		OPT_C:= -O4 $(SUPPRESS) $(OPT_GPU) 
 	endif
 endif
 
@@ -68,28 +70,28 @@ $(EXE): $(OBJS_C)
 #C++ compilation.
 
 pputil_c.o: pputil_c.cpp
-	$(CPP) -c $(OPT_C) pputil_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) pputil_c.cpp
 
 gemx_com_c.o: gemx_com_c.cpp
-	$(CPP) -c $(OPT_C) gemx_com_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) gemx_com_c.cpp
 
 equil_c.o: equil_c.cpp
-	$(CPP) -c $(OPT_C) equil_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) equil_c.cpp 
 
 gemx_c.o: gemx_c.cpp
-	$(CPP) -c $(OPT_C) gemx_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) gemx_c.cpp 
 
 ionPush_c.o: ionPush_c.cpp 
-	$(CPP) -c $(OPT_C) ionPush_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) ionPush_c.cpp
 
 outd_c.o: outd_c.cpp
-	$(CPP) -c $(OPT_C) outd_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) outd_c.cpp
 
 fcnt_c.o: fcnt_c.cpp
-	$(CPP) -c $(OPT_C) fcnt_c.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) fcnt_c.cpp
 
 readDatFiles.o: readDatFiles.cpp
-	$(CPP) -c $(OPT_C) readDatFiles.cpp $(INCS) 
+	$(CPP) -c $(OPT_C) readDatFiles.cpp
 
 #Check for git diffs in the src directory
 check_diff:
