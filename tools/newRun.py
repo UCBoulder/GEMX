@@ -6,7 +6,7 @@ import shutil
 
 def create_run_directory(run_name=None):
     #Define paths
-    file_dirs = ["bin", "jobs", "analysis", "tools", "src/equil"]
+    file_dirs = ["bin", "jobs", "analysis", "tools", "src/CBC_data", "src/Profiles"]
     runs_dir = "runs"
     host = os.environ.get("NERSC_HOST")
 
