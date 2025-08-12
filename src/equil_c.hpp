@@ -19,6 +19,7 @@ extern double betaVal,rmaj0,a,q0,r0,q0p,q0abs,shat0;
 extern double R,dth,mu0,e,proton;
 extern int nr,nr2,ntheta,isgnf,isgnq,isupae0,tor_n;
 extern double psi_max, psi_min ,R_min, Z_min, Z_internal, psi_div,psi_a;
+extern double phi_diag, phi_diag_freq;
 
 extern int nzeta;
 extern int nx, nz;
@@ -43,12 +44,25 @@ extern double *upari;
 extern double *Rgrid;
 extern double *Zgrid;
 
-extern CArray2D<double> t0s,xn0s,capts,capns,vpars,vparsp,psi_p,mask,mask2,mask3,mask4;
+extern CArray2D<double> t0s;
+extern CArray2D<double> xn0s;
+extern CArray2D<double> capts;
+extern CArray2D<double> capns;
+extern CArray2D<double> vpars ;
+extern CArray2D<double> vparsp;
+extern CArray2D<double> psi_p;
+extern CArray2D<double> mask;
+extern CArray2D<double> mask2;
+extern CArray2D<double> mask3;
+extern CArray2D<double> mask4;
 extern double bu,tu,nu,xu,frequ,vu,eru;
 
 extern CArray2D<double> bdcrvb;
 extern CArray2D<double> upae0,nuob,dnuobdr,dnuobdt;
 extern CArray3D<double> curlb;
+extern CArray2D<double> rho_i;
+extern CArray2D<double> dpsi_dr;
+extern CArray2D<double> dpsi_dz;
 
 extern int num_lines, line;
 extern CArray2D<double> phiavg;

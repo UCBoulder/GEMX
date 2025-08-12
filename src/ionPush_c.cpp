@@ -15,7 +15,7 @@ inline double my_fmod(double a, double p) {
 //       Ion pre-push
 //
 void ppush_c_(const int &n) { 
-    double exp1 = 0,ezp = 0,ezetap = 0,delbxp = 0,delbzp  = 0,energy = 0, energy0 = 0,nudi0 = 0,nudi = 0,T_center = 0,ni_temp = 0;
+    double exp1 = 0,ezp = 0,ezetap = 0,delbxp = 0,delbzp  = 0,energy = 0, energy0 = 0,nudi0 = 0,nudi = 0,T_center = 0,ni_temp = 0, ti_temp;
     double wx0 = 0,wx1 = 0,wy0 = 0,wy1 = 0,wz0 = 0,wz1 = 0,dum1 = 0; 
     int m = 0,i = 0,j = 0,k = 0,l = 0,k_plus_1 = 0;
     double rhog = 0,vfac = 0,kapxp = 0,kapzp = 0,vpar = 0,kaptxp = 0,kapnxp = 0,kaptzp = 0,kapnzp = 0,xnp = 0;
@@ -26,13 +26,14 @@ void ppush_c_(const int &n) {
     double rhox[4], rhoy[4], BStar3[3], curlbp[3];
     start_ppush_tm = MPI_Wtime();
 
-    nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)* 4.7140e-8* 1.e-6;
+    nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*4.7140e-8*1.e-6;
+	nudi = 0;
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
 
     prepareDeviceData();
     #pragma acc data \
-    copyin(x2[0:mmx], z2[0:mmx], zeta2[0:mmx], rand_table[0:10007]) \
+    copyin(x2[0:mmx], z2[0:mmx], zeta2[0:mmx], w2[0:mmx], rand_table[0:10007]) \
     copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx])
     #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox,curlbp)
     for(m = 0; m < mm[0]; ++m) {
@@ -51,15 +52,14 @@ void ppush_c_(const int &n) {
 
         //bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
         //                 +wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
-        // #pragma loop seq
         for(j = 0; j <= 2; ++j) {
             curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
               +wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
         }
 		dbdxp = wx0*wz0*dbdx(i,k)+wx0*wz1*dbdx(i,k+1) 
-				+wx1*wz0*dbdx(i+1,k)+wx1*wz1*dbdx(i+1,k+1); 
+                 +wx1*wz0*dbdx(i+1,k)+wx1*wz1*dbdx(i+1,k+1);
 		dbdzp = wx0*wz0*dbdz(i,k)+wx0*wz1*dbdz(i,k+1) 
-				+wx1*wz0*dbdz(i+1,k)+wx1*wz1*dbdz(i+1,k+1);
+				+wx1*wz0*dbdz(i+1,k)+wx1*wz1*dbdz(i+1,k+1); 
 		bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
 				+wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
 		bfldxp = wx0*wz0*b0x(i,k)+wx0*wz1*b0x(i,k+1) 
@@ -70,9 +70,8 @@ void ppush_c_(const int &n) {
 				+wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1); 
 		ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
 				+wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1); 
-		kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1) 
-				+wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1);
-
+		kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1)
+				+wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1); 
 		kapnxp = wx0*wz0*capnix(i,k)+wx0*wz1*capnix(i,k+1) 
 				+wx1*wz0*capnix(i+1,k)+wx1*wz1*capnix(i+1,k+1); 
 
@@ -86,29 +85,31 @@ void ppush_c_(const int &n) {
 
 		b=1.-tor+tor*bfldp;
 
+		//cout << w2[m] << "	" << w3[m] << "\n";
+		ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+				+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1);
+
+		ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+				+wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+
+		energy0 = (mu[m]*b + 0.5*mims[0]*(u3[m]*u3[m]));
+        energy =  max(energy0,0.1*T_center);
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
-        // ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
-        //          +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
-         energy0 = (mu[m]*b+0.5*mims[0]*(u3[m] * u3[m]));
-         energy =  max(energy0,0.1*T_center);
          if(icollision == 1){
-            nudi=nudi0*xnp/pow(energy, 1.5);
+            nudi=nudi0*ni_temp/pow(energy, 1.5);
             //  call random_number(rrr)
             //  p_m = int(2*rrr-1)
-         }
+         
 
-         u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-(u2[m]*u2[m]))*nudi*dt);
-         globle_integer = (globle_integer+1) % 10007;
+         	u2[m]=u2[m]*(1-nudi*dt)+rand_table[globle_integer]*sqrt((2*energy0/mims[0]-(u2[m]*u2[m]))*nudi*dt);
+         	globle_integer = (globle_integer+1) % 10007;
 
-         mu[m]= (energy0-0.5*mims[0]*(u2[m] * u2[m]))/b;
-
+        	mu[m]= (energy0-0.5*mims[0]*(u2[m] * u2[m]))/b;
+		}
 /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   */
 
-
-
-        rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr; //iflr never set?
+        rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr; 
 
         rhox[0] = rhog;
         rhoy[0] = 0;
@@ -130,63 +131,64 @@ void ppush_c_(const int &n) {
 //  4 pt. avg. done explicitly for vectorization...
         
 	#pragma acc loop seq 
-	for(l = 0; l <= lr[0]; ++l){
+	for(l = 0; l < lr[0]; ++l){
 
 		xt=x2[m]+rhox[l]; //rwx(1,l)*rhog
 		zt=z2[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog;
 		//zeta=modulo(zeta2(m),pi2);
 	
 //particle can go out of bounds during gyroavg...
-		if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) {xt=x2[m];}
-		if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) {zt=z2[m];}
+		if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x2[m];
+		if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z2[m];
 		zeta=zeta2[m];
 		//xt=modulo(xs,xdim)
 		//zt=modulo(zt,zdim)
+
 		i=static_cast<int>(xt/dx);
 		j=static_cast<int>(zt/dz);
 		k=static_cast<int>(zeta/dzeta);
 
-		wx0=static_cast<float>(i+1)-xt/dx;
+		wx0=static_cast<double>(i+1)-xt/dx;
 		wx1=1.-wx0;
-		wy0=static_cast<float>(j+1)-zt/dz;
+		wy0=static_cast<double>(j+1)-zt/dz;
 		wy1=1.-wy0;
-		wz0=static_cast<float>(k+1)-zeta/dzeta;
+		wz0=static_cast<double>(k+1)-zeta/dzeta;
 		wz1=1.-wz0;
 
 		k_plus_1=k+1;
 		if(k==kmx) k_plus_1=0;
 		exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
-		+ wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
-		wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
+            + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
+            wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
 
 		ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
-		+ wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
-		wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
+            + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
+            wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
 
-		ezetap =ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
-		+ wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
-		wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
+		ezetap=ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
+            + wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
+            wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
 
-		delbxp =delbxp + wx0*wy0*wz0*delbx(i,j,k)  
-		+ wx1*wy0*wz0*delbx(i+1,j,k) 
-		+ wx0*wy1*wz0*delbx(i,j+1,k) 
-		+ wx1*wy1*wz0*delbx(i+1,j+1,k) 
-		+ wx0*wy0*wz1*delbx(i,j, k_plus_1) 
-		+ wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
-		+ wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
-		+ wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
+		delbxp=delbxp + wx0*wy0*wz0*delbx(i,j,k)  
+            + wx1*wy0*wz0*delbx(i+1,j,k) 
+            + wx0*wy1*wz0*delbx(i,j+1,k) 
+            + wx1*wy1*wz0*delbx(i+1,j+1,k) 
+            + wx0*wy0*wz1*delbx(i,j, k_plus_1) 
+            + wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
+            + wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
+            + wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
 
 		delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
-		+ wx1*wy0*wz0*delbz(i+1,j,k) 
-		+ wx0*wy1*wz0*delbz(i,j+1,k) 
-		+ wx1*wy1*wz0*delbz(i+1,j+1,k)  
-		+ wx0*wy0*wz1*delbz(i,j, k_plus_1) 
-		+ wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
-		+ wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
-		+ wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
+            + wx1*wy0*wz0*delbz(i+1,j,k) 
+            + wx0*wy1*wz0*delbz(i,j+1,k)  
+            + wx1*wy1*wz0*delbz(i+1,j+1,k)  
+            + wx0*wy0*wz1*delbz(i,j, k_plus_1)  
+            + wx1*wy0*wz1*delbz(i+1,j, k_plus_1) 
+            + wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
+            + wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
 	}
 	exp1 = exp1*0.25;
 	ezp = ezp*0.25;
@@ -225,11 +227,9 @@ void ppush_c_(const int &n) {
 
 
 //         write(*,*) dbdzetap
-	xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-	zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
-
-
+	xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar;
+	zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar;
+	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2[m]+(xctr-0.5*xdim));
          
 	//pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 	//write(*,*)
@@ -239,25 +239,34 @@ void ppush_c_(const int &n) {
 	//pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-	pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
+	pzdot = (BStar3[0]*(q[0]*exp1*nonlin-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp*nonlin-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap*nonlin-mu[m]*dbdzetap))/(mims[0]*bstar);
 	
-	edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
+	edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*(x2[m]+(xctr-0.5*xdim))*ezetap);
 
 	x3[m] = x2[m] + 0.5*dt*xdot;
 	z3[m] = z2[m] + 0.5*dt*zdot;
 	zeta3[m] = zeta2[m] + 0.5*dt*zetadot;
 	if(zeta3[m] < 0) zeta3[m] = zeta3[m] + pi2;
-
 	u3[m] = u2[m] + 0.5*dt*pzdot;
+
 	//dum = 1.0
 	//vxdum = (ezp/b+vpar/b*delbxp)*dum1
 	//vzdum = (-exp1/b+vpar/b*delbzp)*dum1
 	//vxdum = eyp+vpar/b*delbxp
 	//w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
 
-    if( x3[m] > 2 * dxeq || x3[m] < lx - 2 * dxeq || z3[m] > 2 * dzeq || z3[m] < lz - 2 * dzeq) {  
-        continue; 
-    } else { 
+	if(weightscheme == 1) {
+		//linear weight equation
+		if(nonlin == 0) {
+			w3[m] = w2[m] + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) 
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp));
+		} else {
+			 w3[m] = w2[m] + 0.5*dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+			 //print("%lf", (xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+		}
+		//printf("%lf", w3[m]);
+	}
+    if( !((x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq)) ) {   
 		u3[m]=u2[m];
 		x3[m]=x2[m];
 		z3[m]=z2[m];
@@ -279,18 +288,24 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 //-----------------------------------------------------------------------
 //              Ion corrector push
 //-----------------------------------------------------------------------
-	double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,T_center;                          //nudi=0,energy,rrr,energy0
+	double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,ti_temp,T_center;                          //nudi=0,energy,rrr,energy0
 	double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum
 	int m,i,j,k,l,k_plus_1=0;                                                             //p_m,
 	double rhog,vfac,kapxp,kapzp,vpar,kaptxp,kapnxp,kaptzp,kapnzp,xnp;                    //pidum,bdcurlbp
 	double b,enerb,ter,x,z,zeta;                                                          //th,r,qr
 	double xt,zt,xdot,zdot,zetadot,pzdot,edot;                                            //xs,xdt,ydt,pzd0,vp0,vcurlbdotE
 	double dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap, bstar, dbdzetap=0;
+	double Q_flux, G_flux, P_flux;
+	double dpsidxp, dpsidzp, energy0;
 	double rhox[4], rhoy[4], curlbp[3], BStar3[3];
 
 	start_cpush_tm = MPI_Wtime();
 	nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
 	T_center = t0i(imx/2,jmx/2);
+
+	Q_flux = 0;
+	G_flux = 0;
+	P_flux = 0;
         
 	prepareDeviceData();
 	#pragma acc data \
@@ -311,11 +326,13 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 		wz1 = 1-wz0;
 
 		ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
-				+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
+                 +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1); 
+
+        ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1); 
 
 		// bdcurlbp =wx0*wz0*bdcrvb(i,k)+wx0*wz1*bdcrvb(i,k+1) &
 							//+wx1*wz0*bdcrvb(i+1,k)+wx1*wz1*bdcrvb(i+1,k+1)
-		//     #pragma loop seq
 		for(j = 0; j <= 2; ++j) {
 			curlbp[j]= wx0*wz0*curlb(i,k,j)+wx0*wz1*curlb(i,k+1,j) 
 			+wx1*wz0*curlb(i+1,k,j)+wx1*wz1*curlb(i+1,k+1,j);
@@ -344,6 +361,11 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 				+wx1*wz0*captiz(i+1,k)+wx1*wz1*captiz(i+1,k+1); 
 		kapnzp = wx0*wz0*capniz(i,k)+wx0*wz1*capniz(i,k+1) 
 				+wx1*wz0*capniz(i+1,k)+wx1*wz1*capniz(i+1,k+1); 
+
+		dpsidxp = wx0*wz0*dpsi_dr(i,k)+wx0*wz1*dpsi_dr(i,k+1) 
+				+wx1*wz0*dpsi_dr(i+1,k)+wx1*wz1*dpsi_dr(i+1,k+1); 
+		dpsidzp = wx0*wz0*dpsi_dz(i,k)+wx0*wz1*dpsi_dz(i,k+1) 
+				 +wx1*wz0*dpsi_dz(i+1,k)+wx1*wz1*dpsi_dz(i+1,k+1);
 
 		xnp = wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
 				+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1);
@@ -374,8 +396,8 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 	for(l = 0; l < lr[0]; ++l){
 		xt=x3[m]+rhox[l]; //rwx(1,l)*rhog
 		zt=z3[m]+rhoy[l]; //(rwy(1,l)+sz*rwx(1,l))*rhog
-//SP        xs=x3(m)+rhox(l) !rwx(1,l)*rhog
-//   particle can go out of bounds during gyroavg...
+
+		//   particle can go out of bounds during gyroavg...
 		if( (xt<2*dxeq)||(xt>lx-2*dxeq) ) xt=x3[m];
 		if( (zt<2*dzeq)||(zt>lz-2*dzeq) ) zt=z3[m];
 		zeta = my_fmod(zeta3[m], pi2);
@@ -383,47 +405,47 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 		j=static_cast<int>(zt/dz);
 		k=static_cast<int>(zeta/dzeta);
 
-		wx0=static_cast<float>((i+1)-xt/dx);
+		wx0=static_cast<double>(i+1)-xt/dx;
 		wx1=1.-wx0;
-		wy0=static_cast<float>((j+1)-zt/dz);
+		wy0=static_cast<double>(j+1)-zt/dz;
 		wy1=1.-wy0;
-		wz0=static_cast<float>((k+1)-zeta/dzeta);
+		wz0=static_cast<double>(k+1)-zeta/dzeta;
 		wz1=1.-wz0;
 
 		k_plus_1=k+1;
 		if(k==kmx) k_plus_1=0;
-		exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k)
-		+ wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
-		wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
+		exp1=exp1 + wx0*wy0*wz0*ex(i,j,k) + wx1*wy0*wz0*ex(i+1,j,k) 
+            + wx0*wy1*wz0*ex(i,j+1,k) + wx1*wy1*wz0*ex(i+1,j+1,k) + 
+            wx0*wy0*wz1*ex(i,j, k_plus_1) + wx1*wy0*wz1*ex(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ex(i,j+1, k_plus_1) + wx1*wy1*wz1*ex(i+1,j+1, k_plus_1);
 
-		ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
-		+ wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
-		wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
+        ezp=ezp + wx0*wy0*wz0*ez(i,j,k) + wx1*wy0*wz0*ez(i+1,j,k) 
+            + wx0*wy1*wz0*ez(i,j+1,k) + wx1*wy1*wz0*ez(i+1,j+1,k) + 
+            wx0*wy0*wz1*ez(i,j, k_plus_1) + wx1*wy0*wz1*ez(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ez(i,j+1, k_plus_1) + wx1*wy1*wz1*ez(i+1,j+1, k_plus_1);
 
-		ezetap =ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
-		+ wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
-		wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
-		wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
+        ezetap =ezetap + wx0*wy0*wz0*ezeta(i,j,k) + wx1*wy0*wz0*ezeta(i+1,j,k) 
+            + wx0*wy1*wz0*ezeta(i,j+1,k) + wx1*wy1*wz0*ezeta(i+1,j+1,k) + 
+            wx0*wy0*wz1*ezeta(i,j, k_plus_1) + wx1*wy0*wz1*ezeta(i+1,j, k_plus_1) + 
+            wx0*wy1*wz1*ezeta(i,j+1, k_plus_1) + wx1*wy1*wz1*ezeta(i+1,j+1, k_plus_1);
 
-		delbxp =delbxp + wx0*wy0*wz0*delbx(i,j,k)  
-		+ wx1*wy0*wz0*delbx(i+1,j,k) 
-		+ wx0*wy1*wz0*delbx(i,j+1,k) 
-		+ wx1*wy1*wz0*delbx(i+1,j+1,k) 
-		+ wx0*wy0*wz1*delbx(i,j, k_plus_1) 
-		+ wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
-		+ wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
-		+ wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
+        delbxp =delbxp + wx0*wy0*wz0*delbx(i,j,k)  
+            + wx1*wy0*wz0*delbx(i+1,j,k) 
+            + wx0*wy1*wz0*delbx(i,j+1,k) 
+            + wx1*wy1*wz0*delbx(i+1,j+1,k) 
+            + wx0*wy0*wz1*delbx(i,j, k_plus_1) 
+            + wx1*wy0*wz1*delbx(i+1,j, k_plus_1) 
+            + wx0*wy1*wz1*delbx(i,j+1, k_plus_1) 
+            + wx1*wy1*wz1*delbx(i+1,j+1, k_plus_1);
 
-		delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
-		+ wx1*wy0*wz0*delbz(i+1,j,k) 
-		+ wx0*wy1*wz0*delbz(i,j+1,k)  
-		+ wx1*wy1*wz0*delbz(i+1,j+1,k)  
-		+ wx0*wy0*wz1*delbz(i,j, k_plus_1)  
-		+ wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
-		+ wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
-		+ wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
+        delbzp =delbzp + wx0*wy0*wz0*delbz(i,j,k) 
+			+ wx1*wy0*wz0*delbz(i+1,j,k) 
+			+ wx0*wy1*wz0*delbz(i,j+1,k) 
+			+ wx1*wy1*wz0*delbz(i+1,j+1,k)  
+			+ wx0*wy0*wz1*delbz(i,j, k_plus_1)  
+			+ wx1*wy0*wz1*delbz(i+1,j, k_plus_1)  
+			+ wx0*wy1*wz1*delbz(i,j+1, k_plus_1)  
+			+ wx1*wy1*wz1*delbz(i+1,j+1, k_plus_1);
 	}
 	exp1 = exp1*0.25;
 	ezp = ezp*0.25;
@@ -446,7 +468,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
 	bstar=(bfldxp*BStar3[0]+bfldzp*BStar3[1]+bfldzetap*BStar3[2])/bfldp;
 
-
+	energy0 = (mu[m]*b + 0.5*mims[0]*(u3[m]*u3[m]));
 	//vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
 
 
@@ -468,9 +490,9 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
 
 // !         write(*,*)dbdzetap
-	xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp))/(b))/bstar;
-	zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap))/(b))/bstar;
-	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp))/(b))/bstar;
+	xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar;
+	zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar;
+	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2[m]+(xctr-0.5*xdim));
 
 // !        pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 // !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*q(1)/mims(1)*nonlin
@@ -480,8 +502,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 
 	pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
 
-
-	edot = q[0]*(xdot*exp1+zdot*ezp+zetadot*ezetap);
+	edot = q[0]*(xdot*exp1 + zdot*ezp + zetadot*(x2[m]+(xctr-0.5*xdim))*ezetap);
 
 	x3[m] = x2[m] + dt*xdot;
 	z3[m] = z2[m] + dt*zdot;
@@ -515,8 +536,20 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 		x2[m]=x3[m];
 		z2[m]=z3[m];
 		zeta2[m]=zeta3[m];
-		w2[m]=w3[m];
 		
+
+		if (weightscheme == 1) {
+			if(nonlin == 0) {
+				w3[m] = w2[m] + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) 
+                        + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp));
+			} else {
+				w3[m] = w2[m] + dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+			}
+			//printf("%lf", w3[m]);
+		}
+		
+		w2[m]=w3[m];
+
 		// write(*,*)rand_table(globle_integer-1),mu(m),(energy0-0.5*mims(1)*u3(m)**2)/b
 		// mu(m)= (energy0-0.5*mims(1)*u2(m)**2)/b
 	} else {
@@ -527,21 +560,20 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 		w2[m]=0.;
 		w3[m]=0.;
 	}
-	// if(Myid==0)then
-	//   open(935, file='flag_debug',status='unknown',position='append')
-	//   write(935,*)'before PETSc sovling'
-	//   close(935)
-	// end if
-	//       if(myid==0 .and. m==1)then
-	//            open(93, file='test_energy',status='unknown',position='append')
-	//            write(93,*) mu(m)*b+0.5*mims(1)*u2(m)**2-q(1)*z2(m)*ez(i,j,k)
-	//            close(93)
-	//                write(*,*) mu(m)*b+0.5*mims(1)*u2(m)**2-q(1)*z2(m)*ez(i,j,k)
-	//          close(19)
-	//       end if  
+
+	//TEMPORARY FLUX DIAGNOSTIC
+	Q_flux = Q_flux + w3[m]*(0.5*mims[1]*pow(u3[m],2))*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
+	G_flux = G_flux + w3[m]*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
+	P_flux = P_flux + w3[m]*(mims[0]*u3[m])*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
   }
-  #pragma acc wait
+//   #pragma acc wait
   freeDeviceData();
+
+  ofstream fluxDiag;
+  fluxDiag.open("test_fluxdiag", ios::app);
+  fluxDiag << timestep << "    " << Q_flux << "    " << G_flux << "\n";
+  fluxDiag.close();
+
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
 }
@@ -565,6 +597,8 @@ inline void prepareDeviceData() {
     delbx.todev();
     delbz.todev();
     t0i.todev();
+	dpsi_dr.todev();
+	dpsi_dz.todev();
 
 //     // Grid-based fields
 //     curlb.updatedev();
@@ -606,6 +640,8 @@ inline void freeDeviceData() {
     delbx.updatehost();
     delbz.updatehost();
     t0i.updatehost();
+	dpsi_dr.updatehost();
+	dpsi_dz.updatehost();
 
     curlb.fromdev();
     ex.fromdev();
@@ -625,6 +661,8 @@ inline void freeDeviceData() {
     delbx.fromdev();
     delbz.fromdev();
     t0i.fromdev();
+	dpsi_dr.fromdev();
+	dpsi_dz.fromdev();
 }
 
 //as a note: copyin will copy an array to gpu/cpu kernels.

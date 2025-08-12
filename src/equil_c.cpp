@@ -3,6 +3,7 @@
 
 double mimp = 2, chgi = 1;
 double betaVal,rmaj0,a,q0,r0,q0p,q0abs,shat0;
+double phi_diag,phi_diag_freq,weight_diag;
 double dR,dth,mu0,e,proton;
 int nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n;
 double psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647;
@@ -10,8 +11,8 @@ double psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_d
 // GEM-X
 //integer :: cont=259002 !Calder Edit
 
-int nzeta = 32;
-int nx=449, nz=433;
+int nzeta = 64; 
+int nx=257, nz=257; //indexing problems
 double zctr;
 double  dxeq, xdim, xctr, zdim, dzeq;
 double pi,pi2;
@@ -39,6 +40,9 @@ double bu,tu,nu,xu,frequ,vu,eru;
 
 //     for including bstar effects (this was the only one allocated)
 CArray2D<double> bdcrvb;
+CArray2D<double> rho_i;
+CArray2D<double> dpsi_dr;
+CArray2D<double> dpsi_dz;
 /*double *psip2 = new double[?] //this array isn't allocated, keeping just in case
 also these arrays are not allocated (2D):  curvbz,srbr,srbz,thbr,thbz,prsrbr,prsrbz,pthsrbr,pthsrbz*/
 
@@ -47,7 +51,9 @@ CArray2D<double> upae0,nuob,dnuobdr,dnuobdt;
 CArray3D<double> curlb; //last index 1 based in ftn - cPP:(0,1,2) vs ftn:(1,2,3)
 
 // for phi average Calder Edit
-int num_lines = 80817, line;
+// int num_lines = 80817; //NON-CBC VERSION
+int num_lines = 53782;    //CBC VERSION
+int line;
 CArray2D<double> phiavg;
 double *psitab;
 double *weight00;
@@ -64,12 +70,8 @@ int *priv;
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void new_equil_c(){
     using namespace std;
-    //all commented variables are declared by never refrenced
-     //pi2, r, th, s 
-
-    int i;       //j,k,m,i1,j1,j2;
-                //double dum,x,tempn;
-    double omegau;          //,e,proton
+    int i;
+    double omegau;
     
     //allocating arrays
     psitab = new double[num_lines+1]; std::fill(psitab, psitab+num_lines+1, 0.0);
@@ -118,13 +120,16 @@ void new_equil_c(){
     curlb.resize(nx+1, nz+1, 3); //last index 1 based in ftn - cPP:(0,1,2) vs ftn:(1,2,3)
 
     phiavg.resize(nx+1, nz+1);
+    rho_i.resize(nx+1, nz+1);
+    dpsi_dr.resize(nx+1,nz+1);
+    dpsi_dz.resize(nx+1,nz+1);
 
     //global equilibrium data
 
     //open R.dat and input into Rgrid
     read1D("R.dat", Rgrid, 0);
     //open Z.dat and input into Zgrid
-    read1D("Z.dat", Zgrid, 1);
+    read1D("Z.dat", Zgrid, 0);
     //open psi_p.dat and input into psi_p
     read2D("psi_p.dat", psi_p, nx, nz);
 
@@ -136,7 +141,7 @@ void new_equil_c(){
     std::string line;
     std::string num;
     std::ifstream file;
-    file.open("jacodata.dat");
+    file.open("jacodata_cbc.dat");
     int index = 0;
     int currI = 0;
 
@@ -270,34 +275,47 @@ void new_equil_c(){
     //    close(10) 
     
 //   Manufactured Temperature Profiles: 0.5*(-np.tanh(5*np.array(profiles['psinorm'])-2.5)+1)*np.max(np.array(profiles['ti']))
-    //open tif_profile.dat input into t0i
-    read2D("tif_profile.dat", t0i, nx, nz);
-    //open tef_profile.dat input into t0e
-    read2D("tef_profile.dat", t0e, nx, nz);
+    // GORLER PROFILES
+    read2D("ni0_gorler.dat", xn0i, nx, nz);
+    read2D("ne0_gorler.dat", xn0e, nx, nz);
+    read2D("ti0_gorler.dat", t0i, nx, nz); //problem likley here, so likely also with others
+    read2D("te0_gorler.dat", t0e, nx, nz);
 
-    //Put into SI units
-    for(int i = 0; i <= nx; ++i){
-        for(int j = 0; j <= nz; ++j){
+    //PUT INTO SI UNITS
+    for(int i = 0; i <= nx; ++i) {
+        for(int j = 0; j <=nz; ++j) {
             t0i(i,j) = t0i(i,j)*tu;
             t0e(i,j) = t0e(i,j)*tu;
-            // xn0i = xn0i*1.0e21
-            // xn0e = xn0e*1.0e21
-            // xn0i = xn0e 
-        }
-    }   
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    //open ne0.dat input into xn0e
-    read2D("ne0.dat", xn0e, nx, nz);
-    //open ti0.dat input into t0i
-    read2D("ti0.dat", t0i, nx, nz);
-    for(int i = 0; i <= nx; ++i){
-        for(int j = 0; j <= nz; ++j){
-            xn0e(i,j) = xn0e(i,j)*nu;
-            t0i(i,j) = t0i(i,j)*tu;
+            xn0i(i,j) = xn0i(i,j)*1e19;
+            xn0e(i,j) = xn0e(i,j)*1e19;
         }
     }
-    xn0i = xn0e; 
+
+    //Put into SI units
+    // for(int i = 0; i <= nx; ++i){
+    //     for(int j = 0; j <= nz; ++j){
+    //         t0i(i,j) = t0i(i,j)*tu;
+    //         t0e(i,j) = t0e(i,j)*tu;
+    //         // xn0i = xn0i*1.0e21
+    //         // xn0e = xn0e*1.0e21
+    //         // xn0i = xn0e 
+    //     }
+    // }   
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    // //open ne0.dat input into xn0e
+    // read2D("ne0.dat", xn0e, nx, nz);
+    // //open ti0.dat input into t0i
+    // read2D("ti0.dat", t0i, nx, nz);
+
+    // UNIFORM PROFILES
+    // for(int i = 0; i <= nx; ++i){
+    //     for(int j = 0; j <= nz; ++j){
+    //         xn0e(i,j) = xn0e(i,j)*nu;
+    //         t0i(i,j) = t0i(i,j)*tu;
+    //     }
+    // }
+    // xn0i = xn0e; 
 
     for(int i = 0; i <= nx; ++i){
         for(int j = 0; j <= nz; ++j){
@@ -306,7 +324,7 @@ void new_equil_c(){
             } else {
                 c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)*b0(i,j))*(vu*vu);//2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
             }
-
+            rho_i(i,j) = sqrt(2*t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j));
             // if (c2_over_vA2(i,j)<1.0e-19) c2_over_vA2(i,j)=0.01*mu0*2*proton*xn0e(i/2,j/2)/(b0(i/2,j/2)**2)*vu**2
         }
     }
@@ -451,19 +469,40 @@ void new_equil_c(){
     }
 
 //   Gradients of T and n profiles for global simulation. Flux-tube parameters done at the end
-    captix.Clear();
-    captex.Clear();
-    capnix.Clear();
-    capnex.Clear();
-    captiz.Clear(); //shouldn't need this since array filled with zeros upon initialization
-    captez.Clear();
-    capniz.Clear();
-    capnez.Clear();
+    // captix.Clear();
+    // captex.Clear();
+    // capnix.Clear();
+    // capnex.Clear();
+    // captiz.Clear(); //shouldn't need this since array filled with zeros upon initialization
+    // captez.Clear();
+    // capniz.Clear();
+    // capnez.Clear();
 
-    dbdx.Clear();
-    dbdz.Clear();
-    for(int i = 1; i <= nx-1; ++i){
-        for(int j = 1; j <= nz-1; ++j){
+    // dspi_dr.Clear();
+    // dpsi_dz.Clear();
+    
+    //-CALDER EDIT 05/13/2025 ("<" specifically used - not a mistake)----
+    for(int i = 1; i < nx; ++i) {
+        for(int j = 1; j < nz; ++j) {
+            captix(i,j) = (-1/t0i(i,j))*(t0i(i+1,j)-t0i(i-1,j))/(2*dxeq);
+            captex(i,j) = (-1/t0e(i,j))*(t0e(i+1,j)-t0e(i-1,j))/(2*dxeq);
+            captiz(i,j) = (-1/t0i(i,j))*(t0i(i,j+1)-t0i(i,j-1))/(2*dzeq);
+            captez(i,j) = (-1/t0e(i,j))*(t0e(i,j+1)-t0e(i,j-1))/(2*dzeq);
+            capnix(i,j) = (-1/xn0i(i,j))*(xn0i(i+1,j)-xn0i(i-1,j))/(2*dxeq);
+            capnex(i,j) = (-1/xn0e(i,j))*(xn0e(i+1,j)-xn0e(i-1,j))/(2*dxeq);
+            capniz(i,j) = (-1/xn0i(i,j))*(xn0i(i,j+1)-xn0i(i,j-1))/(2*dzeq);
+            capnez(i,j) = (-1/xn0e(i,j))*(xn0e(i,j+1)-xn0e(i,j-1))/(2*dzeq);
+
+            dpsi_dr(i,j) = (psi_p(i+1,j)-psi_p(i-1,j))/(2*dxeq);
+            dpsi_dz(i,j) = (psi_p(i,j+1)-psi_p(i,j-1))/(2*dzeq);
+        }
+    }
+    //-------------------------------------------------------------------
+
+    //dbdx.Clear();
+    //dbdz.Clear();
+    for(int i = 1; i < nx; ++i){
+        for(int j = 1; j < nz; ++j){
             dbdx(i,j) = (b0(i+1,j)-b0(i-1,j))/(2*dxeq);
             dbdz(i,j) = (b0(i,j+1)-b0(i,j-1))/(2*dzeq); 
         }

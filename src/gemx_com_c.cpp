@@ -81,10 +81,13 @@ CArray3D<double> dnedy;
 CArray3D<double> dupadx;
 CArray3D<double> dupady;
 
+CArray3D<double> rk_hand;
+
 MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;
 int imx, jmx, kmx, mmx;
 int numprocs;
 int last,myid, cnt , ierr;
+int PADE, CST, weightscheme,modes,filtering_iterations, cold_start,checkpoint;
 
 int nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
 int rand_table[10007];
@@ -137,6 +140,7 @@ double *z3 = nullptr;
 double *u3 = nullptr;
 double *w2 = nullptr;
 double *w3 = nullptr;
+double *gw = nullptr;
 
 double *fe = nullptr;
 double *te = nullptr;
@@ -176,6 +180,7 @@ void new_gemx_com(){
     u3 = new double[mmx]; std::fill(u3, u3+mmx, 0.0);
     w2 = new double[mmx]; std::fill(w2, w2+mmx, 0.0);
     w3 = new double[mmx]; std::fill(w3, w3+mmx, 0.0);
+    gw = new double[mmx]; std::fill(gw,gw+mmx, 0.0);
 
 //      variables for tracing a grid (i,j) along field lien to the neighboring planes
     ileft.resize(imx+1, jmx+1); 
@@ -253,6 +258,7 @@ void new_gemx_com(){
         // Calder Edit End
 
     //3D Arrays
+    rk_hand.resize(imx+1, jmx+1, kmx+1);
     rho.resize(imx+1, jmx+1, kmx+1);
     phi.resize(imx+1, jmx+1, kmx+1);//!,den_pre(0:imx,0:jmx,0:kmx),dden(0:imx,0:jmx,0:kmx))
     //allocate(phiavg(0:imx,0:jmx))!,0:kmx)) !Calder Edit
@@ -309,4 +315,5 @@ void cleanupCom(){
     delete[] u3;
     delete[] w2;
     delete[] w3;
+    delete[] gw;
 }

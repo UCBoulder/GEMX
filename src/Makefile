@@ -11,7 +11,7 @@ INCS_C := -I$(MPIPATH)/include
 SRCS_C := $(wildcard *.cpp) #C++ sources
 OBJS := $(SRCS:.F90=.o)
 OBJS_C := $(SRCS_C:.cpp=.o)
-LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc -lmpi_cxx
+LIBS := -L${PETSC_PATH}/lib -lstdc++ -lpetsc -lmpi_cxx -lfftw3 -lm
 INCS := -I${PETSC_PATH}/include
 DIFF := $(BINDIR)/codeChanges.txt
 EXE := gemx

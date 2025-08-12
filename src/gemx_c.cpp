@@ -86,48 +86,59 @@ int main() {
    starttm=MPI_Wtime();
    upar.Clear();
 
-   mid_i=imx/2; //faster to bit shift if we want
-   mid_j=jmx/2;
-   mid_i=257;
-   mid_j=257;
+   // mid_i=imx/2; 
+   // mid_j=jmx/2;
+   // mid_i=257;
+   // mid_j=257;
+   mid_i = (imx+1)/2;
+   mid_j = (jmx+1)/2;
 
    tor_n = 1;
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!initialize perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   for(int k = 0; k <= kmx; ++k){
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-//                    call random_number(random)
-//                    dene(i,j,k)=mask(i,j)*cos(2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
+   if (checkpoint == 0) {
+      for(int k = 0; k <= kmx; ++k){
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+   //                    call random_number(random)
+   //                    dene(i,j,k)=mask(i,j)*cos(2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
 
 
 
 
-//                     !                    apar(i,j,k)=mask(i,j)*cos(tor_n*2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
-//                     ! apar(i,j,k)=mask2(i,j)*2*exp(-((i-ix)**2+(j-jx)**2)/(0.04*257)**2)!*cos(tor_n*2*pi*k/(kmx+1))
-//                     !                    apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.13)**2/0.01**2)-exp(-(psi_p(i,j)-0.16)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))
-//                    ! if (i==mid_i .and. j==mid_j) then
-//                    !    apar(i,j,k)=0
-//                    ! else
-//                       ! apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.1905)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))*(2*(j-mid_j)**2*dz**2/((j-mid_j)**2*dz**2+(i-mid_i)**2*dx**2)-1)!cos(2*pi*2*ATAN((j-mid_j)/(i-mid_i)))
-//                    ! endif
-                    
-                    
-// !                    apar(i,j,k)=mask(i,j)*(ran2(iseed)-0.5)
-// !                    apar(i,j,k)=0
-            apars(i,j,k) = 0; //could use Clear in future
-            //apar(i,j,k) = 0;
-            jpar(i,j,k)=0;
-            dene(i,j,k)=0;//ran(-0.5); 
-            phi(i,j,k)=0;//-j*0.01;
-            ez(i,j,k)=0;//0.01/dz;
+   //                     !                    apar(i,j,k)=mask(i,j)*cos(tor_n*2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
+   //                     ! apar(i,j,k)=mask2(i,j)*2*exp(-((i-ix)**2+(j-jx)**2)/(0.04*257)**2)!*cos(tor_n*2*pi*k/(kmx+1))
+   //                     !                    apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.13)**2/0.01**2)-exp(-(psi_p(i,j)-0.16)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))
+   //                    ! if (i==mid_i .and. j==mid_j) then
+   //                    !    apar(i,j,k)=0
+   //                    ! else
+   //                       ! apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.1905)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))*(2*(j-mid_j)**2*dz**2/((j-mid_j)**2*dz**2+(i-mid_i)**2*dx**2)-1)!cos(2*pi*2*ATAN((j-mid_j)/(i-mid_i)))
+   //                    ! endif
+                     
+                     
+   // !                    apar(i,j,k)=mask(i,j)*(ran2(iseed)-0.5)
+   // !                    apar(i,j,k)=0
+               apars(i,j,k) = 0; //could use Clear in future
+               //apar(i,j,k) = 0;
+               jpar(i,j,k)=0;
+               dene(i,j,k)=0;//ran(-0.5); 
+               phi(i,j,k)=0;//-j*0.01;
+               ez(i,j,k)=0;//0.01/dz;
+
+               ex(i,j,k) = 0;
+               ezeta(i,j,k) = 0;
+            }
          }
       }
+   } else {
+      //read files from out/checkpoint - written later (do both at same time is probably easiest) 
    }
-   phiavg.Clear();
+
+
+   phiavg.Clear(); //Calder Edit
 
    get_jpar_(apar); 
-   get_ne_c_(1);
+   get_ne_c_(0);
 
    if(i3D==0){
       apar.Clear();
@@ -194,108 +205,163 @@ int main() {
    //	   gkps()
    //    field(timestep-1,0)
 
+   ofstream weightFile;
+   weightFile.open("testweights", ios::app);
+      double weight_diag = 0.0;
+      for(int m = 0; m < mm[0]; ++m) {
+         weight_diag =+ w2[m]/mm[0];
+      }
+      weightFile << timestep << "   " << weight_diag << "   " << zeta2[mmx-1] <<"\n";
+   weightFile.close();
+
 
    if(ifield_solver == 1) {
+      //cout << "in ifield solver" << endl;
       phi.Clear();
       phiavg.Clear();
       denes=dene;
 
-      if(i3D != 0) {
-         for(int k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-
-            for(iter = 0; iter<=iterations; ++iter){
-               fluxavg_c_(phi, phiavg);
-               if(eBoltzmann == 1){
-                  BoltzSolve_c_(phi);
-               } else {
-                  kval = (PetscInt)k;
-                  PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
-                  PetscCall(KSPSolve(ksp,nullptr,nullptr));
-                  PetscCall(KSPGetSolution(ksp,&petsc_phi));
-                  PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
-                  PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-                  
-                  for(idx = 0; idx < (vec_end-vec_start); ++idx) {
-                     i=((idx)%iw)+is;
-                     j=(idx)/(iw)+js;
-                     phi(i,j,k)=phi_array[idx];//*mask(i,j);
-                     // //DEGBUG-----------------------------------------------
-                     // if (iter == 0 && k == myid*(kmx+1)/(numprocs)+2) {
-                     //    cout << fixed << setprecision(15) << phi_array[idx] << endl;
-                     // }
-                     // //DEGBUG-----------------------------------------------
-                  }
-                  PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
-               }
-            }
-         }
-
-         MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      } else {
+      if(eBoltzmann == 1) {
          k = 0;
-
          for(iter = 0; iter <= iterations; ++iter) {
-            fluxavg_c_(phi, phiavg);
-            if(eBoltzmann == 1) {
-               BoltzSolve_c_(phi);
-            } else {
+            //  do iter=0, iterations
+            //     call fluxavg(phi,phiavg)
+            //  end do
+            BoltzSolve_c_(phi);
+         }
+      
+      // call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+      } else if(i3D != 0) {
+         // cout << "i3d != 0" << endl;
+         phi.Clear();
+         
+         for(iter = 0; iter <= iterations; ++iter) {
+            for(k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k) {
+               fluxavg_c_(phi,phiavg); //Uses previous time step phi
+               //phi.Clear();
                kval = (PetscInt)k;
+
                PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
-               PetscCall(KSPSolve(ksp,NULL,NULL));
+               PetscCall(KSPSolve(ksp,nullptr,nullptr));
                PetscCall(KSPGetSolution(ksp,&petsc_phi));
+               PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
                PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-               PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
+
                for(idx = 0; idx < (vec_end-vec_start); ++idx) {
                   i=((idx)%(iw))+is;
                   j=(idx)/(iw)+js;
                   phi(i,j,k)=phi_array[idx];//*mask(i,j);
                }
-
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+            }
+            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            // fluxavg(phi,phiavg) //Turned off for CBC
+         }
+         
+      } else {
+         k = 0;
+         phi.Clear();
+         
+         for(iter = 0; iter <= iterations; ++iter) {
+            fluxavg_c_(phi, phiavg);
+         
+            kval = (PetscInt)k;
+            PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
+            PetscCall(KSPSolve(ksp,NULL,NULL));
+            PetscCall(KSPGetSolution(ksp,&petsc_phi));
+            PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
+            PetscCall(VecGetArrayRead(petsc_phi,&phi_array));
+            for(idx = 0; idx < (vec_end-vec_start); ++idx) {
+               i=((idx)%(iw))+is;
+               j=(idx)/(iw)+js;
+               phi(i,j,k)=phi_array[idx];//*mask(i,j);
+            }
 
-               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
 
-               for(int i = 0; i <= imx; ++i){
-                  for(int j = 0; j <= jmx; ++j){
-                     for(int kk = 1; kk <= kmx; ++kk){
-                        phi(i,j,kk) = phi(i,j,0);
-                     }
+            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+         }
+         // MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD,ierr)
+         for(int i = 0; i <= imx; ++i){ //Put outside Calder Loops
+            for(int j = 0; j <= jmx; ++j){
+               for(int kk = 1; kk <= kmx; ++kk){
+                  phi(i,j,kk) = phi(i,j,0);
+               }
+            }
+         }
+      }
+
+      //PING FUNCTION
+      if(timestep <= 10 && nonlin != 1) {
+         for(int i = 0; i <= imx; ++i) {
+            for (int j = 0; j <= jmx; ++j) {
+               for(int k=0; k <= kmx; ++k) {
+                  //  phi(i,j,k) = 100
+                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
+                  exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05)); //*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+                  // phi(i,j,k) = 1e-5*cos(modes*(-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+                  // exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+                  if (mask(i,j) < 0.99) {
+                     phi(i,j,k) = 0;
                   }
                }
             }
          }
       }
-      efieldcalc_c_(phi);
+
+      if(modes != 0) {
+         fourier_modes(phi,modes);
+      }
+
+      //binomial_filter(phi); //TODO
+
+      if(filtering_iterations) {
+         for(int filter_int = 1; filter_int <= filtering_iterations; ++filter_int) {
+            poloidal_filter_methods(phi); 
+         }
+      }
+
+      //EFIELD TESTING
+      if (cold_start == 1) {
+         if(timestep >= 300) {
+            efieldcalc_c_(phi);
+         }
+      } else {
+         efieldcalc_c_(phi);
+      }
+
       get_apar_(-1);
       //smooth(apars,2);
       get_jpar_(apars);
       //smooth(jpar,3)
       get_ne_c_(-1);
-      if(ision==1) ppush_c_(timestep);
-      // //-------------------------------------------------------------------------
-      // if(myid==0){
-      // std::ofstream myFile;
-      // std::string fileName = "AAPARTICLETRACKER"; 
-      // myFile.open(fileName);
 
-      //    j = mmx-10001;
-      //    while(j < mmx){
-      //       myFile << std::setprecision(16) << x2[j] << "      ";
-      //       myFile << std::setprecision(16) << x3[j] << "      ";
-      //       myFile << std::setprecision(16) << z2[j] << "      " << "\n";
-      //       myFile << std::setprecision(16) << z3[j] << "      ";
-      //       myFile << std::setprecision(16) << u2[j] << "      ";
-      //       myFile << std::setprecision(16) << u3[j] << "      " << "\n";
-      //       j++;
-      //    }
-      //    myFile.close();
-      // }
-      // //---------------------------------------------------------------------------
+      if(ision==1) ppush_c_(timestep);
       if(ifluid==1) integ_c_(0);
    } else {
          if(ision==1) ppush_c_(timestep);
          //if(ifluid==1)call pintef
          if(ifluid==1) integ_c_(0);
+      //-------------------------------------------------------------------------
+      if(myid==0){
+      std::ofstream myFile;
+      std::string fileName = "AAPARTICLETRACKER"; 
+      myFile.open(fileName);
+
+         j = mmx-10001;
+         while(j < mmx){
+            myFile << std::setprecision(16) << x2[j] << "      ";
+            myFile << std::setprecision(16) << x3[j] << "      ";
+            myFile << std::setprecision(16) << z2[j] << "      " << "\n";
+            myFile << std::setprecision(16) << z3[j] << "      ";
+            myFile << std::setprecision(16) << u2[j] << "      ";
+            myFile << std::setprecision(16) << u3[j] << "      " << "\n";
+            j++;
+         }
+         myFile.close();
+      }
+      //---------------------------------------------------------------------------
    }  
 
     // !	   call accumulate(timestep,1)
@@ -305,70 +371,131 @@ int main() {
    if(ifield_solver == 1) {
       phi.Clear();
 
-      if(i3D != 0){
-         for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-
-            for(iter = 0; iter<=iterations; ++iter){
-               fluxavg_c_(phi, phiavg);
-               if(eBoltzmann == 1){
-                  BoltzSolve_c_(phi);
-               } else {
-                  kval = (PetscInt)k;
-                  PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
-                  PetscCall(KSPSolve(ksp,NULL,NULL));
-                  PetscCall(KSPGetSolution(ksp,&petsc_phi));
-                  PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
-                  PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
-                  for(idx=0; idx < (vec_end-vec_start); ++idx) {
-                     i=((idx)%(iw))+is;
-                     j=(idx)/(iw)+js;
-                     phi(i,j,k)=phi_array[idx];//*mask(i,j);
-                  }
-                  PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
-               }
-            }
-         }
-
-         MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
-      } else {
-
+      if (eBoltzmann == 1) {
          k = 0;
-
          for(iter = 0; iter <= iterations; ++iter) {
-            fluxavg_c_(phi, phiavg);
-            if(eBoltzmann == 1){
-               BoltzSolve_c_(phi);
-            } else {
+            BoltzSolve_c_(phi);
+         }
+         //MPI_Allreduce(MPI_IN_PLACE, phi,start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      } else if(i3D != 0) {
+         phi.Clear();
+         for(iter = 0; iter <= iterations; ++iter) {
+            for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
+               fluxavg_c_(phi, phiavg);
+
                kval = (PetscInt)k;
                PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
-               PetscCall(KSPSolve(ksp,nullptr,nullptr));
+               PetscCall(KSPSolve(ksp,NULL,NULL));
                PetscCall(KSPGetSolution(ksp,&petsc_phi));
+               PetscCall(VecGetOwnershipRange(petsc_phi,&vec_start,&vec_end));
                PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
 
                for(idx=0; idx < (vec_end-vec_start); ++idx) {
-                  i=(idx%(iw))+is;
+                  i=((idx)%(iw))+is;
                   j=(idx)/(iw)+js;
                   phi(i,j,k)=phi_array[idx];//*mask(i,j);
                }
-
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+            }
+            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+         }
+      } else {
 
-               MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+         k = 0;
+         phi.Clear();
 
-               for(int i = 0; i <= imx; ++i){
-                  for(int j = 0; j <= jmx; ++j){
-                     for(int kk = 1; kk <= kmx; ++kk){
-                        phi(i,j,kk) = phi(i,j,0); 
-                     }
+         for(iter = 0; iter <= iterations; ++iter) {
+            fluxavg_c_(phi, phiavg);
+
+            kval = (PetscInt)k;
+            PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
+            PetscCall(KSPSolve(ksp,nullptr,nullptr));
+            PetscCall(KSPGetSolution(ksp,&petsc_phi));
+            PetscCall(VecGetArrayRead(petsc_phi, &phi_array));
+
+            for(idx=0; idx < (vec_end-vec_start); ++idx) {
+               i=(idx%(iw))+is;
+               j=(idx)/(iw)+js;
+               phi(i,j,k)=phi_array[idx];//*mask(i,j);
+            }
+
+            PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
+
+            MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+         }
+         for(int i = 0; i <= imx; ++i){
+            for(int j = 0; j <= jmx; ++j){
+               for(int kk = 1; kk <= kmx; ++kk){
+                  phi(i,j,kk) = phi(i,j,0); 
+               }
+            }
+         }
+      }
+
+      //PING FUNCTION
+      if(timestep <= 10 && nonlin == 0) {
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j) {
+               for(int k = 0; k <= kmx; ++k) {
+                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
+                  exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05));//*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+               // ! phi(i,j,k) = 1e-5*cos(modes*(pi2*k-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+               // ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+                  if (mask(i,j) < 0.99) {
+                     phi(i,j,k) = 0;
                   }
                }
             }
          }
       }
 
-      efieldcalc_c_(phi);
+      if(modes != 0) {
+         fourier_modes(phi,modes);
+      }
+
+   //    !!!!!!!!!!!!!!!!!!!!!!!
+   // ! call ftcamp(phi,timestep)
+   // !!!!!!!!!!!!!!!!!!!!!!!
+   // ! call binomial_filter(phi)
+
+      if(filtering_iterations) {
+         for(int filter_int = 1; filter_int <= filtering_iterations; ++filter_int) {
+            poloidal_filter_methods(phi);
+         }
+      }
+
+      //EFIELD TESING
+      if(cold_start == 1) {
+         if(timestep >= 300) {
+            efieldcalc_c_(phi);
+         }
+      } else {
+         efieldcalc_c_(phi);
+      }
+   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PHI DIAGNOSTIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      phi_diag = 0.0;
+      phi_diag_freq = 0.0;
+
+      for(int i = 0; i <= imx; ++i) {
+         for(int j = 0; j <= jmx; ++j) {
+            for(int k = 0; k <= kmx; ++k) {
+               phi_diag = phi_diag + pow(abs(phi(i,j,k)),2)/(imx*jmx*kmx);
+               phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx);
+            }
+		}
+      }
+	  ofstream file;
+	  file.open("testPhiDiag", ios::app);
+	  file << timestep << "		" << phi_diag << endl;
+	  file.close();
+
+	  file.open("testPhiFreq", ios::app);
+	  file << timestep << "		" << phi_diag_freq << endl;
+	  file.close();
+
+   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if(i3D == 1){
-         growthdiag_c_(phi);
+         // growthdiag_c_(phi); //deprecated
       }
 
 
@@ -578,8 +705,7 @@ void init(){
    {
       printf("Error! Could not open file: gemx.in\n");
       exit(-1); 
-   } else 
-   {
+   } else {
       fscanf(in_file, "%*[^\n]\n");
       fscanf(in_file, "%d %d %d %d %d %d %d", &imx, &jmx, &kmx, &mmx, &nmx, &nsmx, &ntube);
       fscanf(in_file, " %*[^\n]\n");
@@ -587,7 +713,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d %d %d", &iput, &iget, &ision, &peritr);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d %d %d", &nplot, &xnplt, &iflr);
+      fscanf(in_file, "%d %d", &nplot, &xnplt);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%lf %lf %lf", &cut, &amp, &tor);
       fscanf(in_file, " %*[^\n]\n");
@@ -595,13 +721,25 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %lf %lf", &ifluid, &amie, &rneu);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%lf %d %d %lf", &betaVal, &nonlin, &nonline, &vcut);
+      fscanf(in_file, "%lf %d %lf", &betaVal, &nonlin, &vcut);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d %d %d %d %d %d %d %d", &ntracer, &ifield_solver, &i3D, &iBoltzmann, &eAdiabatic, &iterations, &icollision);
+      fscanf(in_file, "%d %d %d %d %d %d %d", &ntracer, &ifield_solver, &i3D, &iBoltzmann, &eAdiabatic, &iterations, &icollision);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &eBoltzmann);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%lf %d %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &R_min, &Z_internal, &psi_div, &psi_a);
+      fscanf(in_file, "%d %d", &iflr, &PADE);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%d", &CST);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%d", &weightscheme);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%d %d", &modes, &filtering_iterations);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%d", &cold_start);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%lf %d %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
+      fscanf(in_file, " %*[^\n]\n");
+      fscanf(in_file, "%d", &checkpoint);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &dbg);
    }
@@ -680,7 +818,7 @@ void init(){
                +wx1*wz0*capnez(i+1,k)+wx1*wz1*capnez(i+1,k+1); 
 
          b = 1.-tor+tor*bfldp;
-         bmag(i1, k1) = b;
+         bmag(i1,k1) = b;
          gbtor(i1,k1) = btorp;
          gbx(i1,k1) = bxp;
          gbz(i1,k1) = bzp;              
@@ -770,13 +908,11 @@ void get_jpar_(CArray3D<double> &matrix){
    for(k = 0; k <= kmx; ++k){     
       for(i = 2; i <= imx-2; ++i){
          for(j = 2; j <= jmx-2; ++j){
-            if(mask3(i,j) < 2.99){
-               continue;
-            } else { 
-               jpar(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)     
-                                 -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)  
-                                 -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*Rgrid[i]/xu))  
-                                 -q[0]*mu0*upar(i,j,k);
+            if(!(mask3(i,j) < 2.99)){
+               jpar(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)       
+                           -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)   
+                           -(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/(dx*Rgrid[i]/xu))  
+                           -q[0]*mu0*upar(i,j,k);
             }
          }
       }
@@ -811,11 +947,11 @@ double ran2_c_(int& idum){
    double retVal;
 
    if(idum <= 0){
-      if((-1 * idum) < 1){ 
+      if((-idum) < 1){ 
          idum = 1;
       }
       else{ 
-         idum = (-1 * idum);
+         idum = (-idum);
       }
       idum2 = idum;
       for(j = NTAB+7; j >= 0; j--){
@@ -873,7 +1009,13 @@ void loadi_c_(){
 
    cnt = static_cast<int>(tmm[0]/numprocs);
    cnt = mmx; 
-   while(m < mm[0]){
+
+   if(CST != 0) {
+      read1D("rdata.dat", x2, 0);
+      read1D("zdata.dat", z2, 0);
+   }
+
+   while(m < mm[0]) {
    //load a slab of ions...
 
       //dumx=xdim*(ran2(iseed)+0.01)*0.9
@@ -884,6 +1026,11 @@ void loadi_c_(){
       dumz=pi2*ran2_c_(iseed); //revers(MyId*cnt+j,5) !ran2(iseed)
 
       //dumx=dxeq+(xdim-2*dxeq)*m/((mm(1)))
+
+      if(CST != 0) {
+         dumx = x2[m]-xctr+xdim/2;
+         dumy = z2[m]-zctr+zdim/2;
+      }
 
       r = xctr-xdim/2+dumx;   
       jacp = r/(xctr+xdim/2);
@@ -909,8 +1056,11 @@ void loadi_c_(){
       wz0 = ((k+1)*dzeq-z)/dzeq;
       wz1 = 1-wz0;
 
-      bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1)+wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1);
-      ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1)+wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+      bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
+               +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
+      ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+               +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+
       u2[m] = vpar/sqrt(mims[0]/ter);
       mu[m] = 0.5*vperp2/bfldp*ter;
 
@@ -919,15 +1069,27 @@ void loadi_c_(){
 //       w2(m)=2.*amp*ran2(iseed)
       w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
                +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
-//    w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+      gw[m] = 1;
+               //    w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+
+      if(weightscheme == 1) {
+         if(nonlin == 1) {
+            w2[m] = 0;
+         } else {
+            w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.3 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
+                    exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.25, 2) / (2 * pow(0.05, 2)));
+         }
+         gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
+      }
 
       myavgw += w2[m];
       m++;
    }
-   //do i=1,mmx
-   //avex=avex+x2(i)
-   //end do
-   //write(*,*)avex/mmx
+   
+   if(CST != 0) {
+      //write to some files
+   }
+
    if(myid==0){
       std::ofstream myFile;
       std::string fileName = "testdepo_posi"; 
@@ -949,15 +1111,17 @@ void loadi_c_(){
    if(idg == 1) std::cout << "all reduce" << "\n";
    avgv = avgv/static_cast<float>(tmm[0]);
 
-   m = 0;
    for(int m = 0; m < mm[0]; ++m){
       u2[m] = u2[m]-avgv;
       x3[m] = x2[m];
+      if(x3[m] < 0 || x3[m] > lx) cout << "x=" << x3[m] << "\n";
       z3[m] = z2[m];
+      if(z3[m] < 0 || z3[m] > lz) cout << "z=" << z3[m] << "\n";
       zeta3[m] = zeta2[m];
+      if(zeta3[m] < 0 || zeta3[m] > pi2) cout << "zeta3=" << zeta3[m] << "\n";
       u3[m] = u2[m];
 //    w2(m) = w2(m)-myavgw
-      w3[m] = w2[m];
+      w3[m] = w2[m]; 
    }
 }
 
@@ -1118,11 +1282,11 @@ void integ_c_(int iflag) {
    //copy used to copy data info to device and then to host implicitly
    //copyin used to just copy data into device, no update on host
    #pragma acc data \
-   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx])
+   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx], gw[0:mmx])
    #pragma acc parallel loop gang vector present(den_ptr, upar_ptr)
    for(m = 0; m < mm[0]; ++m) {
       x = x3[m];
-      if(x < 0 || x > lx) printf("x=%lf\n", x);
+      if(x < 0 || x > lx) printf("integ x=%lf\n", x);
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
       wx1 = 1-wx0;
@@ -1131,113 +1295,114 @@ void integ_c_(int iflag) {
       R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
 
       z = z3[m];
-      if(z < 0 || z > lz) printf("z=%lf\n", z);
+      if(z < 0 || z > lz) printf("integ z=%lf\n", z);
       j = static_cast<int>(z/dzeq);
       wy0 = (j+1)-z/dzeq;
       wy1 = 1-wy0;
       
-      zeta= my_fmod(zeta3[m], pi2); //don't need - updated in cpush and ppush so should already obey boundaries
-      if(zeta < 0 || zeta > pi2)printf("zeta=%lf\n", zeta);
+      zeta= my_fmod(zeta3[m], pi2); 
+      if(zeta < 0 || zeta > pi2)printf("integ zeta=%lf\n", zeta);
       k=static_cast<int>(zeta/dzeta);
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
       idx = get4DIndex(iflag,i,j,k, den.getY(), den.getZ(), den.getQ());
       #pragma acc atomic update
-      den_ptr[idx] += w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+      den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
 
       idx = get4DIndex(iflag,i+1,j,k, den.getY(), den.getZ(), den.getQ());
       #pragma acc atomic update
-      den_ptr[idx] += w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+      den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
 
       idx = get4DIndex(iflag,i,j+1,k, den.getY(), den.getZ(), den.getQ());
       #pragma acc atomic update
-      den_ptr[idx] += w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+      den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
 
       idx = get4DIndex(iflag,i+1,j+1,k, den.getY(), den.getZ(), den.getQ());
       #pragma acc atomic update
-      den_ptr[idx] += w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+      den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       idx = get3DIndex(i,j,k, upar.getY(), upar.getZ());
       #pragma acc atomic update 
-      upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
 
       idx = get3DIndex(i+1,j,k, upar.getY(), upar.getZ());
       #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
 
       idx = get3DIndex(i,j+1,k, upar.getY(), upar.getZ());
       #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
 
       idx = get3DIndex(i+1,j+1,k, upar.getY(), upar.getZ());
       #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       if(k != kmx) {
          idx = get4DIndex(iflag, i, j, k+1, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
          idx = get4DIndex(iflag, i+1, j, k+1, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
          idx = get4DIndex(iflag, i, j+1, k+1, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
          idx = get4DIndex(iflag, i+1, j+1, k+1, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
 
          idx = get3DIndex(i, j, k+1, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
          idx = get3DIndex(i+1, j, k+1, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
          idx = get3DIndex(i, j+1, k+1, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
          idx = get3DIndex(i+1, j+1, k+1, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+
       } else {
          idx = get4DIndex(iflag, i, j, 0, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
          idx = get4DIndex(iflag, i+1, j, 0, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
          idx = get4DIndex(iflag, i, j+1, 0, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
          idx = get4DIndex(iflag, i+1, j+1, 0, den.getY(), den.getZ(), den.getQ());
          #pragma acc atomic update
-         den_ptr[idx] += w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
 
          idx = get3DIndex(i, j, 0, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
          idx = get3DIndex(i+1, j, 0, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
          idx = get3DIndex(i, j+1, 0, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
          idx = get3DIndex(i+1, j+1, 0, upar.getY(), upar.getZ());
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
    }
    den.updatehost();
@@ -1290,7 +1455,7 @@ void integ_c_(int iflag) {
             dden2d(i,j)-=den2d1(i,j);
             den2d1(i,j)=den2d2(i,j);
             // for(k = 0 ; k <= kmx; ++k){
-            //    //den_pre=den(2,i,j,k); 
+            //    //den_pre=den(1,i,j,k); 
             // }
          }
       }
@@ -1323,7 +1488,7 @@ void get_apar_(const int &flagnumber) {
    }
 }
 
-void get_ne_c_(int flagnumber){
+void get_ne_c_(const int flagnumber){
    CArray3D<double> gradPar;
    gradPar.resize(imx+1, jmx+1, kmx+1);
    gradpar_c_(jpar, gradPar);
@@ -1355,6 +1520,7 @@ void get_ne_c_(int flagnumber){
          }
       }
    }
+
    if(i3D == 0){
       for(int k = 1; k <= kmx; ++k) {
          if (flagnumber ==-1 ){
@@ -1433,7 +1599,7 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
 
    for(int i = 2; i <= imx-2; ++i){
       for(int j = 2; j <= jmx-2; ++j){
-         if(!(mask2(i,j)<1.99)){
+         if(!(mask4(i,j)<3.99)){
             gradPar(i,j,kmx)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,kmx)-matrix(i-1,j,kmx))*0.5/dx
                +b0z(i,j)/b0(i,j)*(matrix(i,j+1,kmx)-matrix(i,j-1,kmx))*0.5/dz    
                +b0zeta(i,j)/b0(i,j)*(matrix(i,j,0)-matrix(i,j,kmx-1))/((Rgrid[i]/xu)*2*dzeta));
@@ -1492,99 +1658,124 @@ PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void) {
 }
 
 PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
-   DM dm;
-   //int ii,jj;
-   PetscInt i,j,mx,my,xm;
-   PetscInt    ym,xs,ys,i1, i5; 
-   PetscScalar  v[5],Hx,Hy;
-   PetscScalar  Hx2,Hy2; //tmp_r,a_value
-   MatStencil   row,col[5]; 
+	DM dm;
+	//int ii,jj;
+	PetscInt i,j,mx,my,xm;
+	PetscInt    ym,xs,ys,i1, i5; 
+	PetscScalar  v[5],Hx,Hy;
+	PetscScalar  Hx2,Hy2; //tmp_r,a_value
+	MatStencil   row,col[5]; 
 
-   i1 = 1;
-   i5 = 5;
-   //a_value = 0.5;
-   PetscCall(KSPGetDM(ksp,&dm)); 
-   PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
-                      nullptr,nullptr,nullptr,nullptr,nullptr,nullptr)); 
+	i1 = 1;
+	i5 = 5;
+	//a_value = 0.5;
+	PetscCall(KSPGetDM(ksp,&dm)); 
+	PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
+						nullptr,nullptr,nullptr,nullptr,nullptr,nullptr)); 
 
-   Hx = dx;//! (Rgrid(imx)-Rgrid(0)) / real(imx)
-   Hy = dz;//(Zgrid(jmx)-Zgrid(0)) / real(jmx)
+	Hx = dx;//! (Rgrid(imx)-Rgrid(0)) / real(imx)
+	Hy = dz;//(Zgrid(jmx)-Zgrid(0)) / real(jmx)
 
-   Hx2 = Hx*Hx;
-   Hy2 = Hy*Hy;
-   PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
+	Hx2 = Hx*Hx;
+	Hy2 = Hy*Hy;
+	PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
+	for(j=ys; j < ys+ym; ++j){
+		for(i=xs; i < xs+xm; ++i) {
+			row.i = i;
+			row.j = j;
+			if(mask(i,j) < 0.99){
+				v[0] = (c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))*(-2.0/Hx2-2.0/Hy2);
+				PetscCall(MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES));
+			} else {
+				if(j > 0) {
+					if(j == jmx) {
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
+						v[0] = v[0] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
+					} else {
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[0] = v[0] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
+                  // if(i == 99 && j == 101) cout << v[0] << endl;
+					}
+				}
+				col[0].i = i;
+				col[0].j = j - 1;
 
-   for(j=ys; j < ys+ym; ++j){
-      for(i=xs; i < xs+xm; ++i) {
-         row.i = i;
-         row.j = j;
-         if(mask(i,j)<0.99){
-            v[0] = c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2);
-            PetscCall(MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES));
-         } else {
-            if(j > 0) {
-               if(j == jmx) {
-                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
-               } else {
-                  v[0] = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+				if(i > 0) {
+					if(i == imx) {
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
+                  v[1] = v[1] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
+					} else {
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[1] = v[1] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
+                  // if(i == 99 && j == 101) cout << v[1] << endl;
+					}
+				}
+				col[1].i = i - 1;
+				col[1].j = j;
+
+				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2;
+            // if(i == 99 && j == 101) cout << v[2] << endl;
+				col[2].i = i;
+				col[2].j = j;
+
+				//cout << v[2] << "		" << xn0e(i,j)*mu0*e/t0e(i,j) << endl;
+	//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+				if(iBoltzmann != 0) {
+					v[2]=v[2]-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*pow(rho_i(i,j),2))*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + 
+					(xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2);
+               // if(i == 99 && j == 101) cout << v[2] << endl;
+				}
+            if (std::abs(v[2]) > 1e4) {
+               std::cout << "Large v[2] at (" << i << "," << j << "): "
+                  << v[2] << " | rho_i = " << rho_i(i,j)
+                  << ", xn0e = " << xn0e(i,j)
+                  << ", t0e = " << t0e(i,j)
+                  << ", b0 = " << b0(i,j)
+                  << std::endl;
                }
-            }
-            col[0].i = i;
-            col[0].j = j - 1;
 
-            if(i > 0) {
-               if(i == imx) {
-                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
-               } else {
-                  v[1] =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
-               }
-            }
-            col[1].i = i - 1;
-            col[1].j = j;
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
-            v[2] = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2;
-            col[2].i = i;
-            col[2].j = j;
-//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-            if(iBoltzmann != 0) {
-               v[2]-= xn0e(i,j)*mu0*e*e/t0e(i,j);
-            }
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
-            if(i < imx){
-               if(i == 0){
-                  v[3] = c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
-               } else {
-                  v[3] =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
-               }
-            }
-            col[3].i = i + 1;
-            col[3].j = j;
-            
-            if(j < jmx) {
-               if(j == 0){
-                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
-               } else {
-                  v[4] =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
-               } 
-            }
-            col[4].i = i;
-            col[4].j = j + 1;   
-            PetscCall(MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES));
-         }
-      }
+				if(i < imx){
+					if(i == 0){
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
+                    	v[3] = v[3] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i,j)/t0e(i,j))/Hx2;
+					} else {
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[3] = v[3] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
+                  // if(i == 99 && j == 101) cout << v[3] << endl;
+					}
+				}
+				col[3].i = i + 1;
+				col[3].j = j;
+				
+				if(j < jmx) {
+					if(j == 0){
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
+                    	v[4] = v[4] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
+					} else {
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[4] = v[4] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
+                  // if(i == 99 && j == 101) cout << v[4] << endl;
+					} 
+				}
+				col[4].i = i;
+				col[4].j = j + 1;   
+				PetscCall(MatSetValuesStencil(BB, i1, &row, i5, col, v, INSERT_VALUES));
+			}
+		}
    }
 
-   PetscCall(MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY));
-   PetscCall(MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY));
-   if(AA != BB) {
-      PetscCall(MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY));
-      PetscCall(MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY));
-   }
-   //   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
-   //   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
+	PetscCall(MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY));
+	PetscCall(MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY));
+	if(AA != BB) {
+		PetscCall(MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY));
+		PetscCall(MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY));
+	}
+	//   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
+	//   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
 
-   return 0;
+	return 0;
 }
 
 PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
@@ -1609,38 +1800,91 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
       for(i = xs; i < xs+xm; ++i) {
-         // tmp_value = 0;
          idx+=1;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
          } else {
+			if(weightscheme == 0) {
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2D ni noly now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            if(i3D == 0) {
-               if(iBoltzmann == 0){
-                  tmp_value = denes(i,j,k) - q[0]*mu0*(den2d2(i,j) - xn0i(i,j));
-               } else {
-                  tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j));
-               }
+				if(i3D == 0) {
+					if(iBoltzmann == 0){
+						tmp_value = denes(i,j,k) - q[0]*mu0*(den2d2(i,j) - xn0i(i,j));
+					} else if(eAdiabatic != 0) {
+							tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  
+										PADE*(mu0*q[0]*pow(rho_i(i,j),2))*(((den2d2(i-1,j)-xn0i(i-1,j))+(den2d2(i+1,j)-xn0i(i+1,j))-2*(den2d2(i,j)-xn0i(i,j)))/pow(dx,2) + 
+										((den2d2(i,j-1)-xn0i(i,j-1))+(den2d2(i,j+1)-xn0i(i,j+1))-2*(den2d2(i,j)-xn0i(i,j)))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+										(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) +  
+										(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
+										(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
+										((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+					} else {
+							tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j));
+					}
 //                tmp_value = 1
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            } else {
-               if(iBoltzmann == 0) {
-                  tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
-               }
+            	} else {
+					if(iBoltzmann == 0) {
+						tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
 
-               if(eAdiabatic != 0){
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j);
-               } else {
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
-               }
+						} else if(eAdiabatic != 0) {
+						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*(((den(1,i-1,j,k)-xn0i(i-1,j))+(den(1,i+1,j,k)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/pow(dx,2) + 
+									((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) + 
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+					} else {
+						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
+					}
+				}
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            }
-         }
-         PetscCall(VecSetValues(bbb,1,&idx, &tmp_value, INSERT_VALUES));
+            } else {
+				//weightscheme on use this!
+				if(i3D==0) {
+					if(iBoltzmann == 0) {
+						tmp_value = denes(i,j,k)-q[0]*mu0*(den2d2(i,j));
+					} else if(eAdiabatic != 0) {
+						tmp_value = -q[0]*mu0*(den2d2(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  
+									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*((den2d2(i-1,j)+den2d2(i+1,j)-2*den2d2(i,j))/pow(dx,2) + 
+									(den2d2(i,j-1)+den2d2(i,j+1)-2*den2d2(i,j))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) + 
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+					} else {
+						tmp_value = -q[0]*mu0*(den2d2(i,j));
+					}
+				} else {
+
+					if(iBoltzmann == 0) {
+						tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k));
+					} else if (eAdiabatic != 0) {
+						tmp_value = -q[0]*mu0*(den(1,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*((den(1,i-1,j,k)+den(1,i+1,j,k)-2*den(1,i,j,k))/pow(dx,2) + 
+									(den(1,i,j-1,k)+den(1,i,j+1,k)-2*den(1,i,j,k))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) +  
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+
+                     // if(i == 100 && j == 100) printf("%e\n", tmp_value);
+
+                    //  ! write(*,*) -q(1)*mu0*(den(2,i,j,k)), -(xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j), PADE*(mu0*q(1)*rho_i(i,j)**2)*((den(2,i-1,j,k)+den(2,i+1,j,k)-2*den(2,i,j,k))/dx**2 + (den(2,i,j-1,k)+den(2,i,j+1,k)-2*den(2,i,j,k))/dz**2), PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
+                    //  ! (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
+                    //  ! (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
+                    //  ! (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
+                    //  ! ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
+					} else {
+						tmp_value = -q[0]*mu0*(den(1,i,j,k));
+					}
+				}
+			}
       }
+         PetscCall(VecSetValues(bbb,1,&idx, &tmp_value, INSERT_VALUES));
    }
+}
 
    PetscCall(VecAssemblyBegin(bbb));
    PetscCall(VecAssemblyEnd(bbb));
@@ -1651,13 +1895,13 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
    //Local Variables
-   double phiavg1d[102];
-   double psi1d[102];
-   double psi1d_private[102];
-   double phiavg1d_private[102];
+   double phiavg1d[100];
+   double psi1d[100];
+   double psi1d_private[100];
+   double phiavg1d_private[100];
 
-   int line_large, line_small;
-   int gi = 0, xix=0, yjy=0, miw=0, psi_zero=0, store=0, k=0; 
+   int line_large, line_small, line_marker;
+   int gi = 0, xix=0, yjy=0, miw=0, psi_zero=0, store=0, k=0, priv_mark; 
    double weightinput=0,weightinput3D=0, phiavggi=0, psival=0, wmx0=0, wmx1=0, psi_private_min = 0.0;
 
    // set all arrays to zero here. 
@@ -1666,125 +1910,116 @@ void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
    std::fill(std::begin(psi1d_private), std::end(psi1d_private), 0.0);
    std::fill(std::begin(phiavg1d_private), std::end(phiavg1d_private), 0.0);
 
-   line_large = 1;
    line_small = 0;
-   psi_zero   = 1;
-   //input     = 1;
+   psi_zero = 1;
 
-   //Computation
-   for (int line = 1; line <= 101; ++line) {
+   //REVISED COMPUTATION
+   line_marker = 0;
+
+   for(gi = 0; gi < 100; ++gi) {
+      weightinput = 0.0;
       phiavggi = 0.0;
       store = 0;
-      for(gi = 0; gi < num_lines; ++gi) {
-         if(gindex[gi] == line-1) {
-            weightinput = (weight00[gi]*input(iarray[gi], jarray[gi], 0) + 
-                           weight10[gi]*input(iarray[gi]+1, jarray[gi], 0) + 
-                           weight01[gi]*input(iarray[gi], jarray[gi]+1, 0) + 
-                           weight11[gi]*input(iarray[gi]+1, jarray[gi]+1, 0));
-
+      priv_mark = 0;
+      for(line = line_marker; line <=  num_lines; ++line) {
+         if(gindex[line] == gi) {
+            weightinput = (weight00[line]*input(iarray[line], jarray[line],0) + 
+                          weight10[line]*input(iarray[line]+1, jarray[line],0) + 
+                          weight01[line]*input(iarray[line], jarray[line]+1,0) + 
+                          weight11[line]*input(iarray[line]+1, jarray[line]+1,0));
             if(i3D == 0) {
-               phiavggi += (weightinput*jacobian[gi])/deno[gi]; 
+               phiavggi += (weightinput*jacobian[line])/deno[line];
             } else {
                for(k = 1; k <= kmx; ++k) {
-                  weightinput3D = (weight00[gi]*input(iarray[gi], jarray[gi],k) + 
-                                    weight10[gi]*input(iarray[gi]+1, jarray[gi],k) + 
-                                    weight01[gi]*input(iarray[gi], jarray[gi]+1,k) + 
-                                    weight11[gi]*input(iarray[gi]+1, jarray[gi]+1,k));
-                   weightinput += weightinput3D;
+                  weightinput3D = (weight00[line]*input(iarray[line], jarray[line],k) + 
+                                   weight10[line]*input(iarray[line]+1, jarray[line],k) + 
+                                   weight01[line]*input(iarray[line], jarray[line]+1,k) + 
+                                   weight11[line]*input(iarray[line]+1, jarray[line]+1,k));
+                  weightinput += weightinput3D;
                }
-               phiavggi += (weightinput*jacobian[gi])/(deno[gi]*(kmx+1)); 
+               phiavggi = phiavggi +(weightinput*jacobian[line])/(deno[line]*(kmx+1));
             }
-
-            if(priv[gi] == 0) {
-               store = gi;
+            store = line;
+            if(priv[line] == 0) {
+               priv_mark = 1;
             }
          }
-
          //Remove redundancy from closed loop integration process
          if(phiavggi != 0) {
-            if(gindex[gi] != line-1) {
-               if(i3D == 0){
-                  phiavggi -= (weightinput*jacobian[gi-1])/deno[gi-1]; 
-               }else{
-                  phiavggi -= (weightinput*jacobian[gi-1])/(deno[gi-1]*(kmx+1));
+            if(gindex[line] != gi) {
+               if(i3D == 0) {
+                  phiavggi = phiavggi - (weightinput*jacobian[line-1])/deno[line-1];
+               } else {
+                  phiavggi = phiavggi - (weightinput*jacobian[line-1])/(deno[line-1]*(kmx+1));
                }
+               line_marker = line;
                break;
             }
          }
       }
-      if(store != 0) {
-            phiavg1d[psi_zero] = phiavggi;
-            psi1d[psi_zero] = psitab[store];
-            psi_zero += 1;
+
+      if(priv_mark != 0) {
+        phiavg1d[psi_zero] = phiavggi;
+        psi1d[psi_zero]    = psitab[store];
+        psi_zero = psi_zero + 1;
       } else {
-         if(line_small == 0) {psi_private_min = psitab[line];}
-         phiavg1d_private[line_small] = phiavggi;
-         psi1d_private[line_small] = psitab[gi];
-         line_small = line_small + 1;
+         phiavg1d_private[gi] = phiavggi;
+         if(line_small == 0) {
+            psi_private_min = psitab[store];
+         }
+         line_small += 1;
       }
    }
+
+   //Initialize output to zero
    phiavg1d[0] = phiavg1d[1];
-   //  phiavg1d(0) = input(268,254,0) //phiavg1d[0] = phi(268,254,0);
-   
-   // Save psi1d and timesteps of phiavg1d to understand convergence
-   //  if (timestep == 10) then
-   //     open(unit=11, file = 'psi1d',status='unknown',action='write')
-   //                 write(11,*) psi1d(:)
-   //              close(11)
-   //  endif
-
-   //  open(unit=11, file = 'phiavg1d',status='unknown',position='append')                
-   //  write(11,*) phiavg1d(:)
-   //  close(11)
-
-   // Initialize output to zero
-   output(xix,yjy) = 0.0; //only sets output(0,0) to 0, not sure if that was intended
+   output.Clear();
+   //QUICK FIX
+   //phiavg1d_private = 0;
 
    //INTERPOLATION
    for(xix = 0; xix <= nx; ++xix) {
       for(yjy = 0; yjy <= nz; ++yjy) {
-         psival = psi_p(xix, yjy);
-         if(mask(xix,yjy) < 0.99) { 
+         psival = psi_p(xix,yjy);
+         if(mask(xix,yjy) < 0.99) {
             output(xix,yjy) = 0;
          } else {
-            if (yjy < 75 && xix < 150 && psival > 0.29 && psival<0.31) {
-               miw  = static_cast<int>((psival-psi_private_min)/(psi1d[2]-psi1d[1]));
-               wmx0 = ((miw+1)*(psi1d_private[2]-psi1d_private[1])-psival)/(psi1d[2]-psi1d[1]);
-               wmx1 = 1.-wmx0;
-               output(xix,yjy) = wmx0*phiavg1d_private[miw] + wmx1*phiavg1d_private[miw+1];
-            } else {
-               miw  = static_cast<int>(psival/(psi1d[2]-psi1d[1]));
-               wmx0 = ((miw+1)*(psi1d[2]-psi1d[1])-psival)/(psi1d[2]-psi1d[1]);
-               wmx1 = 1.-wmx0;
-               output(xix,yjy) = wmx0*phiavg1d[miw] + wmx1*phiavg1d[miw+1];
-            }
+            //    if (yjy < 75 .and. xix < 150 .and. psival > 0.29 .and. psival<0.31) { //!Private region under X-point
+            //       miw  = int((psival-psi_private_min)/(psi1d(2)-psi1d(1)))
+            //     !   wmx0 = ((miw+1)*(psi1d_private(2)-psi1d_private(1))-psival)/(psi1d(2)-psi1d(1))
+            //       wmx0 = ((miw+1)*(psi1d(2)-psi1d(1))-psival)/(psi1d(2)-psi1d(1))
+            //       wmx1 = 1.-wmx0
+            //       output(xix,yjy) = wmx0*phiavg1d_private(miw) + wmx1*phiavg1d_private(miw+1)
+            //  } else {  
+            miw  = static_cast<int>(psival/(psi1d[2]-psi1d[1]));
+            wmx0 = ((miw+1)*(psi1d[2]-psi1d[1])-psival)/(psi1d[2]-psi1d[1]);
+            wmx1 = 1. - wmx0;
+            output(xix,yjy) = wmx0*phiavg1d[miw] + wmx1*phiavg1d[miw+1];
          }
       }
    }
-   // output = output*32 (won't work for current arrays, maybe need a *= operator)
+   //output.Clear();
 }
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void efieldcalc_c_(CArray3D<double> &input_phi){ 
-   //Input is phi array - labeled phi by extern
-
    //local vars
    int i, j, k, kminus, kplus;
 
    for(k = 0; k <= kmx; ++k){
       for(i = 2; i <= imx-1; ++i){
          for(j = 2; j <= jmx-1; ++j){
-            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0])); //input phi incorrect
+            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0]));
             ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
             if(k == 0){
                kminus = kmx;
-               ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,kminus))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,kminus))/(2*Rgrid[i]*(2*pi/(kmx+1)));
             }
             else if(k == kmx){
                kplus = 0;
-               ezeta(i,j,k) = -(input_phi(i,j,kplus) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta(i,j,k) = -(input_phi(i,j,kplus) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*pi/(kmx+1)));
             } else {
-               ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*M_PI/(kmx+1)));
+               ezeta(i,j,k) = -(input_phi(i,j,k+1) - input_phi(i,j,k-1))/(2*Rgrid[i]*(2*pi/(kmx+1)));
             }
          }
       }
@@ -1850,50 +2085,56 @@ void BoltzSolve_c_(CArray3D<double> &input_phi){
          for(k = 0; k <= kmx; ++k){
             if(input_phi(i,j,k) == 0){
                phi_k(i,j,k) = 0.005+(ran2_c_(iseed)*0.005);
-            }else{
-               phi_k(i,j,k) = 1.01*input_phi(i,j,k);
+            } else {
+               phi_k(i,j,k) = 1.001*input_phi(i,j,k);
             }
          }
       }
    }
 
-   for(i = 0; i <= imx; ++i){
-      for(j = 0; j <= jmx; ++j){
+   for(i = 2; i < imx; ++i){
+      for(j = 2; j < jmx; ++j){
          for(k = 0; k <= kmx; ++k){
-            dphidr(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i+1,j,k)-input_phi(i-1,j,k))/(2*dx);
-            dphi_kdr(i,j,k) = c2_over_vA2(i,j)*(phi_k(i+1,j,k)-phi_k(i-1,j,k))/(2*dx);
+            dphidr(i,j,k)   = Rgrid[i]*(input_phi(i+1,j,k)-input_phi(i-1,j,k))/(2*dx);
+            dphi_kdr(i,j,k) = Rgrid[i]*(phi_k(i+1,j,k)-phi_k(i-1,j,k))/(2*dx);
 
-            dphidz(i,j,k)   = c2_over_vA2(i,j)*(input_phi(i,j+1,k)-input_phi(i,j-1,k))/(2*dz);
-            dphi_kdz(i,j,k) = c2_over_vA2(i,j)*(phi_k(i,j+1,k)-phi_k(i,j-1,k))/(2*dz);
+            dphidz(i,j,k)   = (input_phi(i,j+1,k)-input_phi(i,j-1,k))/(2*dz);
+            dphi_kdz(i,j,k) = (phi_k(i,j+1,k)-phi_k(i,j-1,k))/(2*dz);
          }
       }
    }
 
-    for(i = 0; i <= imx; ++i){
-      for(j = 0; j <= jmx; ++j){
+    for(i = 2; i < imx; ++i){
+      for(j = 2; j < jmx; ++j){
          for(k = 0; k <= kmx; ++k){
-            d2phidr2(i,j,k)      = (dphidr(i+1,j,k)-dphidr(i-1,j,k))/(2*dx);
-            d2phi_kdr2(i,j,k)    = (dphi_kdr(i+1,j,k)-dphi_kdr(i-1,j,k))/(2*dx);
+            d2phidr2(i,j,k)      = c2_over_vA2(i,j)*(dphidr(i+1,j,k)-dphidr(i-1,j,k))/(2*dx*Rgrid[i]);
+            d2phi_kdr2(i,j,k)    = c2_over_vA2(i,j)*(dphi_kdr(i+1,j,k)-dphi_kdr(i-1,j,k))/(2*dx*Rgrid[i]);
 
-            d2phidz2(i,j,k)      = (dphidz(i,j+1,k)-dphidz(i,j-1,k))/(2*dz);
-            d2phi_kdz2(i,j,k)    = (dphi_kdz(i,j+1,k)-dphi_kdz(i,j-1,k))/(2*dz);
+            d2phidz2(i,j,k)      = c2_over_vA2(i,j)*(dphidz(i,j+1,k)-dphidz(i,j-1,k))/(2*dz);
+            d2phi_kdz2(i,j,k)    = c2_over_vA2(i,j)*(dphi_kdz(i,j+1,k)-dphi_kdz(i,j-1,k))/(2*dz);
             
             OPPphi(i,j,k)  = (d2phidr2(i,j,k)+d2phidz2(i,j,k));
             OPPphik(i,j,k) = (d2phi_kdr2(i,j,k)+d2phi_kdz2(i,j,k));
-   
-            l_hand(i,j,k) = (OPPphik(i,j,k)-OPPphi(i,j,k))/(phi_k(i,j,k)-input_phi(i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j)*exp(input_phi(i,j,k)*e/t0e(i,j)));
 
             if(i3D == 0){
-               r_hand(i,j,k) = (OPPphi(i,j,k)+q[0]*mu0*den2d2(i,j)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k)))); //q set in gem_com externs check in on this
+               r_hand(i,j,k)  = OPPphi(i,j,k) + q[0]*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k));
+               rk_hand(i,j,k) = OPPphik(i,j,k) + q[0]*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k));
             }else{
-               r_hand(i,j,k) = (OPPphi(i,j,k)+q[0]*mu0*den(1,i,j,k)-e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*(input_phi(i,j,k)))); //den is a 4D array
+               r_hand(i,j,k)  = OPPphi(i,j,k) + q[0]*mu0*den(1,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k));
+               rk_hand(i,j,k) = OPPphik(i,j,k) + q[0]*mu0*den(1,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k));
             }
 
-            input_phi(i,j,k) = phi_k(i,j,k) - (r_hand(i,j,k)/l_hand(i,j,k));
+            input_phi(i,j,k) = phi_k(i,j,k) - (input_phi(i,j,k)-phi_k(i,j,k))*r_hand(i,j,k)/(rk_hand(i,j,k)-r_hand(i,j,k));
             // input_phi(i,j,k) = OPPphik(i,j,k)
 
+            if(input_phi(i,j,k) == 0) {
+               cout << "working\n";
+            }
+
             if(mask(i,j) < 0.99){
-                  input_phi.Clear(); //TODO - DOUBLE CHECK THIS IS WHAT WE NEED TO DO
+               for(int kk = 0; kk<= kmx; ++kk) {
+                  input_phi(i,j,kk) = 0;
+               }
             }
          }
       }
@@ -1905,4 +2146,147 @@ void BoltzSolve_c_(CArray3D<double> &input_phi){
    //   end do
    //    close(11)
    // end if
+}
+
+void poloidal_filter_methods(CArray3D<double> &input_phi) {
+   CArray3D<double> Filter;
+   //Quick note, this will get weird due to indexing. From what I understand (what I googled really) there
+   // is no way to declare a 1-indexed array in c++ without creating your own class. 
+   // It would be much easier to just ignore those indeces, so that's what I'll do
+   Filter.resize(imx, jmx, kmx+1);
+
+   for(int i = 1; i < imx; ++i) { //inclusive do loops - imx-1 -> < imx. Also better caching performance for c++ if i,j,k. Not sure for fortran
+      for(int j = 1; j < jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            Filter(i,j,k) = (1.0/16.0) * (input_phi(i-1,j-1,k) + 2*input_phi(i,j-1,k) + input_phi(i+1,j-1,k) + 
+                           2*input_phi(i-1,j,k) + 4*input_phi(i,j,k) + 2*input_phi(i+1,j,k) + 
+                           input_phi(i-1,j+1,k) + 2*input_phi(i,j+1,k) + input_phi(i+1,j+1,k));
+         }
+      }
+   }
+
+   for(int i = 0; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            if(mask(i,j) < 0.99) {
+               input_phi(i,j,k) = 0;
+            } else {
+               // printf("Filter(%d, %d, %d) = %lf\n", i, j, k, Filter(i,j,k));
+               input_phi(i,j,k) = Filter(i,j,k);
+            }
+         }
+      }
+   }
+}
+
+void binomial_filter(CArray3D<double> &input_phi) {
+   int kmin, kmax;
+   CArray3D<double> Filter;
+   Filter.resize(imx,jmx,kmx+1);
+
+   //Binomial Filter
+   for(int i = 1; i < imx; ++i) {
+      for(int j = 1; j < jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            if(k == 0) {
+               kmin = kmx;
+            } else {
+               kmin = k-1;
+            }
+
+            if(k == kmx) {
+               kmax = 0;
+            } else {
+               kmax = k+1;
+            }
+
+            Filter(i,j,k) = (1.0 / 64.0) * (input_phi(i-1,j-1,kmin) + 2*input_phi(i,j-1,kmin) + input_phi(i+1,j-1,kmin) + 
+                           2*input_phi(i-1,j,kmin) + 4*input_phi(i,j,kmin) + 2*input_phi(i+1,j,kmin) + 
+                           input_phi(i-1,j+1,kmin) + 2*input_phi(i,j+1,kmin) + input_phi(i+1,j+1,kmin) + 
+                           2*input_phi(i-1,j-1,k) + 4*input_phi(i,j-1,k) + 2*input_phi(i+1,j-1,k) + 
+                           4*input_phi(i-1,j,k) + 8*input_phi(i,j,k) + 4*input_phi(i+1,j,k) + 
+                           2*input_phi(i-1,j+1,k) + 4*input_phi(i,j+1,k) + 2*input_phi(i+1,j+1,k) + 
+                           input_phi(i-1,j-1,kmax) + 2*input_phi(i,j-1,kmax) + input_phi(i+1,j-1,kmax) + 
+                           2*input_phi(i-1,j,kmax) + 4*input_phi(i,j,kmax) + 2*input_phi(i+1,j,kmax) + 
+                           input_phi(i-1,j+1,kmax) + 2*input_phi(i,j+1,kmax) + input_phi(i+1,j+1,kmax));
+         }
+      }
+   }
+
+   for(int i = 0; i <= imx; ++i) {
+      for(int j = 0; j<= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            if (mask(i,j) < 0.99) {
+               input_phi(i,j,k) = 0.0;
+            } else {
+               input_phi(i,j,k) = Filter(i,j,k);
+            }
+         }
+      }
+   }
+}
+
+void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
+   fftw_complex* phi_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((kmx + 1) / 2 + 1));
+   double* f_filtered = (double*) fftw_malloc(sizeof(double) * (kmx + 1));
+
+   for (int i = 0; i <= imx; ++i) {
+      for (int j = 0; j <= jmx; ++j) {
+         fftw_plan plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &input_phi(i,j,0), phi_hat, FFTW_ESTIMATE);
+         fftw_execute(plan_forward);
+         fftw_destroy_plan(plan_forward);
+
+         //  if (mod(timestep,10)==0) then
+         //     if (j = jmidplane .and. i = grad_peak) then            
+         //        ! Calculate real frequency and growth rate
+         //        do k = 0, ((kmx+1)/2 + 1)
+         //           ! Real frequency: omega_r = 2 * pi * k / L
+         //           omega_r = real(k) / R(grad_peak)
+   
+         //           ! Growth rate: look at imaginary part of phi_hat(k)
+         //           gamma = aimag(phi_hat(k))  ! Extract the imaginary part (growth rate)
+   
+         //           ! Print or store the frequency and growth rate
+         //           if (k == 8) then  ! For the selected mode, print values
+         //              print*, 'Mode ', k, ' - Frequency: ', omega_r, ' - Growth rate: ', gamma
+         //           end if
+         //        end do
+         //     end if
+         //  end if
+
+         for (int k = 0; k <= ((kmx + 1) / 2); ++k) {
+               phi_hat[k][0] /= (kmx + 1);
+               phi_hat[k][1] /= (kmx + 1);
+               if (k != modes) {
+                  phi_hat[k][0] = 0.0;
+                  phi_hat[k][1] = 0.0;
+               }
+         }
+
+         fftw_plan plan_backward = fftw_plan_dft_c2r_1d(kmx + 1, phi_hat, f_filtered, FFTW_ESTIMATE);
+         fftw_execute(plan_backward);
+         fftw_destroy_plan(plan_backward);
+
+         for (int k = 0; k <= kmx; ++k) {
+               input_phi(i,j,k) = f_filtered[k];
+         }
+      }
+   }
+
+   if(myid == 0 && ((timestep%10) == 0)) {
+      // write(*,*) phi(:,:,outk);
+
+      ofstream file;
+      file.open("testphi_fourier");
+      for(int i = 0; i <= imx; ++i) {
+         for(int j = 0; j <= jmx; ++j) {
+            file << input_phi(i,j,0) << "    ";
+         }
+         file << "\n";
+      } 
+      file.close();
+   }
+
+   fftw_free(phi_hat);
+   fftw_free(f_filtered);
 }

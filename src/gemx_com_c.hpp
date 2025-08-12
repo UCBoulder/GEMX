@@ -12,6 +12,7 @@ void cleanupCom();
 void new_gemx_com();
 //Variables and Constants
 extern int imx, jmx, kmx, mmx;
+extern int PADE, CST, weightscheme,modes,filtering_iterations,cold_start,checkpoint;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int rand_table[]; //10007
 extern int timestep,iez;
@@ -64,6 +65,7 @@ extern double *z3;
 extern double *u3;
 extern double *w2;
 extern double *w3;
+extern double *gw;
 
 //2D Arrays
 extern CArray2D<double> den2d1;
@@ -107,6 +109,7 @@ extern CArray2D<double> pfl;
 extern CArray2D<double> efl;
 
 //3D Arrays
+extern CArray3D<double> rk_hand;
 extern CArray3D<double> rho;
 extern CArray3D<double> phi;
 
