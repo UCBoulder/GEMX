@@ -98,45 +98,12 @@ int main() {
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!initialize perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    if (checkpoint == 0) {
-      for(int k = 0; k <= kmx; ++k){
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-   //                    call random_number(random)
-   //                    dene(i,j,k)=mask(i,j)*cos(2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
-
-
-
-
-   //                     !                    apar(i,j,k)=mask(i,j)*cos(tor_n*2*pi*k/(kmx+1))*2*exp(-((i-mid_i)**2+(j-mid_j)**2)/(0.09*min(mid_i,mid_j))**2)
-   //                     ! apar(i,j,k)=mask2(i,j)*2*exp(-((i-ix)**2+(j-jx)**2)/(0.04*257)**2)!*cos(tor_n*2*pi*k/(kmx+1))
-   //                     !                    apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.13)**2/0.01**2)-exp(-(psi_p(i,j)-0.16)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))
-   //                    ! if (i==mid_i .and. j==mid_j) then
-   //                    !    apar(i,j,k)=0
-   //                    ! else
-   //                       ! apar(i,j,k)=mask2(i,j)*(exp(-(psi_p(i,j)-0.1905)**2/0.01**2))*cos(tor_n*2*pi*k/(kmx+1))*(2*(j-mid_j)**2*dz**2/((j-mid_j)**2*dz**2+(i-mid_i)**2*dx**2)-1)!cos(2*pi*2*ATAN((j-mid_j)/(i-mid_i)))
-   //                    ! endif
-                     
-                     
-   // !                    apar(i,j,k)=mask(i,j)*(ran2(iseed)-0.5)
-   // !                    apar(i,j,k)=0
-               apars(i,j,k) = 0; //could use Clear in future
-               //apar(i,j,k) = 0;
-               jpar(i,j,k)=0;
-               dene(i,j,k)=0;//ran(-0.5); 
-               phi(i,j,k)=0;//-j*0.01;
-               ez(i,j,k)=0;//0.01/dz;
-
-               ex(i,j,k) = 0;
-               ezeta(i,j,k) = 0;
-            }
-         }
-      }
+      
    } else {
       //read files from out/checkpoint - written later (do both at same time is probably easiest) 
    }
 
-
-   phiavg.Clear(); //Calder Edit
+   // phiavg.Clear(); phiavg all 0s by default
 
    get_jpar_(apar); 
    get_ne_c_(0);
@@ -192,6 +159,7 @@ int main() {
       
    start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
+      auto start = std::chrono::high_resolution_clock::now();
       for(int randTabInd = 0; randTabInd <= 10006; ++randTabInd){
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[randTabInd]=1;
@@ -217,7 +185,6 @@ int main() {
 
 
    if(ifield_solver == 1) {
-      //cout << "in ifield solver" << endl;
       phi.Clear();
       phiavg.Clear();
       denes=dene;
@@ -239,7 +206,7 @@ int main() {
          
          for(iter = 0; iter <= iterations; ++iter) {
             for(k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k) {
-               fluxavg_c_(phi,phiavg); //Uses previous time step phi
+               // fluxavg_c_(phi,phiavg); //Uses previous time step phi
                //phi.Clear();
                kval = (PetscInt)k;
 
@@ -265,7 +232,7 @@ int main() {
          phi.Clear();
          
          for(iter = 0; iter <= iterations; ++iter) {
-            fluxavg_c_(phi, phiavg);
+            // fluxavg_c_(phi, phiavg);
          
             kval = (PetscInt)k;
             PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -358,7 +325,7 @@ int main() {
          phi.Clear();
          for(iter = 0; iter <= iterations; ++iter) {
             for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-               fluxavg_c_(phi, phiavg);
+               // fluxavg_c_(phi, phiavg);
 
                kval = (PetscInt)k;
                PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -382,7 +349,7 @@ int main() {
          phi.Clear();
 
          for(iter = 0; iter <= iterations; ++iter) {
-            fluxavg_c_(phi, phiavg);
+            // fluxavg_c_(phi, phiavg);
 
             kval = (PetscInt)k;
             PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -611,8 +578,17 @@ int main() {
          cout << "dx=" << dx << "dz=" << dz << "   dzeta=" << dzeta << "   omega_A0=" << tor_n/(Rgrid[mid_i]/xu*sqrt(c2_over_vA2(mid_i,mid_j))) << "\n";
          cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "  Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << "\n";
       }
+      end_total_tm = MPI_Wtime();
+
+      auto end = std::chrono::high_resolution_clock::now();
+      //timing info
+      auto duration = end - start;
+      long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+      ofstream file;
+      file.open("mainLoopTiming", ios::app);
+      file << timestep << "	Time to complete main loop = " << milliseconds << " milliseconds\n";
+      file.close();
    }
-   end_total_tm = MPI_Wtime();
    total_tm = total_tm + end_total_tm - start_total_tm;
    
    ierr = MPI_Reduce(&ppush_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
