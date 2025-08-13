@@ -151,7 +151,7 @@ int main() {
       file.open("testj0");
       for(int i = 0 ; i <= imx; ++i){
          for(int j = 0; j <= jmx; ++j){
-            file << jpar(i,j,outk);
+            file << jpar(i,j,outk) << "   ";
          }
          file << "\n";
       }
