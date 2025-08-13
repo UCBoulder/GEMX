@@ -36,6 +36,7 @@ int main() {
 
    //call init
    initialize_c_();
+   prepareDeviceData();
    
    while(dbg == 1){
       sleep(1);         //if debug option set sleep for forever. To release type "dbg = 0" into debug consol once attatched. Happy Hunting!
@@ -67,7 +68,7 @@ int main() {
    } 
 
    if(iget == 0) loadi_c_();
-   integ_c_(1); //1st index of den 1-based, since index = 1,2 in ftn, index in c is 0,1 meaning 1 is same index in c as ftn.
+   integ_c_(1);
    if(myid == 0) {
       
       file.open("testden", ios::app);
@@ -343,31 +344,7 @@ int main() {
          if(ision==1) ppush_c_(timestep);
          //if(ifluid==1)call pintef
          if(ifluid==1) integ_c_(0);
-      //-------------------------------------------------------------------------
-      if(myid==0){
-      std::ofstream myFile;
-      std::string fileName = "AAPARTICLETRACKER"; 
-      myFile.open(fileName);
-
-         j = mmx-10001;
-         while(j < mmx){
-            myFile << std::setprecision(16) << x2[j] << "      ";
-            myFile << std::setprecision(16) << x3[j] << "      ";
-            myFile << std::setprecision(16) << z2[j] << "      " << "\n";
-            myFile << std::setprecision(16) << z3[j] << "      ";
-            myFile << std::setprecision(16) << u2[j] << "      ";
-            myFile << std::setprecision(16) << u3[j] << "      " << "\n";
-            j++;
-         }
-         myFile.close();
-      }
-      //---------------------------------------------------------------------------
    }  
-
-    // !	   call accumulate(timestep,1)
-    // !	   call ezamp
-    // !	   call gkps
-    // !	   call field(timestep,1)
    if(ifield_solver == 1) {
       phi.Clear();
 
@@ -567,16 +544,18 @@ int main() {
          file.open("testdiffden");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << dden2d(i,j) << "   \n";
+               file << dden2d(i,j) << "   ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testupar");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << upar(i,j,0) << "   \n";
+               file << upar(i,j,0) << "   ";
             }
+            file << "\n";
          }
          file.close();
       }
@@ -588,32 +567,36 @@ int main() {
          file.open("testapar");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << apar(i,j,outk) << "   \n";
+               file << apar(i,j,outk) << "   ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testjpar");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << jpar(i,j,outk) << "   \n";
+               file << jpar(i,j,outk) << "   ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testne");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << dene(i,j,outk) << "   \n";
+               file << dene(i,j,outk) << "   ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testphi_r_phi");
          for(int i = 0; i <= imx; ++i) {
             for(int k = 0; k <= kmx; ++k){
-               file << phi(i,mid_j,k) << "   \n";
+               file << phi(i,mid_j,k) << "   ";
             }
+            file << "\n";
          }
          file.close();
       }
@@ -652,6 +635,7 @@ int main() {
    ierr = MPI_Finalize();
    cleanUpEquil();
    cleanupCom();
+   freeDeviceData();
    return 0;
 }
 
@@ -1275,8 +1259,8 @@ void integ_c_(int iflag) {
 
    size_t idx = 0;                     // idx used to store index calculated for loop - used in den_ptr and upar_ptr 
 
-   den.todev();                        // prepare device (multicore CPU or GPU) with data from objects explicitly
-   upar.todev();
+   den.updatedev();                        // prepare device (multicore CPU or GPU) with data from objects explicitly
+   upar.updatedev();
    auto* den_ptr = den.start();        // grab starting address of den array object
    auto* upar_ptr = upar.start();      // grab starting address of upar array object
    //copy used to copy data info to device and then to host implicitly
@@ -1406,9 +1390,7 @@ void integ_c_(int iflag) {
       }
    }
    den.updatehost();
-   den.fromdev();
    upar.updatehost();
-   upar.fromdev();
    
    MPI_Allreduce(MPI_IN_PLACE, &den(iflag,0,0,0), (imx+1)*(jmx+1)*(kmx+1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
    MPI_Allreduce(MPI_IN_PLACE, upar.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -2005,10 +1987,9 @@ void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
 void efieldcalc_c_(CArray3D<double> &input_phi){ 
    //local vars
    int i, j, k, kminus, kplus;
-
-   for(k = 0; k <= kmx; ++k){
-      for(i = 2; i <= imx-1; ++i){
-         for(j = 2; j <= jmx-1; ++j){
+   for(i = 2; i < imx; ++i){
+      for(j = 2; j < jmx; ++j){
+         for(k = 0; k <= kmx; ++k) {
             ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0]));
             ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
             if(k == 0){
@@ -2290,3 +2271,62 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
    fftw_free(phi_hat);
    fftw_free(f_filtered);
 }
+
+
+//TEST------------------------------------------------------------------------------------------------------------
+inline void prepareDeviceData() {
+   //ionpush data
+   curlb.todev();
+   ex.todev();
+   ez.todev();
+   ezeta.todev();
+   dbdx.todev();
+   dbdz.todev();
+   b0.todev();
+   b0x.todev();
+   b0z.todev();
+   b0zeta.todev();
+   captix.todev();
+   captiz.todev();
+   capnix.todev();
+   capniz.todev();
+   xn0i.todev();
+   delbx.todev();
+   delbz.todev();
+   t0i.todev();
+	dpsi_dr.todev();
+	dpsi_dz.todev();
+
+   //integ data
+   den.todev();
+   upar.todev();
+}
+
+inline void freeDeviceData() {
+   //ionpush data
+   curlb.fromdev();
+   ex.fromdev();
+   ez.fromdev();
+   ezeta.fromdev();
+   dbdx.fromdev();
+   dbdz.fromdev();
+   b0.fromdev();
+   b0x.fromdev();
+   b0z.fromdev();
+   b0zeta.fromdev();
+   captix.fromdev();
+   captiz.fromdev();
+   capnix.fromdev();
+   capniz.fromdev();
+   xn0i.fromdev();
+   delbx.fromdev();
+   delbz.fromdev();
+   t0i.fromdev();
+	dpsi_dr.fromdev();
+	dpsi_dz.fromdev();
+
+   //integ data
+   den.fromdev();
+   upar.fromdev();
+}
+//TEST------------------------------------------------------------------------------------------------------------

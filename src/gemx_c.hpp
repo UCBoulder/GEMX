@@ -5,6 +5,7 @@
 #include <petscmat.h>
 #include <petscksp.h>
 #include <fftw3.h>
+#include <omp.h>
 
 #pragma once
 
@@ -20,7 +21,6 @@ void smooth_c_(CArray3D<double> &matrix, int &mk);
 void get_jpar_(CArray3D<double> &matrix);
 void get_apar_(const int &flagnumber);
 void integ_c_(int iflag);
-void grid1_c_(int &ip, int &n, int &MyId);
 void pintef_c_();
 void gradparz_c_(double *matrix);
 void get_ne_c_(int flagnumber);
@@ -35,3 +35,7 @@ void init();
 static PetscErrorCode ComputeInitialGuess(KSP ksp, Vec init_guess, void* ctx_void);
 static PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy);
 static PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void* k);
+
+//TEST -- make sure you remove!
+inline void prepareDeviceData();
+inline void freeDeviceData();

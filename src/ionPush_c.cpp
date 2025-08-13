@@ -24,6 +24,8 @@ void ppush_c_(const int &n) {
     double xt = 0,zt = 0,xdot = 0,zdot = 0,zetadot = 0,pzdot = 0,edot = 0;
     double dbdxp = 0,dbdzp = 0,bfldp = 0,bfldxp = 0,bfldzp = 0,bfldzetap = 0,dbdzetap=0;
     double rhox[4], rhoy[4], BStar3[3], curlbp[3];
+
+	auto start = std::chrono::high_resolution_clock::now();
     start_ppush_tm = MPI_Wtime();
 
     nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*4.7140e-8*1.e-6;
@@ -31,7 +33,7 @@ void ppush_c_(const int &n) {
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
 
-    prepareDeviceData();
+    updateDeviceData();
     #pragma acc data \
     copyin(x2[0:mmx], z2[0:mmx], zeta2[0:mmx], w2[0:mmx], rand_table[0:10007]) \
     copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx])
@@ -85,7 +87,6 @@ void ppush_c_(const int &n) {
 
 		b=1.-tor+tor*bfldp;
 
-		//cout << w2[m] << "	" << w3[m] << "\n";
 		ni_temp= wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
 				+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1);
 
@@ -267,24 +268,32 @@ void ppush_c_(const int &n) {
 		//printf("%lf", w3[m]);
 	}
     if( !((x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq)) ) {   
-		u3[m]=u2[m];
-		x3[m]=x2[m];
-		z3[m]=z2[m];
-		zeta3[m]=zeta2[m];
-		w3[m]=0;
+			u3[m]=u2[m];
+			x3[m]=x2[m];
+			z3[m]=z2[m];
+			zeta3[m]=zeta2[m];
+			w3[m]=0;
         }
 	}
-	#pragma acc wait
-	freeDeviceData();
+	updateHostData();
+	auto end = std::chrono::high_resolution_clock::now();
 	end_ppush_tm = MPI_Wtime();
 	ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
+
+	//timing info
+	auto duration = end - start;
+	long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    ofstream file;
+	file.open("ppushTiming", ios::app);
+	file << timestep << "	Time to complete funtion = " << milliseconds << " milliseconds\n";
+	file.close();
 }
 
 //!-------------- End of subroutine ppush --------------------------------
 
 
 
-void cpush_c_(const int &timestep){  //all warnings from this function are vars used in commented    //declared vars but not used in current version
+void cpush_c_(const int &timestep){
 //-----------------------------------------------------------------------
 //              Ion corrector push
 //-----------------------------------------------------------------------
@@ -299,6 +308,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 	double dpsidxp, dpsidzp, energy0;
 	double rhox[4], rhoy[4], curlbp[3], BStar3[3];
 
+	auto start = std::chrono::high_resolution_clock::now();
 	start_cpush_tm = MPI_Wtime();
 	nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
 	T_center = t0i(imx/2,jmx/2);
@@ -307,7 +317,7 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 	G_flux = 0;
 	P_flux = 0;
         
-	prepareDeviceData();
+	updateDeviceData();
 	#pragma acc data \
 	copyin(rand_table[0:10007]) \
 	copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx], x2[0:mmx], z2[0:mmx],w2[0:mmx] ,zeta2[0:mmx])
@@ -566,62 +576,48 @@ void cpush_c_(const int &timestep){  //all warnings from this function are vars 
 	G_flux = G_flux + w3[m]*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
 	P_flux = P_flux + w3[m]*(mims[0]*u3[m])*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
   }
-//   #pragma acc wait
-  freeDeviceData();
+  updateHostData();
 
   ofstream fluxDiag;
   fluxDiag.open("test_fluxdiag", ios::app);
   fluxDiag << timestep << "    " << Q_flux << "    " << G_flux << "\n";
   fluxDiag.close();
 
+  auto end = std::chrono::high_resolution_clock::now();
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
+
+	//timing info
+	auto duration = end - start;
+	long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+	ofstream file;
+	file.open("cpushTiming", ios::app);
+	file << timestep << "	Time to complete funtion = " << milliseconds << " milliseconds\n";
+	file.close();
 }
 
-inline void prepareDeviceData() {
-    curlb.todev();
-    ex.todev();  //potentially not needed since sequential loop
-    ez.todev();
-    ezeta.todev();
-    dbdx.todev();
-    dbdz.todev();
-    b0.todev();
-    b0x.todev();
-    b0z.todev();
-    b0zeta.todev();
-    captix.todev();
-    captiz.todev();
-    capnix.todev();
-    capniz.todev();
-    xn0i.todev();
-    delbx.todev();
-    delbz.todev();
-    t0i.todev();
-	dpsi_dr.todev();
-	dpsi_dz.todev();
-
-//     // Grid-based fields
-//     curlb.updatedev();
-//     ex.updatedev();
-//     ez.updatedev();
-//     ezeta.updatedev();
-//     dbdx.updatedev();
-//     dbdz.updatedev();
-//     b0.updatedev();
-//     b0x.updatedev();
-//     b0z.updatedev();
-//     b0zeta.updatedev();
-//     captix.updatedev();
-//     captiz.updatedev();
-//     capnix.updatedev();
-//     capniz.updatedev();
-//     xn0i.updatedev();
-//     delbx.updatedev();
-//     delbz.updatedev();
-//     t0i.updatedev();
+inline void updateDeviceData() {
+    curlb.updatedev();
+    ex.updatedev();
+    ez.updatedev();
+    ezeta.updatedev();
+    dbdx.updatedev();
+    dbdz.updatedev();
+    b0.updatedev();
+    b0x.updatedev();
+    b0z.updatedev();
+    b0zeta.updatedev();
+    captix.updatedev();
+    captiz.updatedev();
+    capnix.updatedev();
+    capniz.updatedev();
+    xn0i.updatedev();
+    delbx.updatedev();
+    delbz.updatedev();
+    t0i.updatedev();
 }
 
-inline void freeDeviceData() {
+inline void updateHostData() {
     curlb.updatehost();
     ex.updatehost();
     ez.updatehost();
@@ -642,41 +638,4 @@ inline void freeDeviceData() {
     t0i.updatehost();
 	dpsi_dr.updatehost();
 	dpsi_dz.updatehost();
-
-    curlb.fromdev();
-    ex.fromdev();
-    ez.fromdev();
-    ezeta.fromdev();
-    dbdx.fromdev();
-    dbdz.fromdev();
-    b0.fromdev();
-    b0x.fromdev();
-    b0z.fromdev();
-    b0zeta.fromdev();
-    captix.fromdev();
-    captiz.fromdev();
-    capnix.fromdev();
-    capniz.fromdev();
-    xn0i.fromdev();
-    delbx.fromdev();
-    delbz.fromdev();
-    t0i.fromdev();
-	dpsi_dr.fromdev();
-	dpsi_dz.fromdev();
 }
-
-//as a note: copyin will copy an array to gpu/cpu kernels.
-//           Using copy will tell openacc to update the host arrays without this function. 
-// void updateHost1DArrays() {
-//     #pragma acc update self(x3[0:mmx])
-//     #pragma acc update self(z3[0:mmx])
-//     #pragma acc update self(zeta3[0:mmx])
-//     #pragma acc update self(u3[0:mmx])
-//     #pragma acc update self(w3[0:mmx])
-
-//     #pragma acc update self(x2[0:mmx])
-//     #pragma acc update self(z2[0:mmx])
-//     #pragma acc update self(zeta2[0:mmx])
-//     #pragma acc update self(u2[0:mmx])
-//     #pragma acc update self(w2[0:mmx])
-// }

@@ -73,7 +73,7 @@ equil_c.o: equil_c.cpp
 	$(CPP) -c $(OPT_C) equil_c.cpp 
 
 gemx_c.o: gemx_c.cpp
-	$(CPP) -c $(OPT_C) gemx_c.cpp 
+	$(CPP) -c $(OPT_C) gemx_c.cpp
 
 ionPush_c.o: ionPush_c.cpp 
 	$(CPP) -c $(OPT_C) ionPush_c.cpp
