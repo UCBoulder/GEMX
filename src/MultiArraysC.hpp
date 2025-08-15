@@ -40,7 +40,7 @@ class CArray4D {
 
     //access data at given index
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k, const std::size_t l) {
-        assert(i < x_ && j < y_ && k < z_ && l < q_ && "Index out of range");
+        // assert(i < x_ && j < y_ && k < z_ && l < q_ && "Index out of range");
         return data_[i * (y_ * z_ * q_) + j * (z_ * q_) + k * q_ + l];
     }
 
@@ -174,7 +174,7 @@ public:
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j, const std::size_t k) {
-        assert(i < x_ && j < y_ && k < z_ && "Index out of range");
+        // assert(i < x_ && j < y_ && k < z_ && "Index out of range");
         return data_[(i * y_ + j) * z_ + k];
     }  
 
@@ -252,7 +252,7 @@ class CArray2D{
     }
 
     inline T& operator()(const std::size_t i, const std::size_t j) {
-        assert(i < x_ && j < y_ && "Index out of range");
+        // assert(i < x_ && j < y_ && "Index out of range");
         return data_[i * y_ + j];
     }
 

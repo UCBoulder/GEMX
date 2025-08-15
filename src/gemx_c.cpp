@@ -579,15 +579,9 @@ int main() {
          cout << "v_A=" << 1/sqrt(c2_over_vA2(mid_i,mid_j)) << "  Omega_i=" << q[0]*b0(mid_i,mid_j)/mims[0] << "\n";
       }
       end_total_tm = MPI_Wtime();
-
-      auto end = std::chrono::high_resolution_clock::now();
-      //timing info
-      auto duration = end - start;
-      long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-      ofstream file;
-      file.open("mainLoopTiming", ios::app);
-      file << timestep << "	Time to complete main loop = " << milliseconds << " milliseconds\n";
-      file.close();
+      double totTime = end_total_tm - start_total_tm;
+      cout << "totTIme = " << totTime << "\n";
+     
    }
    total_tm = total_tm + end_total_tm - start_total_tm;
    
@@ -599,7 +593,6 @@ int main() {
    if(myid==0)integ_tm = tmp/std::real(numprocs);
    MPI_Reduce(&total_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)total_tm = tmp/std::real(numprocs);
-   //More writing stuff to files, work on after (NOW :) )
 
    lasttm=MPI_Wtime();
    tottm=lasttm-starttm;

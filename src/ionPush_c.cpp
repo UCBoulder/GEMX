@@ -25,7 +25,6 @@ void ppush_c_(const int &n) {
     double dbdxp = 0,dbdzp = 0,bfldp = 0,bfldxp = 0,bfldzp = 0,bfldzetap = 0,dbdzetap=0;
     double rhox[4], rhoy[4], BStar3[3], curlbp[3];
 
-	auto start = std::chrono::high_resolution_clock::now();
     start_ppush_tm = MPI_Wtime();
 
     nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*4.7140e-8*1.e-6;
@@ -276,17 +275,10 @@ void ppush_c_(const int &n) {
         }
 	}
 	updateHostData();
-	auto end = std::chrono::high_resolution_clock::now();
 	end_ppush_tm = MPI_Wtime();
 	ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
 
-	//timing info
-	auto duration = end - start;
-	long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-    ofstream file;
-	file.open("ppushTiming", ios::app);
-	file << timestep << "	Time to complete funtion = " << milliseconds << " milliseconds\n";
-	file.close();
+	cout << "ppush_tm = " << ppush_tm << endl;
 }
 
 //!-------------- End of subroutine ppush --------------------------------
@@ -308,7 +300,6 @@ void cpush_c_(const int &timestep){
 	double dpsidxp, dpsidzp, energy0;
 	double rhox[4], rhoy[4], curlbp[3], BStar3[3];
 
-	auto start = std::chrono::high_resolution_clock::now();
 	start_cpush_tm = MPI_Wtime();
 	nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
 	T_center = t0i(imx/2,jmx/2);
@@ -322,7 +313,7 @@ void cpush_c_(const int &timestep){
 	copyin(rand_table[0:10007]) \
 	copy(mu[0:mmx], u2[0:mmx], u3[0:mmx], x3[0:mmx], z3[0:mmx], zeta3[0:mmx], w3[0:mmx], x2[0:mmx], z2[0:mmx],w2[0:mmx] ,zeta2[0:mmx])
 	#pragma acc parallel loop gang vector private(BStar3,rhoy,rhox,curlbp)
-	for(m = 0; m < mm[0]; ++m){
+	for(m = 0; m < mm[0]; ++m) {
 		x=x3[m];
 		i = static_cast<int>(x/dxeq);
 		i = min(i,nx-1);
@@ -583,17 +574,9 @@ void cpush_c_(const int &timestep){
   fluxDiag << timestep << "    " << Q_flux << "    " << G_flux << "\n";
   fluxDiag.close();
 
-  auto end = std::chrono::high_resolution_clock::now();
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
-
-	//timing info
-	auto duration = end - start;
-	long long milliseconds = chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-	ofstream file;
-	file.open("cpushTiming", ios::app);
-	file << timestep << "	Time to complete funtion = " << milliseconds << " milliseconds\n";
-	file.close();
+  cout << "cpush_tm = " << cpush_tm << "\n";
 }
 
 inline void updateDeviceData() {
