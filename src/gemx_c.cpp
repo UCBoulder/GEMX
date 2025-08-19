@@ -857,9 +857,9 @@ void parperp_c_(double& vpar,double& vperp2, const int& m, const int& cnt){
 void get_jpar_(CArray3D<double> &matrix){
    int i, j, k;
 
-   for(k = 0; k <= kmx; ++k){     
-      for(i = 2; i <= imx-2; ++i){
-         for(j = 2; j <= jmx-2; ++j){
+   for(i = 2; i <= imx-2; ++i) {     
+      for(j = 2; j <= jmx-2; ++j) {
+         for(k = 0; k <= kmx; ++k) {
             if(!(mask3(i,j) < 2.99)){
                jpar(i,j,k)=(-(matrix(i+1,j,k)+matrix(i-1,j,k)-2*matrix(i,j,k))/(dx*dx)       
                            -(matrix(i,j+1,k)+matrix(i,j-1,k)-2*matrix(i,j,k))/(dz*dz)   
@@ -1525,10 +1525,9 @@ void gradparz_c_(double *matrix){
 }
 
 void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){ 
-   // auto start_tm = MPI_Wtime();
-   for(int i = 2; i <= imx-2; ++i) {
-      for(int j = 2; j <= jmx-2; ++j) {
-         for(int k = 1; k <= kmx-1; ++k) {
+   for(int i = 2; i < imx-1; ++i) {
+      for(int j = 2; j < jmx-1; ++j) {
+         for(int k = 1; k < kmx; ++k) {
             if (!(mask2(i,j)<1.99)) {
                gradPar(i,j,k)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/dx  
                +b0z(i,j)/b0(i,j)*(matrix(i,j+1,k)-matrix(i,j-1,k))*0.5/dz                
@@ -1538,18 +1537,18 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
       }
    }
 
-   for(int i = 2; i <= imx-2; ++i){
-      for(int j = 2; j <= jmx-2; ++j){
-            if(!(mask2(i,j)<1.99)){
-            gradPar(i,j,0)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,0)-matrix(i-1,j,0))*0.5/dx  
+   for(int i = 2; i < imx-1; ++i){
+      for(int j = 2; j < jmx-1; ++j){
+            if(!(mask2(i,j)<1.99)) {
+               gradPar(i,j,0)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,0)-matrix(i-1,j,0))*0.5/dx  
                +b0z(i,j)/b0(i,j)*(matrix(i,j+1,0)-matrix(i,j-1,0))*0.5/dz                
                +b0zeta(i,j)/b0(i,j)*(matrix(i,j,1)-matrix(i,j,kmx))/((Rgrid[i]/xu)*2*dzeta));
          }
       }
    }
 
-   for(int i = 2; i <= imx-2; ++i){
-      for(int j = 2; j <= jmx-2; ++j){
+   for(int i = 2; i < imx-1; ++i){
+      for(int j = 2; j < jmx-1; ++j){
          if(!(mask4(i,j)<3.99)){
             gradPar(i,j,kmx)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,kmx)-matrix(i-1,j,kmx))*0.5/dx
                +b0z(i,j)/b0(i,j)*(matrix(i,j+1,kmx)-matrix(i,j-1,kmx))*0.5/dz    
@@ -1557,8 +1556,6 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
          }
       }
    }
-   // auto end_tm = MPI_Wtime();
-   // cout << "Gradpar_time = " << end_tm-start_tm << endl;
 }
 
 void pintef_c_(){
@@ -1618,9 +1615,11 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	PetscScalar  v[5],Hx,Hy;
 	PetscScalar  Hx2,Hy2; //tmp_r,a_value
 	MatStencil   row,col[5]; 
+   double rho_squared = 0;
 	i1 = 1;
 	i5 = 5;
 	//a_value = 0.5;
+   // auto start_t = MPI_Wtime();
 	PetscCall(KSPGetDM(ksp,&dm)); 
 	PetscCall(DMDAGetInfo(dm,nullptr,&mx,&my,nullptr,nullptr,nullptr,nullptr,
 						nullptr,nullptr,nullptr,nullptr,nullptr,nullptr)); 
@@ -1633,19 +1632,20 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
 	for(j=ys; j < ys+ym; ++j){
 		for(i=xs; i < xs+xm; ++i) {
+         rho_squared = rho_i(i,j) * rho_i(i,j);
 			row.i = i;
 			row.j = j;
 			if(mask(i,j) < 0.99){
-				v[0] = (c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))*(-2.0/Hx2-2.0/Hy2);
+				v[0] = (c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))*(-2.0/Hx2-2.0/Hy2);
 				PetscCall(MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES));
 			} else {
 				if(j > 0) {
 					if(j == jmx) {
-						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
-						v[0] = v[0] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
+						v[0] = v[0] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
 					} else {
-						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
-                  v[0] = v[0] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[0] = v[0] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
 					}
 				}
 				col[0].i = i;
@@ -1653,44 +1653,36 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
 				if(i > 0) {
 					if(i == imx) {
-						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
-                  v[1] = v[1] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
+                  v[1] = v[1] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
 					} else {
-						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
-                  v[1] = v[1] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[1] = v[1] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
 					}
 				}
 				col[1].i = i - 1;
 				col[1].j = j;
 
-				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2;
+				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2;
 				col[2].i = i;
 				col[2].j = j;
 
 				//cout << v[2] << "		" << xn0e(i,j)*mu0*e/t0e(i,j) << endl;
 	//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 				if(iBoltzmann != 0) {
-					v[2]=v[2]-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*pow(rho_i(i,j),2))*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + 
+					v[2]=v[2]-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*rho_squared)*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + 
 					(xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2);
 				}
-            if (std::abs(v[2]) > 1e4) {
-               std::cout << "Large v[2] at (" << i << "," << j << "): "
-                  << v[2] << " | rho_i = " << rho_i(i,j)
-                  << ", xn0e = " << xn0e(i,j)
-                  << ", t0e = " << t0e(i,j)
-                  << ", b0 = " << b0(i,j)
-                  << std::endl;
-               }
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
 				if(i < imx){
 					if(i == 0){
-						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
-                    	v[3] = v[3] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i,j)/t0e(i,j))/Hx2;
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
+                  v[3] = v[3] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i,j)/t0e(i,j))/Hx2;
 					} else {
-						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
-                  v[3] = v[3] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+                  v[3] = v[3] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
 					}
 				}
 				col[3].i = i + 1;
@@ -1698,11 +1690,11 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				
 				if(j < jmx) {
 					if(j == 0){
-						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
-                    	v[4] = v[4] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
+                    	v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
 					} else {
-						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
-                  v[4] = v[4] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+                  v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
 					} 
 				}
 				col[4].i = i;
@@ -1720,6 +1712,8 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	}
 	//   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
 	//   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
+   // auto end_t = MPI_Wtime();
+   // cout << "ComputeMatrixTm = " << end_t-start_t << endl;
 	return 0;
 }
 
@@ -1731,9 +1725,11 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    DM dm;
    PetscInt idx;
    PetscScalar tmp_value = 0.0;
+   double rho_squared = 0;
    // PetscScalar a_value,tmp_r;
 
    PetscInt k = *(PetscInt*)ctx; 
+   // auto start_t = MPI_Wtime();
    tmp_value = 0;
    
    PetscCall(KSPGetDM(ksp,&dm));
@@ -1745,6 +1741,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
       for(i = xs; i < xs+xm; ++i) {
+         rho_squared = rho_i(i,j) * rho_i(i,j);
          idx+=1;
          if(mask(i,j) < 0.99) {
             tmp_value = 0;
@@ -1756,12 +1753,12 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 						tmp_value = denes(i,j,k) - q[0]*mu0*(den2d2(i,j) - xn0i(i,j));
 					} else if(eAdiabatic != 0) {
 							tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  
-										PADE*(mu0*q[0]*pow(rho_i(i,j),2))*(((den2d2(i-1,j)-xn0i(i-1,j))+(den2d2(i+1,j)-xn0i(i+1,j))-2*(den2d2(i,j)-xn0i(i,j)))/pow(dx,2) + 
-										((den2d2(i,j-1)-xn0i(i,j-1))+(den2d2(i,j+1)-xn0i(i,j+1))-2*(den2d2(i,j)-xn0i(i,j)))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
-										(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) +  
-										(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
-										(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
-										((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+										PADE*(mu0*q[0]*rho_squared)*(((den2d2(i-1,j)-xn0i(i-1,j))+(den2d2(i+1,j)-xn0i(i+1,j))-2*(den2d2(i,j)-xn0i(i,j)))/(dx*dx) + 
+										((den2d2(i,j-1)-xn0i(i,j-1))+(den2d2(i,j+1)-xn0i(i,j+1))-2*(den2d2(i,j)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+										(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) +  
+										(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
+										(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
+										((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
 					} else {
 							tmp_value = -q[0]*mu0*(den2d2(i,j)-xn0i(i,j));
 					}
@@ -1774,12 +1771,12 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 
 						} else if(eAdiabatic != 0) {
 						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*(((den(1,i-1,j,k)-xn0i(i-1,j))+(den(1,i+1,j,k)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/pow(dx,2) + 
-									((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
-									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) + 
-									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
-									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
-									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+									PADE*(mu0*q[0]*rho_squared)*(((den(1,i-1,j,k)-xn0i(i-1,j))+(den(1,i+1,j,k)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/(dx*dx) + 
+									((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) + 
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
 					} else {
 						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
 					}
@@ -1792,12 +1789,12 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 						tmp_value = denes(i,j,k)-q[0]*mu0*(den2d2(i,j));
 					} else if(eAdiabatic != 0) {
 						tmp_value = -q[0]*mu0*(den2d2(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) +  
-									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*((den2d2(i-1,j)+den2d2(i+1,j)-2*den2d2(i,j))/pow(dx,2) + 
-									(den2d2(i,j-1)+den2d2(i,j+1)-2*den2d2(i,j))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
-									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) + 
-									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
-									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
-									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+									PADE*(mu0*q[0]*rho_squared)*((den2d2(i-1,j)+den2d2(i+1,j)-2*den2d2(i,j))/(dx*dx) + 
+									(den2d2(i,j-1)+den2d2(i,j+1)-2*den2d2(i,j))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) + 
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
 					} else {
 						tmp_value = -q[0]*mu0*(den2d2(i,j));
 					}
@@ -1807,12 +1804,12 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 						tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k));
 					} else if (eAdiabatic != 0) {
 						tmp_value = -q[0]*mu0*(den(1,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*pow(rho_i(i,j),2))*((den(1,i-1,j,k)+den(1,i+1,j,k)-2*den(1,i,j,k))/pow(dx,2) + 
-									(den(1,i,j-1,k)+den(1,i,j+1,k)-2*den(1,i,j,k))/pow(dz,2)) + PADE*(e*e*mu0*pow(rho_i(i,j),2))*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
-									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/pow(dx,2) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/pow(dz,2)) +  
-									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/pow(dx,2) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/pow(dz,2)) + 
-									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*pow(dx,2)) + 
-									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*pow(dz,2))));
+									PADE*(mu0*q[0]*rho_squared)*((den(1,i-1,j,k)+den(1,i+1,j,k)-2*den(1,i,j,k))/(dx*dx) + 
+									(den(1,i,j-1,k)+den(1,i,j+1,k)-2*den(1,i,j,k))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) +  
+									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
+									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
+									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
 
                      // if(i == 100 && j == 100) printf("%e\n", tmp_value);
 
@@ -1830,9 +1827,10 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
          PetscCall(VecSetValues(bbb,1,&idx, &tmp_value, INSERT_VALUES));
    }
 }
-
    PetscCall(VecAssemblyBegin(bbb));
    PetscCall(VecAssemblyEnd(bbb));
+   // auto end_t = MPI_Wtime();
+   // cout << "ComputeRHS time = " << end_t-start_t << endl;
    return(PETSC_SUCCESS);
 }
 

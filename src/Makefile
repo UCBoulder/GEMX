@@ -30,7 +30,7 @@ ifneq ($(NERSC_HOST),perlmutter)
 	CPP := mpicxx
 	JOB := job_local
 	CPU := 1
-	LIBS := -L${PETSC_PATH}/lib -lpetsc -lmpi_cxx -lfftw3
+	LIBS := -L${PETSC_PATH}/lib -lpetsc -lmpi_cxx -lfftw3 -fopenmp
 	ifeq ($(DEBUG),1)
 		OPT_C := -O0 -g -Wall -fno-omit-frame-pointer $(OPT_COMMON_C) $(INCS) $(SUPPRESS)
 	else
