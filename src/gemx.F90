@@ -270,7 +270,7 @@
       do iter=0, iterations 
        do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
          ! do iter=0, iterations
-            call fluxavg(phi,phiavg) !Uses previous time step phi
+            ! call fluxavg(phi,phiavg) !Uses previous time step phi
                ! phi = 0 
 
          !  PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
@@ -288,7 +288,7 @@
          enddo
           PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
          enddo
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
          ! call fluxavg(phi,phiavg) !Turned off for CBC
        enddo
             
@@ -296,7 +296,7 @@
        k=0
        phi = 0
        do iter=0, iterations
-         call fluxavg(phi,phiavg) !Turned off for CBC
+         ! call fluxavg(phi,phiavg) !Turned off for CBC
          ! phi = 0
 
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
@@ -313,7 +313,7 @@
 
         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
        
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
       end do !Calder Edit
       ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)   
@@ -326,23 +326,23 @@
          ! call fluxavg(phi,phiavg)
       ! end do
 
-      !PING Function
-      if (timestep <= 10 .and. nonlin /= 1) then
-         do i=0, imx
-            do j=0, jmx
-               do k=0, kmx
-                  ! phi(i,j,k) = 100
-                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))))* &
-                  exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))!*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
-                  ! phi(i,j,k) = 1e-5*cos(modes*(-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
-                  ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
-                  if (mask(i,j) < 0.99) then
-                     phi(i,j,k) = 0
-                  end if
-               end do
-            end do
-         end do
-      end if
+      ! PING Function
+      ! if (timestep <= 10 .and. nonlin /= 1) then
+      !    do i=0, imx
+      !       do j=0, jmx
+      !          do k=0, kmx
+      !             ! phi(i,j,k) = 100
+      !             phi(i,j,k) = 1e-12*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))) - 0.25*pi)* &
+      !             exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))!*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+      !             ! phi(i,j,k) = 1e-5*cos(modes*(-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+      !             ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+      !             if (mask(i,j) < 0.99) then
+      !                phi(i,j,k) = 0
+      !             end if
+      !          end do
+      !       end do
+      !    end do
+      ! end if
 
       if (modes /= 0) then
          call fourier_modes(phi,modes)
@@ -423,6 +423,36 @@
                
             endif
             
+            phi_diag = 0.0
+            phi_diag_freq = 0.0
+         
+            do i = 0, imx
+               do j = 0, jmx
+                  do k = 0, kmx
+                     phi_diag = phi_diag + (abs(phi(i,j,k))**2)/(imx*jmx*kmx)
+                     ! phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx)
+                  end do
+               end do
+            end do
+         
+            ! write(*,*) Rgrid(192), Zgrid(128)
+         
+            open(unit=11, file = 'testPhiDiag',status='unknown',position='append')
+            write(11,*) timestep, phi_diag
+            close(11)
+         
+            open(unit=11, file='testPhiFreq',status='unknown',position='append')
+            write(11,*) timestep, phi(192,128,0), phi(180,128,0)
+            close(11)
+
+            open(unit=11, file='testPhiFreq2',status='unknown',position='append')
+            write(11,*) timestep, phi(170,128,0), phi(200,128,0)
+            close(11)
+
+            open(unit=11, file='testPhiFreq3',status='unknown',position='append')
+            write(11,*) timestep, phi(192,128,0), modes*1.41/(0.36*1.67*0.5)*(ezeta(192,128,0)*b0x(192,128)-ex(192,128,0)*b0zeta(192,128))/(b0(192,128)**2)
+            close(11)
+
  ! write(*,*)'dx=', dx, 'dz=',dz
 
 
@@ -453,7 +483,7 @@
          do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
        
          ! do iter=0,iterations
-            call fluxavg(phi,phiavg)    
+            ! call fluxavg(phi,phiavg)    
 
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
          PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
@@ -468,7 +498,7 @@
          enddo
          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 	      enddo
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
          ! call fluxavg(phi,phiavg) !Turned off for CBC
       enddo
 
@@ -480,7 +510,7 @@
       k=0
       phi = 0
          do iter=0, iterations
-            call fluxavg(phi,phiavg) !Turned off for CBC
+            ! call fluxavg(phi,phiavg) !Turned off for CBC
                ! phi = 0
          
          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
@@ -499,7 +529,7 @@
 
             PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 
-         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
      end do !Calder Edit
    !   call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
@@ -513,22 +543,22 @@
    ! end do
 
 
-   !PING Function
-   if (timestep <= 10 .and. nonlin == 0) then
-      do i=0, imx
-         do j=0, jmx
-            do k=0, kmx
-               phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))))* &
-                  exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))!*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
-               ! phi(i,j,k) = 1e-5*cos(modes*(pi2*k-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
-               ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
-               if (mask(i,j) < 0.99) then
-                  phi(i,j,k) = 0
-               end if
-            end do
-         end do
-      end do
-   end if
+  ! PING Function
+   ! if (timestep <= 10 .and. nonlin == 0) then
+   !    do i=0, imx
+   !       do j=0, jmx
+   !          do k=0, kmx
+   !             phi(i,j,k) = 1e-12*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))) - 0.25*pi)* &
+   !                exp(-(sqrt((Zgrid(j)-Zgrid(jmx/2))**2+(Rgrid(i)-Rgrid(imx/2))**2)-0.25)**2/(2*0.05**2))*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+   !             ! phi(i,j,k) = 1e-5*cos(modes*(pi2*k-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
+   !             ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
+   !             if (mask(i,j) < 0.99) then
+   !                phi(i,j,k) = 0
+   !             end if
+   !          end do
+   !       end do
+   !    end do
+   ! end if
    
    if (modes /= 0) then
       call fourier_modes(phi,modes)
@@ -555,25 +585,27 @@
       call efieldcalc(phi)
    end if
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PHI DIAGNOSTIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   phi_diag = 0.0
-   phi_diag_freq = 0.0
+   ! phi_diag = 0.0
+   ! phi_diag_freq = 0.0
 
-   do i = 0, imx
-      do j = 0, jmx
-         do k = 0, kmx
-            phi_diag = phi_diag + (abs(phi(i,j,k))**2)/(imx*jmx*kmx)
-            phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx)
-         end do
-      end do
-   end do
+   ! do i = 0, imx
+   !    do j = 0, jmx
+   !       do k = 0, kmx
+   !          phi_diag = phi_diag + (abs(phi(i,j,k))**2)/(imx*jmx*kmx)
+   !          ! phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx)
+   !       end do
+   !    end do
+   ! end do
 
-   open(unit=11, file = 'testPhiDiag',status='unknown',position='append')
-   write(11,*) timestep, phi_diag
-   close(11)
+   ! ! write(*,*) Rgrid(192), Zgrid(128)
 
-   open(unit=11, file='testPhiFreq',status='unknown',position='append')
-   write(11,*) timestep, phi_diag_freq
-   close(11)
+   ! open(unit=11, file = 'testPhiDiag',status='unknown',position='append')
+   ! write(11,*) timestep, phi_diag
+   ! close(11)
+
+   ! open(unit=11, file='testPhiFreq',status='unknown',position='append')
+   ! write(11,*) timestep, phi(192,128,0)!, phi(192,128,(kmx+1)/12)
+   ! close(11)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    if (i3D == 1) then
@@ -636,6 +668,8 @@
      end if
      
 
+
+     
         if(myid==0 .and. mod(timestep,10)==0)then
            open(unit=11, file = 'testden2',status='unknown',action='write')
            do j=0,jmx
@@ -915,6 +949,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
 !      mm(ns)=int(ntracer/numprocs)
       mm(ns)=mmx
       mims(ns)=2.0*1.67e-27
+      ! mims(ns) = 1.67e-27 !Gorler Specific, treats electrons two times heavier, using protons now
       q(ns)=1.0*1.6e-19
       lr(ns)=4
 
@@ -1562,6 +1597,8 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       real(8) :: dumx,dumy,dumz,jacp,rand(4)
       REAL(8) :: wx0,wx1,wz0,wz1,avex=0
 
+      real(8) :: energy0,realparticles
+
       cnt=int(tmm(1)/numprocs)
       cnt=mmx
 
@@ -1580,7 +1617,17 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          close(10)
       end if 
 
+      realparticles = 0
+
+      do i=3, imx-3
+         do j=3, jmx-3
+            realparticles = realparticles + xn0i(i,j)*Rgrid(i)
+         end do
+      end do
+
       m=1
+      ! open(unit=11, file = 'test_velo',status='unknown',position='append')
+
       do while(m<=mm(1))
 
 !     load a slab of ions...
@@ -1603,11 +1650,24 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          
          r = xctr-xdim/2+dumx
          jacp = r/(xctr+xdim/2)
-!         if(ran2(iseed)<jacp)then
-!            x2(m)=min(dumx,xdim-dxeq)
-!            z2(m)=min(dumy,zdim-dzeq)
-!            x2(m)=max(dumx,dxeq)
-!            z2(m)=max(dumz,dzeq)
+         
+         i = int(dumx/dxeq)
+         wx0 = ((i+1)*dxeq-dumx)/dxeq
+         wx1 = 1.-wx0
+
+         k = int(dumy/dzeq)
+         wz0 = ((k+1)*dzeq-dumy)/dzeq
+         wz1 = 1-wz0
+
+         ! (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)
+         ! write(*,*) (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)
+         ! write(*,*) wx0, wx1, wz0, wz1, i, k, (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1)), xn0i(imx/2,jmx/2)
+
+        if(ran2(iseed)<jacp .and. ran2(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2))then
+         !   x2(m)=min(dumx,xdim-dxeq)
+         !   z2(m)=min(dumy,zdim-dzeq)
+         !   x2(m)=max(dumx,dxeq)
+         !   z2(m)=max(dumz,dzeq)
             zeta2(m)=dumz
             x2(m)=dumx
             z2(m)=dumy
@@ -1625,13 +1685,32 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
             bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) &
                    +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1) 
-            ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
-                   +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1) 
+            ter   = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
+                   +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
+                   
+                   
+            ! vpar = sqrt(1-Rgrid(150)/Rgrid(192))
+            u2(m)=vpar/sqrt(mims(1)/(ter))
+            mu(m)=0.5*vperp2/bfldp * ter
 
-            u2(m)=vpar/sqrt(mims(1)/ter)
-            mu(m)=0.5*vperp2/bfldp*ter
+            ! write(*,*) vpar, vperp2
+
+            ! open(unit=11, file = 'test_velo',status='unknown',position='append')
+               ! write(11,*) vpar, vperp2
+
+            ! open(unit=11, file='testPhiFreq2',status='unknown',position='append')
+            ! write(11,*) timestep, phi(170,128,0), phi(200,128,0)
+            ! close(11)
+
+            ! mu(m) = 
+            ! u2(m) = 1e5
+            ! z2(m) = 0 - Zgrid(0)
+            ! x2(m) = Rgrid(192) - Rgrid(0)
 
             myavgv=myavgv+u2(m)
+
+            b=1.-tor+tor*bfldp
+            energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
 
 !    LINEAR: perturb w(m) to get linear growth...
 !            w2(m)=2.*amp*ran2(iseed)
@@ -1649,14 +1728,36 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
                else
                   ! w2(m) = 1e-12 
                !Initilizing weight as w_0 = A_i \cos{n(\zeta - q \arctan{z/r})} \exp{-\frac{(\sqrt{r^2+z^2}-a/2)^2}{2\Delta r^2}}
-               w2(m) = 1e-12*cos(modes*(zeta2(m)-1.3*atan2(dumy+Zgrid(0)-Zgrid(jmx/2),dumx+Rgrid(0)-Rgrid(imx/2)))) * &
-               exp(-((sqrt((dumx+Rgrid(0)-Rgrid(imx/2))**2+(dumy+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.05)**2))
+               w2(m) = 1e-12*cos(modes*(zeta2(m)-1.4*atan2(dumy+Zgrid(0)-Zgrid(jmx/2),dumx+Rgrid(0)-Rgrid(imx/2)))) * &
+               exp(-((sqrt((dumx+Rgrid(0)-Rgrid(imx/2))**2+(dumy+Zgrid(0)-Zgrid(jmx/2))**2)-0.3)**2)/(2*(0.05)**2))*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+                  ! w2(m) = 1
                end if
-               gw(m) =  (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
+               ! gw(m) =  (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)!*xctr/(x+xctr-xdim/2.)
+               ! gw(m) = xn0i(imx/2,jmx/2)/(numprocs*mmx) * ((imx-3)*(jmx-3)*(kmx+1)) 
+               ! gw(m) = (((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx) / (pi2*xctr*(imx-3)*(jmx-3)*dx*dz*xn0i(imx/2,jmx/2)))
+
+               gw(m) = (kmx+1)*realparticles/(numprocs * mmx * xctr)
+               ! gw(m) = ter*(kmx+1)*realparticles/(numprocs * mmx * xctr)
+
+               ! gw(m) = (pi2*dx*dz*realparticles*((imx-3)*(jmx-3)*(kmx+1)))/(numprocs*mmx) * r/xctr
+               ! write(*,*) (pi2*dx*dz*realparticles*((imx-3)*(jmx-3)*(kmx+1)))/(numprocs*mmx) * r/xctr, (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)
+
+               ! gw(m) = (pi2*xctr*(imx-3)*(jmx-3)*dx*dz)*xn0i(imx/2,jmx/2)*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx)
+               
+
             end if
- 
+            
+            ! if (m==13 .or. m==14 .or. m==15) then
+            !    write(*,*) mu(m), energy0, u2(m)
+            ! end if
+
+            ! if (mu(m) > 3.51569e-16) then
+            !    write(*,*) m, energy0, u2(m)
+            ! end if
+
             myavgw=myavgw+w2(m)
-            m = m+1            
+            m = m+1  
+         end if          
          end do
 
          if (CST /= 0) then
@@ -1691,7 +1792,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       if(idg.eq.1)write(*,*)'all reduce'
       avgv=avgv/float(tmm(1))
       do 180 m=1,mm(1)
-         u2(m)=u2(m)-avgv
+         ! u2(m)=u2(m)-avgv
          x3(m)=x2(m)
          z3(m)=z2(m)
          zeta3(m)=zeta2(m)
@@ -1700,6 +1801,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          w3(m)=w2(m)
  180  continue
 
+      ! close(11)
       return
       end
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1804,6 +1906,12 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
         real(8),dimension(0:1) :: x,y
 	integer :: n,i,j,k,ip
 
+         ! do i=0,Last
+         ! if (MyId.eq.i) call init
+         call init
+         ! call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+         ! enddo
+
         call ppinit(MyId,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank)
          
 !     reset timestep counter.
@@ -1811,10 +1919,10 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          timestep=0
          tcurr = 0.
 
-         do i=0,Last
-            if (MyId.eq.i) call init
-            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-         enddo
+         ! do i=0,Last
+         !    if (MyId.eq.i) call init
+         !    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+         ! enddo
       
          dum = 0.
          do i = 0,imx-1
@@ -2105,10 +2213,10 @@ end subroutine field
              if (j > 0) then
                  if (j == jmx) then
                     v(1) = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1))
-                    v(1) = v(1) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2
+                    v(1) = v(1) - PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2
                  else
                     v(1) = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
-                    v(1) = v(1) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2)
+                    v(1) = v(1) - PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2)
                  end if
              end if
              col(MatStencil_i, 1) = i
@@ -2117,10 +2225,10 @@ end subroutine field
              if (i > 0) then
                  if (i == imx) then
                     v(2) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j))
-                    v(2) = v(2) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2
+                    v(2) = v(2) - PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2
                  else
                     v(2) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
-                    v(2) = v(2) + PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2)
+                    v(2) = v(2) - PADE*(mu0*e*e*rho_i(i,j)**2)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2)
                  end if
              end if
              col(MatStencil_i, 2) = i - 1
@@ -2134,10 +2242,10 @@ end subroutine field
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
              if(iBoltzmann/=0) then
                 v(3)=v(3)-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*rho_i(i,j)**2)*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + &
-                (xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2)
+                (xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2) !+ (1/Rgrid(i))*(xn0e(i+1)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx)
              end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!             
-
+         
              if (i < imx) then
                  if (i == 0) then
                     v(4) =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_i(i,j)**2))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j))
@@ -2161,6 +2269,12 @@ end subroutine field
              end if
              col(MatStencil_i, 5) = i
              col(MatStencil_j, 5) = j + 1
+
+             
+            !  if (i==192 .and. j==128) then
+            !    write(*,*) v
+            !  end if 
+
              PetscCall(MatSetValuesStencil(BB, i1, row, i5, col, v, INSERT_VALUES, ierr))
           endif
 
@@ -2187,6 +2301,8 @@ end subroutine field
        use equil
        implicit none
        integer::k,ii,jj,iflag
+
+      !  real, dimension(0:imx,0:jmx,0:kmx) :: ddndr
 
        PetscErrorCode  ierr
        PetscScalar, POINTER ::b_array(:)
@@ -2216,6 +2332,7 @@ end subroutine field
              if (mask(i,j) <0.99) then
                 tmp_value = 0
              else
+
                if (weightscheme == 0) then
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2D ni noly now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 if(i3D==0)then
@@ -2278,7 +2395,7 @@ end subroutine field
                           
                   else if (eAdiabatic/=0) then
                      tmp_value = -q(1)*mu0*(den(2,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + &
-                     PADE*(mu0*q(1)*rho_i(i,j)**2)*((den(2,i-1,j,k)+den(2,i+1,j,k)-2*den(2,i,j,k))/dx**2 + &
+                     (PADE)*(mu0*q(1)*rho_i(i,j)**2)*((den(2,i-1,j,k)+den(2,i+1,j,k)-2*den(2,i,j,k))/dx**2 + &
                      (den(2,i,j-1,k)+den(2,i,j+1,k)-2*den(2,i,j,k))/dz**2) + PADE*(e*e*mu0*rho_i(i,j)**2)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + &
                      (xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/dx**2 + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/dz**2) + & 
                      (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
@@ -2290,6 +2407,12 @@ end subroutine field
                      ! (xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/dx**2 + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/dz**2) + &
                      ! (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
                      ! ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
+                     ! ddndr(i,j,k) = (den(2,i+1,j,k)-den(2,i-1,j,k))/(2*dx)
+! 
+                     ! tmp_value = - mu0 * (q(1)*den(2,i,j,k) + xn0e(i,j)*e*e*phiavg(i,j)/t0e(i,j) - PADE*q(1)*rho_i(i,j)**2 * &
+                     ! ((den(2,i,j-1,k)+den(2,i,j+1,k)-2*den(2,i,j,k))/dz**2 + (1/Rgrid(i))*(Rgrid(i+1)*ddndr(i+1,j,k) - Rgrid(i-1)*ddndr(i-1,j,k))/(2*dx)))! - &
+                     ! PADE*e*e*rho_i(i,j)**2 * ())
+
                   else 
                      tmp_value = -q(1)*mu0*(den(2,i,j,k))
                   endif      
@@ -2350,128 +2473,188 @@ end subroutine field
      !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      subroutine integ(iflag)
        
-       use gemx_com
-       use equil
+      use gemx_com
+      use equil
 
-       IMPLICIT NONE
-       integer::i,j,k,ip,m,iflag,itemp
-       real::wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex
+      IMPLICIT NONE
+      integer::i,j,k,ip,m,iflag,itemp
+      real::wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex
+      real::b
 
-       start_integ_tm = MPI_WTIME()
-       itemp=2
-       den(iflag,:,:,:)=0
-       upar=0
-       !$acc parallel loop gang vector
-       do m=1,mm(1)
-         x=x3(m)
-         i = int(x/dxeq)
-         wx0 = (i+1)-x/dxeq
-         wx1 = 1.-wx0
+      Real(8)::rhox(4),rhoy(4),wz0,wz1,bfldp,rhog,xt,zt
+      INTEGER:: l
 
-         R_major_over_R=xctr/(xctr-xdim/2+i*dx)
-         R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx)
+      start_integ_tm = MPI_WTIME()
+      itemp=2
+      den(iflag,:,:,:)=0
+      upar=0
 
-         z = z3(m)
-         j = int(z/dzeq)
-         wy0 = (j+1)-z/dzeq
-         wy1 = 1.-wy0
+      
+      !$acc parallel loop gang vector private(rhoy,rhox)
+      do m=1,mm(1)
+        ! write(*,*) 'made it'
+        x=x3(m)
+        i = int(x/dxeq)
+        i = min(i,nx-1)
+        wx0 = (i+1)-x/dxeq
+        wx1 = 1.-wx0
 
-         zeta=modulo(zeta3(m),2*pi)
-         k=int(zeta/dzeta)
-         wzeta0=(k+1)-zeta/dzeta
-         wzeta1=1.-wzeta0
+        z = z3(m)
+        k = int(z/dzeq)
+        k = min(k,nz-1)
+        wz0 = (k+1)-z/dzeq
+        wz1 = 1-wz0
 
-         ! if (weightscheme == 0) then
+        bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) &
+                +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1)
 
-         !$acc atomic update 
-         den(iflag,i,j,k)=den(iflag,i,j,k)+gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R
-         !$acc atomic update
-         den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1
-         !$acc atomic update
-         den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R
-         !$acc atomic update
-         den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1
-         !$acc atomic update 
-         upar(i,j,k)=upar(i,j,k)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R
-         !$acc atomic update
-         upar(i+1,j,k)=upar(i+1,j,k)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1
-         !$acc atomic update
-         upar(i,j+1,k)=upar(i,j+1,k)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R
-         !$acc atomic update
-         upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1
-         
-         if(k/=kmx)then
-            !$acc atomic update
-            den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
-            !$acc atomic update
-            den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
-            !$acc atomic update
-            den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
-            !$acc atomic update
-            den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
-            !$acc atomic update
-            upar(i,j,k+1)=upar(i,j,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
-            !$acc atomic update
-            upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
-            !$acc atomic update
-            upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
-            !$acc atomic update
-            upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
-            
-         else
-            !$acc atomic update
-            den(iflag,i,j,0)=den(iflag,i,j,0)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
-            !$acc atomic update
-            den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
-            !$acc atomic update
-            den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
-            !$acc atomic update
-            den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
-            !$acc atomic update
-            upar(i,j,0)=upar(i,j,0)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R
-            !$acc atomic update
-            upar(i+1,j,0)=upar(i+1,j,0)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1
-            !$acc atomic update
-            upar(i,j+1,0)=upar(i,j+1,0)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R
-            !$acc atomic update
-            upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1
+        b=1.-tor+tor*bfldp
 
-         end if
-      end do
+        ! do 4-point averaging in particle deposition
+        ! Four point average for delta n_i
+        rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b)*iflr
+
+        rhox(1) = rhog
+        rhoy(1) = 0.
+        rhox(2) = -rhox(1)
+        rhoy(2) = -rhoy(1)
+        rhox(3) = 0
+        rhoy(3) = rhog
+        rhox(4) = 0
+        rhoy(4) = -rhoy(3)
+
+        !$acc loop seq
+        do l=1,lr(1)
+           xt = x3(m)+rhox(l)
+           zt = z3(m)+rhoy(l)
+
+           if ( (xt<2*dxeq).or.(xt>lx-2*dxeq) ) then
+              xt=x3(m)
+           end if
+
+           if ( (zt<2*dzeq).or.(zt>lz-2*dzeq) ) then
+              zt=z3(m)
+           end if
+
+         !   zeta=zeta3(m)
+           zeta=modulo(zeta3(m),pi2)
+
+           i=int(xt/dx)
+           j=int(zt/dz)
+           k=int(zeta/dzeta)
+
+           if (i > imx+1 .or. j > jmx+1 .or. k > kmx+1) then
+            write(*,*) i,j,k
+           end if
+
+           wx0    = float(i+1)-xt/dx
+           wx1    = 1.-wx0
+           wy0    = float(j+1)-zt/dz
+           wy1    = 1.-wy0
+           wzeta0 = float(k+1)-zeta/dzeta
+           wzeta1 = 1.-wzeta0 
+
+           R_major_over_R  = xctr/(xctr-xdim/2+i*dx)
+           R_major_over_R1 = xctr/(xctr-xdim/2+(i+1)*dx)
+           
+           !$acc atomic update 
+           den(iflag,i,j,k)=den(iflag,i,j,k)+gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R/4
+           !$acc atomic update
+           den(iflag,i+1,j,k)=den(iflag,i+1,j,k)+gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1/4
+           !$acc atomic update
+           den(iflag,i,j+1,k)=den(iflag,i,j+1,k)+gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R/4
+           !$acc atomic update
+           den(iflag,i+1,j+1,k)=den(iflag,i+1,j+1,k)+gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1/4
+           !$acc atomic update 
+           upar(i,j,k)=upar(i,j,k)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta0*R_major_over_R/4
+           !$acc atomic update
+           upar(i+1,j,k)=upar(i+1,j,k)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta0*R_major_over_R1/4
+           !$acc atomic update
+           upar(i,j+1,k)=upar(i,j+1,k)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta0*R_major_over_R/4
+           !$acc atomic update
+           upar(i+1,j+1,k)=upar(i+1,j+1,k)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta0*R_major_over_R1/4
+           
+           if(k/=kmx)then
+              !$acc atomic update
+              den(iflag,i,j,k+1)=den(iflag,i,j,k+1)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              den(iflag,i+1,j,k+1)=den(iflag,i+1,j,k+1)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              den(iflag,i,j+1,k+1)=den(iflag,i,j+1,k+1)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              den(iflag,i+1,j+1,k+1)=den(iflag,i+1,j+1,k+1)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              upar(i,j,k+1)=upar(i,j,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              upar(i+1,j,k+1)=upar(i+1,j,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              upar(i,j+1,k+1)=upar(i,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              upar(i+1,j+1,k+1)=upar(i+1,j+1,k+1)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1/4
+              
+           else
+              !$acc atomic update
+              den(iflag,i,j,0)=den(iflag,i,j,0)+gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              den(iflag,i+1,j,0)=den(iflag,i+1,j,0)+gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              den(iflag,i,j+1,0)=den(iflag,i,j+1,0)+gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              den(iflag,i+1,j+1,0)=den(iflag,i+1,j+1,0)+gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              upar(i,j,0)=upar(i,j,0)+u3(m)*gw(m)*w3(m)*wx0*wy0*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              upar(i+1,j,0)=upar(i+1,j,0)+u3(m)*gw(m)*w3(m)*wx1*wy0*wzeta1*R_major_over_R1/4
+              !$acc atomic update
+              upar(i,j+1,0)=upar(i,j+1,0)+u3(m)*gw(m)*w3(m)*wx0*wy1*wzeta1*R_major_over_R/4
+              !$acc atomic update
+              upar(i+1,j+1,0)=upar(i+1,j+1,0)+u3(m)*gw(m)*w3(m)*wx1*wy1*wzeta1*R_major_over_R1/4
+
+        end if
+      
+        ! continue
+
+
+        if (abs(u3(m)) > 1e8) then
+           write(*,*) u3(m)
+        end if
+  
+        end do
+     end do
 !!         !$acc wait
 
-      call MPI_Allreduce(MPI_IN_PLACE, den(iflag,:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-      call MPI_Allreduce(MPI_IN_PLACE, upar(:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+     call MPI_Allreduce(MPI_IN_PLACE, den(iflag,:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+     call MPI_Allreduce(MPI_IN_PLACE, upar(:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
 
-      den(2,:,:,:) = den(iflag,:,:,:) 
-      
-         den2d2=0
-         do k=0,kmx
-            den2d2=den2d2+den(iflag,:,:,k)
-            if (i3D==0 .and. k /= 0) upar(:,:,0)=upar(:,:,0)+upar(:,:,k)
-         end do
-         
-         den2d2=den2d2/(kmx+1)
-         if(i3D==0)then
-            upar(:,:,0)=upar(:,:,0)/(kmx+1)
-            do k=1,kmx
-               upar(:,:,k)=upar(:,:,0)
-            end do
+     den(2,:,:,:) = den(iflag,:,:,:) 
+     
+        den2d2=0
+        do k=0,kmx
+           den2d2=den2d2+den(iflag,:,:,k)
+           if (i3D==0 .and. k /= 0) then
+              upar(:,:,0)=upar(:,:,0)+upar(:,:,k)
+           end if
+        end do
+        
+        den2d2=den2d2/(kmx+1)
+        if(i3D==0)then
+           upar(:,:,0)=upar(:,:,0)/(kmx+1)
+           do k=1,kmx
+              upar(:,:,k)=upar(:,:,0)
+           end do
+        end if
+        
+        if(iflag==2)then
+            dden2d=den2d2-den2d1
+            den2d1=den2d2
+!        den_pre=den(2,:,:,:)
          end if
          
-         if(iflag==2)then
-             dden2d=den2d2-den2d1
-             den2d1=den2d2
- !        den_pre=den(2,:,:,:)
-          end if
-          
-     end_integ_tm = MPI_WTIME()
-     integ_tm = integ_tm + end_integ_tm - start_integ_tm 
+    end_integ_tm = MPI_WTIME()
+    integ_tm = integ_tm + end_integ_tm - start_integ_tm 
 
-    end subroutine integ
-    
-    
+   end subroutine integ
     
 !     !!!!!!!!!!!!!!!!!!!!!!!!! CALDER Flux Average SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine fluxavg(input,output)
@@ -2744,37 +2927,20 @@ subroutine fourier_modes(input_phi, modes)
    !!!
    integer :: i, j, k
    integer*8 :: plan_forward, plan_backward
-   allocate(phi_hat(0:((kmx+1)/2 + 1)),f_filtered(0:kmx))
+   allocate(phi_hat(0:((kmx+1)/2)),f_filtered(0:kmx))
  
    
    do i = 0, imx
       do j = 0, jmx
          !Perform forward FFT
+         f_filtered = 0
+
          call dfftw_plan_dft_r2c_1d(plan_forward,kmx+1,input_phi(i,j,:),phi_hat,FFTW_ESTIMATE)
          call dfftw_execute_dft_r2c(plan_forward, input_phi(i,j,:), phi_hat)
          call dfftw_destroy_plan(plan_forward)
 
-         ! if (mod(timestep,10)==0) then
-         !    if (j = jmidplane .and. i = grad_peak) then            
-         !       ! Calculate real frequency and growth rate
-         !       do k = 0, ((kmx+1)/2 + 1)
-         !          ! Real frequency: omega_r = 2 * pi * k / L
-         !          omega_r = real(k) / R(grad_peak)
-   
-         !          ! Growth rate: look at imaginary part of phi_hat(k)
-         !          gamma = aimag(phi_hat(k))  ! Extract the imaginary part (growth rate)
-   
-         !          ! Print or store the frequency and growth rate
-         !          if (k == 8) then  ! For the selected mode, print values
-         !             print*, 'Mode ', k, ' - Frequency: ', omega_r, ' - Growth rate: ', gamma
-         !          end if
-         !       end do
-         !    end if
-         ! end if
-
-
          ! Zero out unwanted modes
-         do k = 0, ((kmx+1)/2 + 1)
+         do k = 0, ((kmx+1)/2)
             phi_hat(k) = phi_hat(k)/(kmx+1)
             if (k /= modes) then !n toroidal modes
                phi_hat(k) = (0.0,0.0)
@@ -2815,6 +2981,7 @@ subroutine fourier_modes(input_phi, modes)
    deallocate(phi_hat,f_filtered)
 
 end subroutine fourier_modes
+
 
 
 

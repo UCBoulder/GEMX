@@ -29,6 +29,8 @@
        
       do m=1,mm(1)
          x=x2(m)
+
+        !  write(*,*) u2(m)
          i = int(x/dxeq)
          i = min(i,nx-1)
          wx0 = (i+1)-x/dxeq
@@ -85,8 +87,17 @@
          ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
                  +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
 
-         energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+        !  energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+         energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
          energy =  max(energy0,0.1*T_center)
+
+        ! if (m==14) then
+                ! open(unit=11, file='testPhiFreq2',status='unknown',position='append')
+        ! open(unit=11, file = 'test14',status='unknown',position='append')
+                ! write(*,*) energy0
+        ! close(11)
+                
+        ! end if
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          if (icollision==1) then
@@ -150,15 +161,6 @@
             wy1=1.-wy0
             wz0=float(k+1)-zeta/dzeta
             wz1=1.-wz0
-
-        !     if (FLE==0) then
-        !         wx0 = 1
-        !         wx1 = 0
-        !         wy0 = 1
-        !         wy1 = 0
-        !         wz0 = 1
-        !         wz1 = 0
-        !     end if
 
               k_plus_1=k+1
               if(k==kmx) k_plus_1=0
@@ -234,6 +236,8 @@
          xdot = (vpar*Bstar3(1)+(mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1)+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar
          zdot = (vpar*Bstar3(2)+(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar
          zetadot = (vpar*Bstar3(3)+(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2(m)+(xctr-0.5*xdim))
+
+        !  write(*,*) vpar*Bstar3(3), (mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1)+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b),(mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1)+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b)
          
 !         pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 !         write(*,*)
@@ -242,8 +246,11 @@
 
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
-         pzdot = (Bstar3(1)*(q(1)*exp1*nonlin-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp*nonlin-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap*nonlin-mu(m)*dbdzetap))/(mims(1)*bstar)          
-         
+        ! write(*,*) xdot, zdot, zetadot, u2(m)
+
+         pzdot = (Bstar3(1)*(q(1)*exp1*nonlin - mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp*nonlin - mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap*nonlin - mu(m)*dbdzetap))/(mims(1)*bstar)    
+
+
          edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)
         !  write(*,*) q(1)*(xdot*exp1+zdot*ezp+zetadot*(x2(m)+(xctr-0.5*xdim))*ezetap)/ti_temp, ((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp)
         !  edot = q(1)*(xdot*exp1+zdot*ezp+zetadot*ezetap)

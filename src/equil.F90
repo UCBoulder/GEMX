@@ -165,6 +165,9 @@ contains
 
 !      B0x=0
 !      B0z=0
+
+      ! b0x = -1*b0x
+      ! b0z = -1*b0z
       
       do i =0,nx
             do j =0,nz
@@ -184,23 +187,23 @@ contains
       omegau = e*Bu/proton
       frequ = omegau
 
-      vu = sqrt(Tu/proton)
+      ! vu = sqrt(Tu/proton)
       vu=1
-      xu = proton*vu/(e*Bu)
+      ! xu = proton*vu/(e*Bu)
       xu=1
       nu = 2.5e19
       beta = 4*3.14159*1e-7*nu*Tu/Bu**2
 
 
       !     assign T, n profiles 
-      do i = 0,nx
-         do j = 0,nz
-            t0i(i,j) = 1.*Tu
-            t0e(i,j) = 1.*Tu
-            xn0i(i,j) = 1.*nu
-            xn0e(i,j) = 1.*nu
-         end do
-      end do
+      ! do i = 0,nx
+      !    do j = 0,nz
+      !       t0i(i,j) = 1.*Tu
+      !       t0e(i,j) = 1.*Tu
+      ! !       xn0i(i,j) = 1.*nu
+      ! !       xn0e(i,j) = 1.*nu
+      !    end do
+      ! end do
 
       !Calder Edit: realistic profilies for ITG runs
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -261,6 +264,10 @@ contains
       xn0e = xn0e*1e19
       ! !!!!
 
+      ! open(unit=10, file = 'testT',status='unknown',action='write')
+      ! write(10,*) xn0e
+      ! close(10)
+
       !Put into SI units
       ! t0i  = t0i*Tu
       ! t0e  = t0e*Tu
@@ -296,10 +303,12 @@ contains
          do j=0,nz
             if (xn0e(i,j)<1e-9) then
                c2_over_vA2(i,j)=mu0*2*proton*0.01*xn0e(nx/2,nz/2)/(b0(i,j)**2)*vu**2
+               ! c2_over_vA2(i,j)=mu0*2*proton*0.01*xn0e(i,j)/(b0(i,j)**2)*vu**2
             else
                c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)**2)*vu**2!2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
             end if
-            rho_i(i,j) = sqrt(2*t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j))
+            ! rho_i(i,j) = sqrt(2*t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j))
+            rho_i(i,j) = sqrt(t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j))
            ! if (c2_over_vA2(i,j)<1.0e-19) c2_over_vA2(i,j)=0.01*mu0*2*proton*xn0e(i/2,j/2)/(b0(i/2,j/2)**2)*vu**2
          end do
       end do
@@ -416,6 +425,14 @@ contains
             curlb(i,j,1)=-((-b0zeta(i,j+1)/b0(i,j+1)+b0zeta(i,j-1)/b0(i,j-1))/(2*dzeq))
             curlb(i,j,2)=-(1/Rgrid(i)*(Rgrid(i+1)*b0zeta(i+1,j)/b0(i+1,j)-Rgrid(i-1)*b0zeta(i-1,j)/b0(i-1,j))/(2*dxeq))
             curlb(i,j,3)=-((b0x(i,j+1)/b0(i,j+1)-b0x(i,j-1)/b0(i,j-1))/(2*dzeq)-(b0z(i+1,j)/b0(i+1,j)-b0z(i-1,j)/b0(i-1,j))/(2*dxeq))
+
+            ! curlb(i,j,1) = (b0zeta(i,j+1)/b0(i,j+1) - b0zeta(i,j-1)/b0(j-1))/(2*dzeq)
+            ! curlb(i,j,2) = (-1)*(1/Rgrid(i))*(Rgrid(i+1)*b0zeta(i+1,j)/b0(i+1,j)-Rgrid(i-1)*b0zeta(i-1,j)/b0(i-1,j))/(2*dxeq)
+            ! curlb(i,j,3) = (b0z(i+1,j)/b0(i+1,j) - b0z(i-1,j)/b0(i-1,j))/(2*dxeq) - (b0x(i,j+1)/b0(i,j+1) - b0x(i,j-1)/b0(i,j-1))/(2*dzeq)
+
+            ! curlb(i,j,1)=((-b0zeta(i,j+1)/b0(i,j+1)+b0zeta(i,j-1)/b0(i,j-1))/(2*dzeq))
+            ! curlb(i,j,2)=(1/Rgrid(i)*(Rgrid(i+1)*b0zeta(i+1,j)/b0(i+1,j)-Rgrid(i-1)*b0zeta(i-1,j)/b0(i-1,j))/(2*dxeq))
+            ! curlb(i,j,3)=((b0x(i,j+1)/b0(i,j+1)-b0x(i,j-1)/b0(i,j-1))/(2*dzeq)-(b0z(i+1,j)/b0(i+1,j)-b0z(i-1,j)/b0(i-1,j))/(2*dxeq))
 !            write(*,*) curlb(i,j,2)+(b0zeta(i,j)/b0(i,j)/Rgrid(i)*xu+(b0zeta(i+1,j)/b0(i+1,j)-b0zeta(i-1,j)/b0(i-1,j))/(2*dxeq))
          end do
       end do
@@ -457,6 +474,16 @@ contains
             capnex(i,j) = (-1/xn0e(i,j))*(xn0e(i+1,j)-xn0e(i-1,j))/(2*dxeq)
             capniz(i,j) = (-1/xn0i(i,j))*(xn0i(i,j+1)-xn0i(i,j-1))/(2*dzeq)
             capnez(i,j) = (-1/xn0e(i,j))*(xn0e(i,j+1)-xn0e(i,j-1))/(2*dzeq)
+
+            ! captix(i,j) = (1/t0i(i,j))*(t0i(i+1,j)-t0i(i-1,j))/(2*dxeq)
+            ! captex(i,j) = (1/t0e(i,j))*(t0e(i+1,j)-t0e(i-1,j))/(2*dxeq)
+            ! captiz(i,j) = (1/t0i(i,j))*(t0i(i,j+1)-t0i(i,j-1))/(2*dzeq)
+            ! captez(i,j) = (1/t0e(i,j))*(t0e(i,j+1)-t0e(i,j-1))/(2*dzeq)
+            ! capnix(i,j) = (1/xn0i(i,j))*(xn0i(i+1,j)-xn0i(i-1,j))/(2*dxeq)
+            ! capnex(i,j) = (1/xn0e(i,j))*(xn0e(i+1,j)-xn0e(i-1,j))/(2*dxeq)
+            ! capniz(i,j) = (1/xn0i(i,j))*(xn0i(i,j+1)-xn0i(i,j-1))/(2*dzeq)
+            ! capnez(i,j) = (1/xn0e(i,j))*(xn0e(i,j+1)-xn0e(i,j-1))/(2*dzeq)
+
 
             dpsi_dr(i,j) = (psi_p(i+1,j)-psi_p(i-1,j))/(2*dxeq)
             dpsi_dz(i,j) = (psi_p(i,j+1)-psi_p(i,j-1))/(2*dzeq)
