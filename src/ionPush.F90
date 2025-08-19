@@ -87,8 +87,8 @@
          ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
                  +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
 
-        !  energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
-         energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
+         energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+        !  energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
          energy =  max(energy0,0.1*T_center)
 
         ! if (m==14) then
