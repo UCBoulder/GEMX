@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include <mpi.h>
+#include <nvToolsExt.h>
 #pragma once
 
 void ppush_c_(const int &n);

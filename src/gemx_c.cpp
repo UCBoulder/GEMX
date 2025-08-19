@@ -157,9 +157,8 @@ int main() {
 
    if(ifield_solver == 1) ncurr=1;
       
-   start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
-      auto start = std::chrono::high_resolution_clock::now();
+      start_total_tm = MPI_Wtime();
       for(int randTabInd = 0; randTabInd <= 10006; ++randTabInd){
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[randTabInd]=1;
@@ -580,7 +579,7 @@ int main() {
       }
       end_total_tm = MPI_Wtime();
       double totTime = end_total_tm - start_total_tm;
-      cout << "totTIme = " << totTime << "\n";
+      // cout << "totTIme = " << totTime << "\n";
      
    }
    total_tm = total_tm + end_total_tm - start_total_tm;
@@ -1067,11 +1066,11 @@ void loadi_c_(){
    for(int m = 0; m < mm[0]; ++m){
       u2[m] = u2[m]-avgv;
       x3[m] = x2[m];
-      if(x3[m] < 0 || x3[m] > lx) cout << "x=" << x3[m] << "\n";
+      // if(x3[m] < 0 || x3[m] > lx) cout << "x=" << x3[m] << "\n";
       z3[m] = z2[m];
-      if(z3[m] < 0 || z3[m] > lz) cout << "z=" << z3[m] << "\n";
+      // if(z3[m] < 0 || z3[m] > lz) cout << "z=" << z3[m] << "\n";
       zeta3[m] = zeta2[m];
-      if(zeta3[m] < 0 || zeta3[m] > pi2) cout << "zeta3=" << zeta3[m] << "\n";
+      // if(zeta3[m] < 0 || zeta3[m] > pi2) cout << "zeta3=" << zeta3[m] << "\n";
       u3[m] = u2[m];
 //    w2(m) = w2(m)-myavgw
       w3[m] = w2[m]; 
@@ -1526,10 +1525,11 @@ void gradparz_c_(double *matrix){
 }
 
 void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){ 
-   for(int k = 1; k <= kmx-1; ++k){
-      for(int i = 2; i <= imx-2; ++i){
-         for(int j = 2; j <= jmx-2; ++j){
-            if (!(mask2(i,j)<1.99)){
+   // auto start_tm = MPI_Wtime();
+   for(int i = 2; i <= imx-2; ++i) {
+      for(int j = 2; j <= jmx-2; ++j) {
+         for(int k = 1; k <= kmx-1; ++k) {
+            if (!(mask2(i,j)<1.99)) {
                gradPar(i,j,k)=(b0x(i,j)/b0(i,j)*(matrix(i+1,j,k)-matrix(i-1,j,k))*0.5/dx  
                +b0z(i,j)/b0(i,j)*(matrix(i,j+1,k)-matrix(i,j-1,k))*0.5/dz                
                +b0zeta(i,j)/b0(i,j)*(matrix(i,j,k+1)-matrix(i,j,k-1))/((Rgrid[i]/xu)*2*dzeta));
@@ -1557,6 +1557,8 @@ void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar){
          }
       }
    }
+   // auto end_tm = MPI_Wtime();
+   // cout << "Gradpar_time = " << end_tm-start_tm << endl;
 }
 
 void pintef_c_(){
@@ -1616,7 +1618,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	PetscScalar  v[5],Hx,Hy;
 	PetscScalar  Hx2,Hy2; //tmp_r,a_value
 	MatStencil   row,col[5]; 
-
 	i1 = 1;
 	i5 = 5;
 	//a_value = 0.5;
@@ -1645,7 +1646,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 					} else {
 						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                   v[0] = v[0] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
-                  // if(i == 99 && j == 101) cout << v[0] << endl;
 					}
 				}
 				col[0].i = i;
@@ -1658,14 +1658,12 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 					} else {
 						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                   v[1] = v[1] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
-                  // if(i == 99 && j == 101) cout << v[1] << endl;
 					}
 				}
 				col[1].i = i - 1;
 				col[1].j = j;
 
 				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2;
-            // if(i == 99 && j == 101) cout << v[2] << endl;
 				col[2].i = i;
 				col[2].j = j;
 
@@ -1674,7 +1672,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				if(iBoltzmann != 0) {
 					v[2]=v[2]-xn0e(i,j)*mu0*e*e/t0e(i,j) + PADE*(mu0*e*e*pow(rho_i(i,j),2))*((xn0e(i-1,j)/t0e(i-1,j) + xn0e(i+1,j)/t0e(i+1,j) - 2*xn0e(i,j)/t0e(i,j))/Hx2 + 
 					(xn0e(i,j-1)/t0e(i,j-1) + xn0e(i,j+1)/t0e(i,j+1) - 2*xn0e(i,j)/t0e(i,j))/Hy2);
-               // if(i == 99 && j == 101) cout << v[2] << endl;
 				}
             if (std::abs(v[2]) > 1e4) {
                std::cout << "Large v[2] at (" << i << "," << j << "): "
@@ -1694,7 +1691,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 					} else {
 						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                   v[3] = v[3] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
-                  // if(i == 99 && j == 101) cout << v[3] << endl;
 					}
 				}
 				col[3].i = i + 1;
@@ -1707,7 +1703,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 					} else {
 						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*pow(rho_i(i,j),2)))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                   v[4] = v[4] + PADE*(mu0*e*e*pow(rho_i(i,j),2))*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
-                  // if(i == 99 && j == 101) cout << v[4] << endl;
 					} 
 				}
 				col[4].i = i;
@@ -1725,7 +1720,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	}
 	//   PetscCall(MatView(AA,PETSC_VIEWER_STDOUT_WORLD));
 	//   PetscCall(MatView(BB,PETSC_VIEWER_STDOUT_WORLD));
-
 	return 0;
 }
 
@@ -1839,7 +1833,6 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 
    PetscCall(VecAssemblyBegin(bbb));
    PetscCall(VecAssemblyEnd(bbb));
-   
    return(PETSC_SUCCESS);
 }
 

@@ -278,7 +278,7 @@ void ppush_c_(const int &n) {
 	end_ppush_tm = MPI_Wtime();
 	ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
 
-	cout << "ppush_tm = " << ppush_tm << endl;
+	// cout << "ppush_tm = " << ppush_tm << endl;
 }
 
 //!-------------- End of subroutine ppush --------------------------------
@@ -576,7 +576,7 @@ void cpush_c_(const int &timestep){
 
   end_cpush_tm = MPI_Wtime();
   cpush_tm = cpush_tm + end_cpush_tm - start_cpush_tm;
-  cout << "cpush_tm = " << cpush_tm << "\n";
+//   cout << "cpush_tm = " << cpush_tm << "\n";
 }
 
 inline void updateDeviceData() {
