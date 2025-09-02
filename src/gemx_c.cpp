@@ -1078,16 +1078,15 @@ void loadi_c_(){
 }
 
 void gradu_c_(CArray3D<double> &u_, CArray3D<double> &ux_, CArray3D<double> &uz_){
-
    int ju = 0;
    int jl = 0;
    double ul = 0;
-   
-   for(int j = 0; j < jmx; ++j){
-      ju = j+1;
-      jl = j-1;
-      if(j == 0) jl = jmx-1;
-      for (int i = 0; i <= imx-1; ++i){ 
+
+   for (int i = 0; i <= imx-1; ++i){ //changed order here in case anyone ever uses
+      for(int j = 0; j < jmx; ++j){
+         ju = j+1;
+         jl = j-1;
+         if(j == 0) jl = jmx-1;
          for (int k = 0; k <= kmx; ++k){
             uz_(i,j,k) = (u_(i,ju,k)-u_(i,jl,k))/(2*dz);
          }
@@ -1108,7 +1107,6 @@ void gradu_c_(CArray3D<double> &u_, CArray3D<double> &ux_, CArray3D<double> &uz_
          ux_(0,j,k) = (u_(1,j,k)-ul)/(2*dx);
       }
    }
-   return;
 }
 
 void gradz_c_(CArray3D<double> &u, CArray3D<double> &uz){
@@ -1210,7 +1208,7 @@ void integ_c_(int iflag) {
    double R_major_over_R = 0;
    double R_major_over_R1 = 0;
 
-   int start_integ_tm = MPI_Wtime();
+   auto start_integ_tm = MPI_Wtime();
 
    //using ii,jj,kk to distinguish between i,j, and k used in m loop - maybe add clear for 4d based on iflag - like clear 3d, but start at index based on iflag
    for(int ii = 0; ii <= imx; ++ii) {
@@ -1237,6 +1235,13 @@ void integ_c_(int iflag) {
    copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx], gw[0:mmx])
    #pragma acc parallel loop gang vector present(den_ptr, upar_ptr)
    for(m = 0; m < mm[0]; ++m) {
+      const auto denY = den.getY();
+      const auto denZ = den.getZ();
+      const auto denQ = den.getQ();
+
+      const double uparY = upar.getY();
+      const double uparZ = upar.getZ();
+
       x = x3[m];
       if(x < 0 || x > lx) printf("integ x=%lf\n", x);
       i = static_cast<int>(x/dxeq);
@@ -1258,101 +1263,101 @@ void integ_c_(int iflag) {
       wzeta0=(k+1)-zeta/dzeta;
       wzeta1=1-wzeta0;
 
-      idx = get4DIndex(iflag,i,j,k, den.getY(), den.getZ(), den.getQ());
+      idx = get4DIndex(iflag,i,j,k, denY, denZ, denQ);
       #pragma acc atomic update
       den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
 
-      idx = get4DIndex(iflag,i+1,j,k, den.getY(), den.getZ(), den.getQ());
+      idx = get4DIndex(iflag,i+1,j,k, denY, denZ, denQ);
       #pragma acc atomic update
       den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
 
-      idx = get4DIndex(iflag,i,j+1,k, den.getY(), den.getZ(), den.getQ());
+      idx = get4DIndex(iflag,i,j+1,k, denY, denZ, denQ);
       #pragma acc atomic update
       den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
 
-      idx = get4DIndex(iflag,i+1,j+1,k, den.getY(), den.getZ(), den.getQ());
+      idx = get4DIndex(iflag,i+1,j+1,k, denY, denZ, denQ);
       #pragma acc atomic update
       den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
-      idx = get3DIndex(i,j,k, upar.getY(), upar.getZ());
+      idx = get3DIndex(i,j,k, uparY, uparZ);
       #pragma acc atomic update 
       upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
 
-      idx = get3DIndex(i+1,j,k, upar.getY(), upar.getZ());
+      idx = get3DIndex(i+1,j,k, uparY, uparZ);
       #pragma acc atomic update
       upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
 
-      idx = get3DIndex(i,j+1,k, upar.getY(), upar.getZ());
+      idx = get3DIndex(i,j+1,k, uparY, uparZ);
       #pragma acc atomic update
       upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
 
-      idx = get3DIndex(i+1,j+1,k, upar.getY(), upar.getZ());
+      idx = get3DIndex(i+1,j+1,k, uparY, uparZ);
       #pragma acc atomic update
       upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
 
       if(k != kmx) {
-         idx = get4DIndex(iflag, i, j, k+1, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i, j, k+1, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
-         idx = get4DIndex(iflag, i+1, j, k+1, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i+1, j, k+1, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
-         idx = get4DIndex(iflag, i, j+1, k+1, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i, j+1, k+1, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
-         idx = get4DIndex(iflag, i+1, j+1, k+1, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i+1, j+1, k+1, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
 
-         idx = get3DIndex(i, j, k+1, upar.getY(), upar.getZ());
+         idx = get3DIndex(i, j, k+1, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
-         idx = get3DIndex(i+1, j, k+1, upar.getY(), upar.getZ());
+         idx = get3DIndex(i+1, j, k+1, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
-         idx = get3DIndex(i, j+1, k+1, upar.getY(), upar.getZ());
+         idx = get3DIndex(i, j+1, k+1, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
-         idx = get3DIndex(i+1, j+1, k+1, upar.getY(), upar.getZ());
+         idx = get3DIndex(i+1, j+1, k+1, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
 
       } else {
-         idx = get4DIndex(iflag, i, j, 0, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i, j, 0, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
-         idx = get4DIndex(iflag, i+1, j, 0, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i+1, j, 0, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
-         idx = get4DIndex(iflag, i, j+1, 0, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i, j+1, 0, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
-         idx = get4DIndex(iflag, i+1, j+1, 0, den.getY(), den.getZ(), den.getQ());
+         idx = get4DIndex(iflag, i+1, j+1, 0, denY, denZ, denQ);
          #pragma acc atomic update
          den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
 
-         idx = get3DIndex(i, j, 0, upar.getY(), upar.getZ());
+         idx = get3DIndex(i, j, 0, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
 
-         idx = get3DIndex(i+1, j, 0, upar.getY(), upar.getZ());
+         idx = get3DIndex(i+1, j, 0, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
 
-         idx = get3DIndex(i, j+1, 0, upar.getY(), upar.getZ());
+         idx = get3DIndex(i, j+1, 0, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
 
-         idx = get3DIndex(i+1, j+1, 0, upar.getY(), upar.getZ());
+         idx = get3DIndex(i+1, j+1, 0, uparY, uparZ);
          #pragma acc atomic update
          upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
       }
@@ -1366,7 +1371,7 @@ void integ_c_(int iflag) {
    for(int i = 0 ; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
          for(int k = 0; k <= kmx; ++k) {
-            den(1,i,j,k) = den(iflag, i, j, k);
+            den(1,i,j,k) = den(iflag, i, j, k);   ///This is the den we want
          }
       }
    }
@@ -1410,8 +1415,10 @@ void integ_c_(int iflag) {
          }
       }
    }
-   int end_integ_tm = MPI_Wtime();
-   integ_tm = integ_tm + end_integ_tm - start_integ_tm; 
+
+   
+   auto end_integ_tm = MPI_Wtime();
+   integ_tm = end_integ_tm - start_integ_tm;  //integ_tm + 
 }
 
 void get_apar_(const int &flagnumber) {
@@ -1691,7 +1698,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				if(j < jmx) {
 					if(j == 0){
 						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
-                    	v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
+                  v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
 					} else {
 						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                   v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
