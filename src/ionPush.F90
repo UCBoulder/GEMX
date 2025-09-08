@@ -87,8 +87,8 @@
          ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
                  +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
 
-         energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
-        !  energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
+        !  energy0 = (mu(m)*b + 0.5*mims(1)*u3(m)**2)
+         energy0 = (mu(m)*b + 0.5*mims(1)*u2(m)**2)
          energy =  max(energy0,0.1*T_center)
 
         ! if (m==14) then
@@ -267,20 +267,21 @@
 !        vzdum = (-exp1/b+vpar/b*delbzp)*dum1
 !         vxdum = eyp+vpar/b*delbxp
 !         w3(m)=w2(m) + 0.5*dt*(vxdum*kapxp + vzdum*kapzp+edot/ter)*dum*xnp
+
         if (weightscheme == 1) then
         !linear weight equation
         if (nonlin == 0) then
-        w3(m) = w2(m) + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) &
-         + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+        w3(m) = w2(m) + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) &
+         + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp))
         else
-        w3(m) = w2(m) + 0.5*dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)))
+        w3(m) = w2(m) + 0.5*dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)))
 
         ! write(*,*) (xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
         end if
         ! write(*,*) w3(m)
         end if
         
-      if( (x3(m)>2*dxeq).and.(x3(m)<lx-2*dxeq).and.(z3(m)>2*dzeq).and.(z3(m)<lz-2*dzeq) ) then
+      if( (x3(m)>2*dxeq).and.(x3(m)<lx-2*dxeq).and.(z3(m)>2*dzeq).and.(z3(m)<lz-2*dzeq)) then
       else
           u3(m)=u2(m)
           x3(m)=x2(m)
@@ -288,6 +289,10 @@
           zeta3(m)=zeta2(m)
           w3(m)=0.
       endif
+
+      if (sqrt((x3(m)+Rgrid(0)-xctr)**2 + (z3(m)+Zgrid(0))**2) > 0.6012) then
+        w3(m) = 0
+      end if
 
    enddo
 !!   !$acc wait
@@ -526,7 +531,6 @@
 !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*(q(1)/mims(1)+bdcurlbp*vpar/b)*nonlin
 !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
-
          pzdot = (Bstar3(1)*(q(1)*exp1*nonlin-mu(m)*dbdxp)+Bstar3(2)*(q(1)*ezp*nonlin-mu(m)*dbdzp)+Bstar3(3)*(q(1)*ezetap*nonlin-mu(m)*dbdzetap))/(mims(1)*bstar)
           
 
@@ -570,13 +574,21 @@
           if (weightscheme == 1) then
           !linear weight equation
           if (nonlin == 0) then
-        w3(m) = w2(m) + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) &
-                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+        w3(m) = w2(m) + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) &
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp))
           else
-                w3(m) = w2(m) + dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)))
+                w3(m) = w2(m) + dt*((1-w2(m))*(xdot*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)))
           end if
           ! write(*,*) w3(m)
           end if
+
+        !   if (timestep == 1 .and. m > 458081 .and. m < 458112) then
+        !   write(*,*) m, dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) &
+        !   + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp))
+        !   end if
+
+        !   write(*,*) vpar*mims(1)*vpar*curlbp(1)/q(1)/bstar, vpar*mims(1)*vpar*curlbp(2)/q(1)/bstar,vpar*mims(1)*vpar*curlbp(3)/q(1)/bstar
+        !   write(*,*) (mu(m)*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q(1))/b/bstar, (mu(m)*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q(1))/b/bstar,(mu(m)*(bfldxp*dbdzp-bfldzp*dbdxp)/q(1))/b/bstar
 
           w2(m)=w3(m)
 
@@ -590,6 +602,10 @@
           w2(m)=0.
           w3(m)=0.
       endif
+
+      if (sqrt((x3(m)+Rgrid(0)-xctr)**2 + (z3(m)+Zgrid(0))**2) > 0.6012) then
+        w3(m) = 0
+      end if
 
       !Temporary Flux Diagnostic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !No volume averaging currently

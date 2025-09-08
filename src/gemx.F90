@@ -17,6 +17,8 @@
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68
        integer :: iter, filter_int !Calder Edit
 
+      !  complex(8) :: phi_n
+
        real::random
        real :: tmp
        PetscInt is,js,iw,jw,idx,n_in_porcs
@@ -288,7 +290,7 @@
          enddo
           PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
          enddo
-         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
          ! call fluxavg(phi,phiavg) !Turned off for CBC
        enddo
             
@@ -313,7 +315,7 @@
 
         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
        
-         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
       end do !Calder Edit
       ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)   
@@ -346,6 +348,7 @@
 
       if (modes /= 0) then
          call fourier_modes(phi,modes)
+         ! call fourier_modes_2(phi,modes)
       end if
 
       ! call binomial_filter(phi)
@@ -425,6 +428,17 @@
             
             phi_diag = 0.0
             phi_diag_freq = 0.0
+            phi_n = (0.0,0.0)
+
+            do k = 0, kmx
+               phi_n = phi_n + phi(192,128,k) * exp(-i*modes*2.0*pi*k/(kmx+1))
+            end do
+
+            phi_n = phi_n / (kmx+1)
+
+            open(unit=11, file='testPhiFreq_mode',status='unknown',position='append')
+            write(11,*) timestep, real(phi_n), aimag(phi_n)
+            close(11)
          
             do i = 0, imx
                do j = 0, jmx
@@ -498,7 +512,7 @@
          enddo
          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 	      enddo
-         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
          ! call fluxavg(phi,phiavg) !Turned off for CBC
       enddo
 
@@ -529,7 +543,7 @@
 
             PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 
-         ! call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+         call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
      end do !Calder Edit
    !   call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
@@ -562,6 +576,7 @@
    
    if (modes /= 0) then
       call fourier_modes(phi,modes)
+      ! call fourier_modes_2(phi,modes)
    end if
 
    !!!!!!!!!!!!!!!!!!!!!!!
@@ -655,7 +670,9 @@
       close(11)
       end if
 
-      
+      ! ex = 2*ex
+      ! ez = 2*ez
+      ! ezeta = 2*ezeta
 
        if(ision==1)call cpush(timestep)
         !        if(ifluid==1)call cintef(timestep)
@@ -949,7 +966,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
 !      mm(ns)=int(ntracer/numprocs)
       mm(ns)=mmx
       mims(ns)=2.0*1.67e-27
-      ! mims(ns) = 1.67e-27 !Gorler Specific, treats electrons two times heavier, using protons now
+      
       q(ns)=1.0*1.6e-19
       lr(ns)=4
 
@@ -967,7 +984,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
          close(9)
       end if
 
-      iadi = 0
+      ! iadi = 0
 
       if(iget.eq.1) amp=0.
 
@@ -1627,9 +1644,8 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 
       m=1
       ! open(unit=11, file = 'test_velo',status='unknown',position='append')
-
+      write(*,*) 'Loading Particles'
       do while(m<=mm(1))
-
 !     load a slab of ions...
 
 !         dumx=xdim*(ran2(iseed)+0.01)*0.9
@@ -1662,7 +1678,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
          ! (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)
          ! write(*,*) (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)
          ! write(*,*) wx0, wx1, wz0, wz1, i, k, (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1)), xn0i(imx/2,jmx/2)
-
+         
         if(ran2(iseed)<jacp .and. ran2(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2))then
          !   x2(m)=min(dumx,xdim-dxeq)
          !   z2(m)=min(dumy,zdim-dzeq)
@@ -1671,7 +1687,15 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
             zeta2(m)=dumz
             x2(m)=dumx
             z2(m)=dumy
+            ! write(*,*) 'Working'
             call parperp(vpar,vperp2,m,pi,cnt,MyId)
+
+            !!!!!!!
+            ! x2(m) = Rgrid(186)-Rgrid(0)
+            ! z2(m) = -Zgrid(0)
+            ! u2(m) = 2E5 
+            ! mu(m) = 0
+            !!!!!!
 
             x=x2(m)
             i = int(x/dxeq)
@@ -2543,7 +2567,7 @@ end subroutine field
            j=int(zt/dz)
            k=int(zeta/dzeta)
 
-           if (i > imx+1 .or. j > jmx+1 .or. k > kmx+1) then
+           if (i > imx+1 .or. j > jmx+1 .or. k > kmx+1 .or. i<0 .or. j<0 .or. k<0) then
             write(*,*) i,j,k
            end if
 
@@ -2982,7 +3006,71 @@ subroutine fourier_modes(input_phi, modes)
 
 end subroutine fourier_modes
 
-
+subroutine fourier_modes_2(phi, n_mode)
+   use gemx_com
+   implicit none
+   include 'fftw3.f'
+ 
+   real(8), intent(inout) :: phi(0:imx,0:jmx,0:kmx)   ! R,Z,ζ
+   integer, intent(in)    :: n_mode                   ! mode to keep (0..N-1), allow negative by mapping
+ 
+   integer                :: i, j, N, Nout, kk
+   integer*8              :: plan_fwd, plan_bwd
+   real(8), allocatable   :: rbuf(:)                  ! length N contiguous
+   double complex, allocatable :: cbuf(:), ctmp(:)    ! length Nout (0..N/2)
+ 
+   N    = kmx + 1
+   Nout = N/2 + 1
+ 
+   allocate(rbuf(0:kmx))
+   allocate(cbuf(0:Nout-1), ctmp(0:Nout-1))
+ 
+   ! Create/reuse plans on contiguous work buffers
+   call dfftw_plan_dft_r2c_1d(plan_fwd, N, rbuf, cbuf, FFTW_ESTIMATE)
+   call dfftw_plan_dft_c2r_1d(plan_bwd, N, cbuf, rbuf, FFTW_ESTIMATE)
+ 
+   do i = 0, imx
+     do j = 0, jmx
+       ! Make the (i,j,: ) line contiguous
+       rbuf = phi(i,j,:)
+ 
+       ! Forward FFT (real -> halfcomplex)
+       call dfftw_execute_dft_r2c(plan_fwd, rbuf, cbuf)
+ 
+       ! Save, zero, then keep only requested mode
+       ctmp = cbuf
+       cbuf = (0.0d0, 0.0d0)
+ 
+       ! Map requested mode index into 0..N/2 for r2c storage
+       if (n_mode >= 0) then
+         if (n_mode <= N/2) then
+           kk = n_mode
+         else
+           kk = N - n_mode                 ! treat > N/2 as negative mode
+         end if
+       else
+         kk = mod(N - abs(n_mode), N)      ! negative -> positive index
+         if (kk > N/2) kk = N - kk         ! fold into 0..N/2
+       end if
+ 
+       if (kk >= 0 .and. kk <= N/2) cbuf(kk) = ctmp(kk)
+ 
+       ! Inverse FFT (complex -> real)
+       call dfftw_execute_dft_c2r(plan_bwd, cbuf, rbuf)
+ 
+       ! Normalize (FFTW inverse is unnormalized)
+       rbuf = rbuf / real(N,8)
+ 
+       ! Write back
+       phi(i,j,:) = rbuf
+     end do
+   end do
+ 
+   call dfftw_destroy_plan(plan_fwd)
+   call dfftw_destroy_plan(plan_bwd)
+   deallocate(rbuf, cbuf, ctmp)
+ end subroutine fourier_modes_2
+ 
 
 
 ! !Poloidal Direction

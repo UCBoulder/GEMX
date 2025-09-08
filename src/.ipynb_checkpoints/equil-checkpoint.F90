@@ -4,7 +4,6 @@ MODULE equil
       real :: beta,rmaj0,a,q0,r0,q0p,q0abs,shat0
       real :: phi_diag,phi_diag_freq,weight_diag
       real :: dR,dth,mu0,e,proton
-      complex :: phi_n
       integer :: nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n
       real :: psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647
 
@@ -93,9 +92,9 @@ contains
 	read(10,*) Zgrid
         close(10)
 
-      !   open(unit=10, file='psi_p.dat',status='old',action='read')
-      !   read(10,*) psi_p
-      !   close(10)
+        open(unit=10, file='psi_p.dat',status='old',action='read')
+        read(10,*) psi_p
+        close(10)
         
         !Calder Edits Start
         !character(len=100) :: line_buffer
@@ -170,21 +169,6 @@ contains
             b0z(i,j)    = 2.0*sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(Rgrid(i) * &
                          (2.52*(sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67))**2 - 0.16*(sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)) + 0.86)) * &
                          (cos(atan2(Zgrid(j),Rgrid(i)-1.67))) * 1/sqrt(1-(sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/1.67)**2)
-
-            ! psi_p(i,j)  = 2.0*((67525*0.6012**2*log(abs(126*sqrt((Rgrid(i)-1.67)**2 + (Zgrid(j))**2)**2 - 8*0.6012*sqrt((Rgrid(i)-1.67)**2 + &
-            !                (Zgrid(j))**2) + 43*0.6012**2)) + 25*2**(5/2)*sqrt(37*73)*0.6012**2 * atan((63*sqrt(2)*sqrt(37*73)*sqrt((Rgrid(i)-1.67)**2 + (Zgrid(j))**2) - &
-            !                2**(3/2)*sqrt(37*73)*0.6012)/(2701*0.6012)))/340326) - 2.0*(25*0.6012**2*log(43*0.6012**2))/126 + &
-            !                2.0*(25*0.6012**2*2**(3/2)*atan(2**(3/2)/sqrt(2701)))/(63*sqrt(2701))
-
-            psi_p(i,j) = 2.0*((67525.0*0.6012**2 * log(abs(126.0*sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)**2 - &
-                           8.0*0.6012*sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2) + 43.0*0.6012**2))) + &
-                           25.0*2.0**(5.0/2.0)*sqrt(37.0*73.0)*0.6012**2 * atan((63.0*sqrt(2.0)*sqrt(37.0*73.0)*sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2) - &
-                           2.0**(3.0/2.0)*sqrt(37.0*73.0)*0.6012)/(2701.0*0.6012)))/340326.0 &
-                           - 2.0*(25.0*0.6012**2*log(43.0*0.6012**2))/126.0 + &
-                           2.0*(25.0*0.6012**2*2.0**(3.0/2.0)*atan(2.0**(3.0/2.0)/sqrt(2701.0)))/(63.0*sqrt(2701.0))
-         
-
-            
             ! write(*,*) b0x(i,j)          
          end do
       end do
@@ -297,10 +281,10 @@ contains
             xn0i(i,j) = 4.66*1e19*exp((-2.23*0.3*0.36)*tanh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3))
             xn0e(i,j) = 4.66*1e19*exp((-2.23*0.3*0.36)*tanh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3))
 
-            kapti(i,j) = 6.96/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2.0)
-            kapte(i,j) = 6.96/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2.0)
-            kapni(i,j) = 2.23/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2.0)
-            kapne(i,j) = 2.23/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2.0)
+            kapti(i,j) = 6.96/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2)
+            kapte(i,j) = 6.96/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2)
+            kapni(i,j) = 2.23/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2)
+            kapne(i,j) = 2.23/1.67 * cosh((sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2)/(0.36*1.67)-0.5)/0.3)**(-2)
 
             ! write(*,*) xn0i(i,j)
          end do   
@@ -365,19 +349,12 @@ contains
            do j=2,nz-2
              ! c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)**2)*vu**2!2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
 !              write(*,*) c2_over_vA2(i,j)
-               if ( sqrt((Rgrid(i)-1.67)**2 + Zgrid(j)**2) <= 0.6012 ) then
-                  mask(i,j) = 1
-
-               else 
-                  mask(i,j) = 0
-               end if
-
-            !   if (psi_p(i,j)<psi_max .and.psi_p(i,j)>psi_min .and. (Zgrid(j)>Z_internal .or. (Zgrid(j)>Z_min .and. psi_p(i,j)>psi_div)) .and. Rgrid(i)>R_min)  then
+              if (psi_p(i,j)<psi_max .and.psi_p(i,j)>psi_min .and. (Zgrid(j)>Z_internal .or. (Zgrid(j)>Z_min .and. psi_p(i,j)>psi_div)) .and. Rgrid(i)>R_min)  then
 !             if(psi_p(i,j)<0.3 .and. Zgrid(j)>-1.08) then
-            !   mask(i,j)=1
-         !   else
-         !      mask(i,j)=0
-         !   endif
+              mask(i,j)=1
+           else
+              mask(i,j)=0
+           endif
         end do
      end do
 
