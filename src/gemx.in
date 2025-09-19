@@ -1,8 +1,8 @@
 'imx   jmx   kmx     mmx                    nmx   nsmx   ntube'
- 257   257   63        10000000          10000000   4       4
+ 257   257   127        40000000          10000000   4       4
 
 'dt       nm           nsm    iez'
- 500e-9  1500        1       0
+ 500e-10  50000        1       0
 
 'iput   iget  ision    peritr'
   1      0     1         0 
@@ -44,7 +44,7 @@
 0
 
 'psi_out_bound,  psi_inner_bound,  R_min_for_mask, Z_min_for_mask, Z_X_point, psi_lower_divertor,     psi_a'
-    0.2	 	       -1		               1.1		   	 -0.4			-1.2		     0.305		          0.2
+    0.2	 	       -1		               1.05		   	 -0.4			-1.2		     0.305		          0.2
 
 'checkpoint'
 0

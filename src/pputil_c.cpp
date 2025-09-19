@@ -32,10 +32,10 @@ void ppinit_c(int& idproc, int& nproc, int &ntube,int &kmx, int& i3D, MPI_Comm &
     
     p_color = static_cast<int>(me*(n_tor_planes)/npp);
 
-    if((kmx+1) > npp) { //0%0 causes undefined behaviour
-        p_rank = me;
+    if((n_tor_planes) > npp) { //0%0 causes undefined behaviour
+        p_rank = 0;
     } else {
-        p_rank = me%(npp/(kmx+1));
+        p_rank = me%(npp/(n_tor_planes));
     }
     ierr = MPI_Comm_split(MPI_COMM_WORLD, p_color, p_rank, &PETSC_COMM);
     petsc_color = p_color;

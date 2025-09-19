@@ -35,6 +35,7 @@ int main() {
    //VecScatter   ctx;
 
    //call init
+   
    initialize_c_();
    prepareDeviceData();
    
@@ -128,16 +129,18 @@ int main() {
       file.open("testne0");
       for(int i = 0; i <= imx; ++i){
          for(int j = 0; j <= jmx; ++j){
-            file << dene(i,j,outk) << "   \n";
+            file << dene(i,j,outk) << "    ";
          }
+         file << "\n";
       }
       file.close();
 
       file.open("testapar0");
       for(int i = 0; i <= imx; ++i){
          for(int j = 0; j <= jmx; ++j){
-            file << apar(i,j,outk) << "   \n";
+            file << apar(i,j,outk) << "    ";
          }
+         file << "\n";
       }
       file.close();
 
@@ -201,11 +204,12 @@ int main() {
 
       } else if(i3D != 0) {
          // cout << "i3d != 0" << endl;
-         phi.Clear();
+         // phi.Clear();
          
          for(iter = 0; iter <= iterations; ++iter) {
+            phi.Clear(); // 9/12/2025 test
             for(k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k) {
-               // fluxavg_c_(phi,phiavg); //Uses previous time step phi
+               fluxavg_c_(phi,phiavg); //Uses previous time step phi
                //phi.Clear();
                kval = (PetscInt)k;
 
@@ -231,7 +235,7 @@ int main() {
          phi.Clear();
          
          for(iter = 0; iter <= iterations; ++iter) {
-            // fluxavg_c_(phi, phiavg);
+            fluxavg_c_(phi, phiavg);
          
             kval = (PetscInt)k;
             PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -265,12 +269,12 @@ int main() {
             for (int j = 0; j <= jmx; ++j) {
                for(int k=0; k <= kmx; ++k) {
                   //  phi(i,j,k) = 100
-                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
-                  exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05)); //*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+                  // phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
+                  // exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05)); //*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
                   // phi(i,j,k) = 1e-5*cos(modes*(-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
                   // exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
                   if (mask(i,j) < 0.99) {
-                     phi(i,j,k) = 0;
+                     // phi(i,j,k) = 0;
                   }
                }
             }
@@ -310,7 +314,35 @@ int main() {
          if(ision==1) ppush_c_(timestep);
          //if(ifluid==1)call pintef
          if(ifluid==1) integ_c_(0);
-   }  
+   }
+   
+     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PHI DIAGNOSTIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      phi_diag = 0.0;
+      phi_diag_freq = 0.0;
+
+      for(int i = 0; i <= imx; ++i) {
+         for(int j = 0; j <= jmx; ++j) {
+            for(int k = 0; k <= kmx; ++k) {
+               phi_diag = phi_diag + pow(abs(phi(i,j,k)),2)/(imx*jmx*kmx);
+               // phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx);
+            }
+		}
+      }
+	  ofstream file;
+	  file.open("testPhiDiag", ios::app);
+	  file << timestep << "		" << phi_diag << endl;
+	  file.close();
+
+	  file.open("testPhiFreq", ios::app);
+	  file << timestep << "		" << phi(192,128,0) << "    " << phi(180,128,0) << endl;
+	  file.close();
+
+     file.open("testPhiFreq2", ios::app);
+	  file << timestep << "		" << phi(170,128,0) << "    " << phi(200,128,0) << endl;
+	  file.close();
+
+   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
    if(ifield_solver == 1) {
       phi.Clear();
 
@@ -321,10 +353,11 @@ int main() {
          }
          //MPI_Allreduce(MPI_IN_PLACE, phi,start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else if(i3D != 0) {
-         phi.Clear();
+         // phi.Clear();
          for(iter = 0; iter <= iterations; ++iter) {
+            phi.Clear();
             for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-               // fluxavg_c_(phi, phiavg);
+               fluxavg_c_(phi, phiavg);
 
                kval = (PetscInt)k;
                PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -348,7 +381,7 @@ int main() {
          phi.Clear();
 
          for(iter = 0; iter <= iterations; ++iter) {
-            // fluxavg_c_(phi, phiavg);
+            fluxavg_c_(phi, phiavg);
 
             kval = (PetscInt)k;
             PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -380,12 +413,12 @@ int main() {
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j) {
                for(int k = 0; k <= kmx; ++k) {
-                  phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
-                  exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05));//*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
+                  // phi(i,j,k) = 1e-8*cos(modes*((pi2*k)/(kmx+1)-1.3*atan2(Zgrid[j]-Zgrid[jmx/2],Rgrid[i]-Rgrid[imx/2])))* 
+                  // exp(-pow((sqrt(pow((Zgrid[j]-Zgrid[jmx/2]),2)+pow((Rgrid[i]-Rgrid[imx/2]),2))-0.25),2)/(2*0.05*0.05));//*cos(atan2(Zgrid(j)-Zgrid(jmx/2),Rgrid(i)-Rgrid(imx/2))/2)
                // ! phi(i,j,k) = 1e-5*cos(modes*(pi2*k-1.3*atan2(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2),Rgrid(i)+Rgrid(0)-Rgrid(imx/2)))) * &
                // ! exp(-((sqrt((Rgrid(i)+Rgrid(0)-Rgrid(imx/2))**2+(Zgrid(j)+Zgrid(0)-Zgrid(jmx/2))**2)-0.25)**2)/(2*(0.15)**2))
                   if (mask(i,j) < 0.99) {
-                     phi(i,j,k) = 0;
+                     // phi(i,j,k) = 0;
                   }
                }
             }
@@ -415,28 +448,7 @@ int main() {
       } else {
          efieldcalc_c_(phi);
       }
-   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PHI DIAGNOSTIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      phi_diag = 0.0;
-      phi_diag_freq = 0.0;
 
-      for(int i = 0; i <= imx; ++i) {
-         for(int j = 0; j <= jmx; ++j) {
-            for(int k = 0; k <= kmx; ++k) {
-               phi_diag = phi_diag + pow(abs(phi(i,j,k)),2)/(imx*jmx*kmx);
-               phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx);
-            }
-		}
-      }
-	  ofstream file;
-	  file.open("testPhiDiag", ios::app);
-	  file << timestep << "		" << phi_diag << endl;
-	  file.close();
-
-	  file.open("testPhiFreq", ios::app);
-	  file << timestep << "		" << phi_diag_freq << endl;
-	  file.close();
-
-   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if(i3D == 1){
          // growthdiag_c_(phi); //deprecated
       }
@@ -464,26 +476,29 @@ int main() {
 
       if(myid == 0 && (timestep%10) == 0) {
          file.open("testphiavg");
-         for(int i = 0; i <= nx; ++i){
-            for(int j = 0; j <= nz; ++j){
-               file << phiavg(i,j) << "   \n";
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << phiavg(i,j) << "    ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testER");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-               file << ex(i,j,0) << "   \n";
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << ex(i,j,0) << "    ";
             }
+            file << "\n";
          }
          file.close();
 
          file.open("testEZ");
-         for(int i = 0; i <= imx; ++i){
-            for(int j = 0; j <= jmx; ++j){
-               file << ez(i,j,0) << "   \n";
+         for(int j = 0; j <= jmx; ++j)  {
+            for(int i = 0; i <= imx; ++i) {
+               file << ez(i,j,0) << "    ";
             }
+            file << "\n";
          }
          file.close();
       }
@@ -502,8 +517,9 @@ int main() {
          file.open("testden2");
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
-               file << den2d2(i,j) << "   \n";
+               file << den2d2(i,j) << "    ";
             }
+            file << "\n";
          }
          file.close();
 
@@ -616,7 +632,7 @@ void initialize_c_(){
    tcurr = 0.;
    init();
    ppinit_c(myid,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank);
-
+   iseed = -(1777+myid*13);
    // for(int i = 0; i <= last; ++i){
    //    if(myid == i) {
          
@@ -699,6 +715,9 @@ void init(){
    nsm = 1;
 
    new_gemx_com(); //initializes arrays in gemx_com_c
+   nx = imx;
+   nz = jmx;
+   nzeta = kmx;  
    
    ns = 0;
    tmm[ns] = mmx;
@@ -951,6 +970,8 @@ void loadi_c_(){
    double ter = 0;
    double bfldp = 0;
 
+   double realparticles = 0;
+
    double avgv = 0;
    double myavgv = 0;
    // double avgw = 0;
@@ -965,6 +986,12 @@ void loadi_c_(){
    if(CST != 0) {
       read1D("rdata.dat", x2, 0);
       read1D("zdata.dat", z2, 0);
+   }
+
+   for(i = 2; i <= imx-2; ++i) {
+      for(j = 2; j <= jmx-2; ++j){
+         realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+      }
    }
 
    while(m < mm[0]) {
@@ -986,56 +1013,64 @@ void loadi_c_(){
 
       r = xctr-xdim/2+dumx;   
       jacp = r/(xctr+xdim/2);
-//    if(ran2(iseed)<jacp){
-//       x2(m)=min(dumx,xdim-dxeq)
-//       z2(m)=min(dumy,zdim-dzeq)
-//       x2(m)=max(dumx,dxeq)
-//       z2(m)=max(dumz,dzeq)
-//       }
-      zeta2[m] = dumz;
-      x2[m] = dumx;
-      z2[m] = dumy;
+     
+      i = static_cast<int>(dumx/dxeq);
+      wx0 = ((i+1)*dxeq-dumx)/dxeq;
+      wx1 = 1.-wx0;
 
-      parperp_c_(vpar, vperp2, m+1, cnt);
+      k = static_cast<int>(dumy/dzeq);
+      wz0 = ((k+1)*dzeq-dumy)/dzeq;
+      wz1 = 1.-wz0;
 
-      x = x2[m];
-      i = static_cast<int>(x/dxeq);
-      wx0 = ((i+1)*dxeq-x)/dxeq;
-      wx1 = 1 - wx0;
+      if(ran2_c_(iseed)<jacp && ran2_c_(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)) {
 
-      z = z2[m];
-      k = static_cast<int>(z/dzeq);
-      wz0 = ((k+1)*dzeq-z)/dzeq;
-      wz1 = 1-wz0;
+         zeta2[m] = dumz;
+         x2[m] = dumx;
+         z2[m] = dumy;
 
-      bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
-               +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
-      ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
-               +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+         parperp_c_(vpar, vperp2, m+1, cnt);
 
-      u2[m] = vpar/sqrt(mims[0]/ter);
-      mu[m] = 0.5*vperp2/bfldp*ter;
+         x = x2[m];
+         i = static_cast<int>(x/dxeq);
+         wx0 = ((i+1)*dxeq-x)/dxeq;
+         wx1 = 1 - wx0;
 
-      myavgv = myavgv+u2[m];
-//    LINEAR: perturb w(m) to get linear growth...
-//       w2(m)=2.*amp*ran2(iseed)
-      w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
-               +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
-      gw[m] = 1;
-               //    w2(m) = r/xctr*((imx-1)*(jmx-1)*(kmx+1))/(numprocs*mmx)
+         z = z2[m];
+         k = static_cast<int>(z/dzeq);
+         wz0 = ((k+1)*dzeq-z)/dzeq;
+         wz1 = 1-wz0;
 
-      if(weightscheme == 1) {
-         if(nonlin == 1) {
-            w2[m] = 0;
-         } else {
-            w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.3 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
-                    exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.25, 2) / (2 * pow(0.05, 2)));
+         bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
+                  +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
+         ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+                  +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+
+         u2[m] = vpar/sqrt(mims[0]/ter);
+         mu[m] = 0.5*vperp2/bfldp*ter;
+
+         myavgv = myavgv+u2[m];
+   //    LINEAR: perturb w(m) to get linear growth...
+   //       w2(m)=2.*amp*ran2(iseed)
+         w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
+         gw[m] = 1;
+
+         if(weightscheme == 1) {
+            if(nonlin == 1) {
+               // w2[m] = 0;
+               w2[m] = 1e-12;
+            } else {
+               w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.4 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
+                     exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)))
+                     * cos(atan2(Zgrid[j] - Zgrid[jmx / 2], Rgrid[i] - Rgrid[imx / 2]) / 2);
+            }
+            // gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
+            gw[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
          }
-         gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
-      }
 
-      myavgw += w2[m];
-      m++;
+         myavgw += w2[m];
+         m++;
+      }
    }
    
    if(CST != 0) {
@@ -1195,6 +1230,7 @@ void integ_c_(int iflag) {
    int j = 0;
    int k = 0;
    int m = 0;
+   int l = 0;
 
    double wx0 = 0;
    double wx1 = 0;
@@ -1207,6 +1243,15 @@ void integ_c_(int iflag) {
    double zeta = 0;
    double R_major_over_R = 0;
    double R_major_over_R1 = 0;
+
+   double xt = 0,zt = 0;
+
+   double wz0 = 0;
+   double wz1 = 0;
+   double bfldp = 0;
+   double b = 0;
+   double rhog = 0;
+   double rhox[4], rhoy[4];
 
    auto start_integ_tm = MPI_Wtime();
 
@@ -1231,9 +1276,11 @@ void integ_c_(int iflag) {
    auto* upar_ptr = upar.start();      // grab starting address of upar array object
    //copy used to copy data info to device and then to host implicitly
    //copyin used to just copy data into device, no update on host
+
    #pragma acc data \
-   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx], gw[0:mmx])
-   #pragma acc parallel loop gang vector present(den_ptr, upar_ptr)
+   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx], gw[0:mmx]) \
+   copy(mu[0:mmx])
+   #pragma acc parallel loop gang vector present(den_ptr, upar_ptr) private(rhox,rhoy)
    for(m = 0; m < mm[0]; ++m) {
       const auto denY = den.getY();
       const auto denZ = den.getZ();
@@ -1246,122 +1293,155 @@ void integ_c_(int iflag) {
       if(x < 0 || x > lx) printf("integ x=%lf\n", x);
       i = static_cast<int>(x/dxeq);
       wx0 = (i+1)-x/dxeq;
-      wx1 = 1-wx0;
-
-      R_major_over_R=xctr/(xctr-xdim/2+i*dx);
-      R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
+      wx1 = 1.-wx0;
 
       z = z3[m];
+      k = static_cast<int>(z/dzeq);
       if(z < 0 || z > lz) printf("integ z=%lf\n", z);
-      j = static_cast<int>(z/dzeq);
-      wy0 = (j+1)-z/dzeq;
-      wy1 = 1-wy0;
-      
-      zeta= my_fmod(zeta3[m], pi2); 
-      if(zeta < 0 || zeta > pi2)printf("integ zeta=%lf\n", zeta);
-      k=static_cast<int>(zeta/dzeta);
-      wzeta0=(k+1)-zeta/dzeta;
-      wzeta1=1-wzeta0;
+      wz0 = (k+1)-z/dzeq;
+      wz1 = 1.-wz0;
 
-      idx = get4DIndex(iflag,i,j,k, denY, denZ, denQ);
-      #pragma acc atomic update
-      den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+      bfldp = wx0*wz0*b0(i,k) + wx0*wz1*b0(i,k+1) + wx1*wz0*b0(i+1,k) + wx1*wz1*b0(i+1,k+1);
+      b = 1.-tor+tor*bfldp;
 
-      idx = get4DIndex(iflag,i+1,j,k, denY, denZ, denQ);
-      #pragma acc atomic update
-      den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+      rhog = sqrt(2.*b*mu[m]*mims[0])/(q[0]*b) * iflr;
 
-      idx = get4DIndex(iflag,i,j+1,k, denY, denZ, denQ);
-      #pragma acc atomic update
-      den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+      rhox[0] = rhog;
+      rhoy[0] = 0;
+      rhox[1] = -rhox[0];
+      rhoy[1] = -rhoy[0];
+      rhox[2] = 0;
+      rhoy[2] = rhog;
+      rhox[3] = 0;
+      rhoy[3] = -rhoy[2];
 
-      idx = get4DIndex(iflag,i+1,j+1,k, denY, denZ, denQ);
-      #pragma acc atomic update
-      den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+      #pragma acc loop seq
+      for(l = 0; l < lr[0]; ++l){
+         xt=x3[m]+rhox[l];
+         zt=z3[m]+rhoy[l];
 
-      idx = get3DIndex(i,j,k, uparY, uparZ);
-      #pragma acc atomic update 
-      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R;
+         if( (xt<2*dxeq) || (xt>lx-2*dxeq) ) xt=x3[m];
+         if( (zt<2*dzeq) || (zt>lz-2*dzeq) ) zt=z3[m];
 
-      idx = get3DIndex(i+1,j,k, uparY, uparZ);
-      #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1;
+         zeta= my_fmod(zeta3[m], pi2); 
+         if(zeta < 0 || zeta > pi2)printf("integ zeta=%lf\n", zeta);
 
-      idx = get3DIndex(i,j+1,k, uparY, uparZ);
-      #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R;
+         i = static_cast<int>(xt/dx);
+         j = static_cast<int>(zt/dz);
+         k = static_cast<int>(zeta/dzeta);
 
-      idx = get3DIndex(i+1,j+1,k, uparY, uparZ);
-      #pragma acc atomic update
-      upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1;
+         wx0 = (i+1)-xt/dx;
+         wx1 = 1.-wx0;
+         wy0 = (j+1)-zt/dz;
+         wy1 = 1.-wy0;
+         wzeta0 = (k+1)-zeta/dzeta;
+         wzeta1 = 1.-wzeta0;
 
-      if(k != kmx) {
-         idx = get4DIndex(iflag, i, j, k+1, denY, denZ, denQ);
+         R_major_over_R=xctr/(xctr-xdim/2+i*dx);
+         R_major_over_R1=xctr/(xctr-xdim/2+(i+1)*dx);
+        
+
+         idx = get4DIndex(iflag,i,j,k, denY, denZ, denQ);
          #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R/4;
 
-         idx = get4DIndex(iflag, i+1, j, k+1, denY, denZ, denQ);
+         idx = get4DIndex(iflag,i+1,j,k, denY, denZ, denQ);
          #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1/4;
 
-         idx = get4DIndex(iflag, i, j+1, k+1, denY, denZ, denQ);
+         idx = get4DIndex(iflag,i,j+1,k, denY, denZ, denQ);
          #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R/4;
 
-         idx = get4DIndex(iflag, i+1, j+1, k+1, denY, denZ, denQ);
+         idx = get4DIndex(iflag,i+1,j+1,k, denY, denZ, denQ);
          #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1/4;
 
-         idx = get3DIndex(i, j, k+1, uparY, uparZ);
-         #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         idx = get3DIndex(i,j,k, uparY, uparZ);
+         #pragma acc atomic update 
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta0*R_major_over_R/4;
 
-         idx = get3DIndex(i+1, j, k+1, uparY, uparZ);
+         idx = get3DIndex(i+1,j,k, uparY, uparZ);
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta0*R_major_over_R1/4;
 
-         idx = get3DIndex(i, j+1, k+1, uparY, uparZ);
+         idx = get3DIndex(i,j+1,k, uparY, uparZ);
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta0*R_major_over_R/4;
 
-         idx = get3DIndex(i+1, j+1, k+1, uparY, uparZ);
+         idx = get3DIndex(i+1,j+1,k, uparY, uparZ);
          #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta0*R_major_over_R1/4;
 
-      } else {
-         idx = get4DIndex(iflag, i, j, 0, denY, denZ, denQ);
-         #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+         if(k != kmx) {
+            idx = get4DIndex(iflag, i, j, k+1, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R/4;
 
-         idx = get4DIndex(iflag, i+1, j, 0, denY, denZ, denQ);
-         #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+            idx = get4DIndex(iflag, i+1, j, k+1, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1/4;
 
-         idx = get4DIndex(iflag, i, j+1, 0, denY, denZ, denQ);
-         #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+            idx = get4DIndex(iflag, i, j+1, k+1, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R/4;
 
-         idx = get4DIndex(iflag, i+1, j+1, 0, denY, denZ, denQ);
-         #pragma acc atomic update
-         den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
+            idx = get4DIndex(iflag, i+1, j+1, k+1, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1/4;
 
-         idx = get3DIndex(i, j, 0, uparY, uparZ);
-         #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R;
+            idx = get3DIndex(i, j, k+1, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R/4;
 
-         idx = get3DIndex(i+1, j, 0, uparY, uparZ);
-         #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1;
+            idx = get3DIndex(i+1, j, k+1, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1/4;
 
-         idx = get3DIndex(i, j+1, 0, uparY, uparZ);
-         #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R;
+            idx = get3DIndex(i, j+1, k+1, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R/4;
 
-         idx = get3DIndex(i+1, j+1, 0, uparY, uparZ);
-         #pragma acc atomic update
-         upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1;
-      }
+            idx = get3DIndex(i+1, j+1, k+1, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1/4;
+
+         } else {
+            idx = get4DIndex(iflag, i, j, 0, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R/4;
+
+            idx = get4DIndex(iflag, i+1, j, 0, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1/4;
+
+            idx = get4DIndex(iflag, i, j+1, 0, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R/4;
+
+            idx = get4DIndex(iflag, i+1, j+1, 0, denY, denZ, denQ);
+            #pragma acc atomic update
+            den_ptr[idx] += gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1/4;
+
+            idx = get3DIndex(i, j, 0, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy0*wzeta1*R_major_over_R/4;
+
+            idx = get3DIndex(i+1, j, 0, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy0*wzeta1*R_major_over_R1/4;
+
+            idx = get3DIndex(i, j+1, 0, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx0*wy1*wzeta1*R_major_over_R/4;
+
+            idx = get3DIndex(i+1, j+1, 0, uparY, uparZ);
+            #pragma acc atomic update
+            upar_ptr[idx] += u3[m]*gw[m]*w3[m]*wx1*wy1*wzeta1*R_major_over_R1/4;
+         }
+      }   
    }
+   
    den.updatehost();
    upar.updatehost();
    
@@ -1649,10 +1729,10 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				if(j > 0) {
 					if(j == jmx) {
 						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
-						v[0] = v[0] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
+						v[0] = v[0] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
 					} else {
 						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
-                  v[0] = v[0] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
+                  v[0] = v[0] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
 					}
 				}
 				col[0].i = i;
@@ -1661,10 +1741,10 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				if(i > 0) {
 					if(i == imx) {
 						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
-                  v[1] = v[1] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
+                  v[1] = v[1] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
 					} else {
 						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
-                  v[1] = v[1] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
+                  v[1] = v[1] - PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
 					}
 				}
 				col[1].i = i - 1;

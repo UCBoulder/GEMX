@@ -92,7 +92,8 @@ void ppush_c_(const int &n) {
 		ti_temp= wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
 				+wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
 
-		energy0 = (mu[m]*b + 0.5*mims[0]*(u3[m]*u3[m]));
+		// energy0 = (mu[m]*b + 0.5*mims[0]*(u3[m]*u3[m]));
+		energy0 = (mu[m]*b + 0.5*mims[0]*u2[m]*u2[m]);
         energy =  max(energy0,0.1*T_center);
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -196,7 +197,7 @@ void ppush_c_(const int &n) {
 	delbxp = delbxp*0.25;
 	delbzp = delbzp*0.25;
 
-	vfac = 0.5*(mims[0] * (u2[m] * u2[m]) + 2 * mu[m] * b);
+	vfac = 0.5*(mims[0]*(u2[m]*u2[m]) + 2.*mu[m]*b);
 	kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
 	kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
 
@@ -212,7 +213,7 @@ void ppush_c_(const int &n) {
 	//  write(*,*)bstar-b-mims(1)*vpar*bdcurlbp/q(1), b-bfldp
 	//  vcurlbdotE=vpar*(exp1*curlbp(1)+ezp*curlbp(2)+ezetap*curlbp(3))
 	
-	dum1 = 1;
+	dum1 = 1.;
 	// vxdum = (ezp/b+vpar/b*delbxp)*dum1
 	//  vxdum = (ezp*bfldzetap-ezetap*bfldzp)/b**2
 	// xdot = vxdum*nonlin +vpar*bfldxp/b-enerb/bfldp/bfldp*bfldzetap*dbdzp
@@ -258,10 +259,12 @@ void ppush_c_(const int &n) {
 	if(weightscheme == 1) {
 		//linear weight equation
 		if(nonlin == 0) {
-			w3[m] = w2[m] + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) 
-                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp));
+			w3[m] = w2[m] + 0.5*dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp));
 		} else {
-			 w3[m] = w2[m] + 0.5*dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+			//  w3[m] = w2[m] + 0.5*dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+			 w3[m] = w2[m] + 0.5*dt*((1-w2[m])*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)));
 			 //print("%lf", (xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
 		}
 		//printf("%lf", w3[m]);
@@ -501,7 +504,8 @@ void cpush_c_(const int &timestep){
 // !          pzdot = pzd0+((exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)*q(1)/mims(1)+vcurlbdotE)/bstar*nonlin
 
 
-	pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
+	// pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
+	pzdot = (BStar3[0]*(q[0]*exp1*nonlin-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp*nonlin-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap*nonlin-mu[m]*dbdzetap))/(mims[0]*bstar);
 
 	edot = q[0]*(xdot*exp1 + zdot*ezp + zetadot*(x2[m]+(xctr-0.5*xdim))*ezetap);
 
@@ -541,10 +545,12 @@ void cpush_c_(const int &timestep){
 
 		if (weightscheme == 1) {
 			if(nonlin == 0) {
-				w3[m] = w2[m] + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) 
-                        + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp));
+				w3[m] = w2[m] + dt*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
+                        + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp));
 			} else {
-				w3[m] = w2[m] + dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+				// w3[m] = w2[m] + dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
+				w3[m] = w2[m] + 0.5*dt*((1-w2[m])*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
+                + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)));
 			}
 			//printf("%lf", w3[m]);
 		}

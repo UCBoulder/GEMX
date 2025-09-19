@@ -52,7 +52,7 @@ CArray3D<double> curlb; //last index 1 based in ftn - cPP:(0,1,2) vs ftn:(1,2,3)
 
 // for phi average Calder Edit
 // int num_lines = 80817; //NON-CBC VERSION
-int num_lines = 53782;    //CBC VERSION
+int num_lines = 44816;    //CBC VERSION
 int line;
 CArray2D<double> phiavg;
 double *psitab;
@@ -100,7 +100,6 @@ void new_equil_c(){
     Rgrid = new double[nx+1]; std::fill(Rgrid, Rgrid+nx+1, 0.0);
     Zgrid = new double[nz+1]; std::fill(Zgrid, Zgrid+nz+1, 0.0);
 
-
     b0.resize(nx+1,nz+1), b0x.resize(nx+1,nz+1), b0z.resize(nx+1,nz+1),
                  b0zeta.resize(nx+1,nz+1),dbdx.resize(nx+1,nz+1),dbdz.resize(nx+1,nz+1),
                  c2_over_vA2.resize(nx+1,nz+1);
@@ -124,8 +123,7 @@ void new_equil_c(){
     dpsi_dr.resize(nx+1,nz+1);
     dpsi_dz.resize(nx+1,nz+1);
 
-    //global equilibrium data
-
+    //global equilibrium data 
     //open R.dat and input into Rgrid
     read1D("R.dat", Rgrid, 0);
     //open Z.dat and input into Zgrid
@@ -231,7 +229,7 @@ void new_equil_c(){
     e = 1.6e-19;
     mu0 = 1.25663706212e-6;
     proton = 1.67e-27;
-    bu = 1.98562;
+    // bu = 1.98562;
 
     bu = 1; //?
 
@@ -239,22 +237,22 @@ void new_equil_c(){
     omegau = e*bu/proton;
     frequ = omegau;
 
-    vu = sqrt(tu/proton);
+    // vu = sqrt(tu/proton);
     vu = 1; //?
-    xu = proton*vu/(e*bu);
+    // xu = proton*vu/(e*bu);
     xu = 1; //?
     nu = 2.5e19;
     betaVal = 4*3.14159*1e-7*nu*tu/(bu*bu); //is this the whole thing squared or bu squared? Double check if ever used
     
 //     assign T, n profiles 
-    for(int i = 0; i <= nx; ++i){
-        for(int j = 0; j <= nz; ++j){
-            t0i(i,j) = 1.*tu;
-            t0e(i,j) = 1.*tu;
-            xn0i(i,j) = 1.*nu;
-            xn0e(i,j) = 1.*nu;
-        }
-    }
+    // for(int i = 0; i <= nx; ++i){
+    //     for(int j = 0; j <= nz; ++j){
+    //         t0i(i,j) = 1.*tu;
+    //         t0e(i,j) = 1.*tu;
+    //         xn0i(i,j) = 1.*nu;
+    //         xn0e(i,j) = 1.*nu;
+    //     }
+    // }
     //   Calder Edit: realistic profilies for ITG runs
     //   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -280,7 +278,7 @@ void new_equil_c(){
     read2D("ne0_gorler.dat", xn0e, nx, nz);
     read2D("ti0_gorler.dat", t0i, nx, nz); //problem likley here, so likely also with others
     read2D("te0_gorler.dat", t0e, nx, nz);
-
+    // printf("Testing");
     //PUT INTO SI UNITS
     for(int i = 0; i <= nx; ++i) {
         for(int j = 0; j <=nz; ++j) {
@@ -324,7 +322,7 @@ void new_equil_c(){
             } else {
                 c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)*b0(i,j))*(vu*vu);//2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
             }
-            rho_i(i,j) = sqrt(2*t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j));
+            rho_i(i,j) = sqrt(t0i(i,j)/(2*proton))*(2*proton)/(e*b0(i,j));
             // if (c2_over_vA2(i,j)<1.0e-19) c2_over_vA2(i,j)=0.01*mu0*2*proton*xn0e(i/2,j/2)/(b0(i/2,j/2)**2)*vu**2
         }
     }
@@ -450,6 +448,9 @@ void new_equil_c(){
 //  zdim = a*3
     dxeq = xdim/nx;
     dzeq = zdim/nz;
+
+    dxeq = abs(Rgrid[1]-Rgrid[0]);
+    dzeq = abs(Zgrid[1]-Zgrid[0]);
     
     for(int i = 1; i <= nx-1; ++i){
         for(int j = 1; j <= nz-1; ++j){
