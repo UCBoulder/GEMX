@@ -177,13 +177,15 @@ int main() {
    //    field(timestep-1,0)
 
    ofstream weightFile;
-   weightFile.open("testweights", ios::app);
+   if(myid==0){
+      weightFile.open("testweights", ios::app);
       double weight_diag = 0.0;
       for(int m = 0; m < mm[0]; ++m) {
          weight_diag =+ w2[m]/mm[0];
       }
       weightFile << timestep << "   " << weight_diag << "   " << zeta2[mmx-1] <<"\n";
-   weightFile.close();
+      weightFile.close();
+   }
 
 
    if(ifield_solver == 1) {
@@ -205,11 +207,13 @@ int main() {
       } else if(i3D != 0) {
          // cout << "i3d != 0" << endl;
          // phi.Clear();
-         
+         phiavg.Clear();
          for(iter = 0; iter <= iterations; ++iter) {
             phi.Clear(); // 9/12/2025 test
+            // phiavg.Clear();
+            // fluxavg_c_(phi,phiavg); //Uses previous time step phi
             for(k = myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k) {
-               fluxavg_c_(phi,phiavg); //Uses previous time step phi
+               // fluxavg_c_(phi,phiavg); //Uses previous time step phi
                //phi.Clear();
                kval = (PetscInt)k;
 
@@ -225,7 +229,8 @@ int main() {
                   phi(i,j,k)=phi_array[idx];//*mask(i,j);
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
-            }
+            } 
+            fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             // fluxavg(phi,phiavg) //Turned off for CBC
          }
@@ -281,7 +286,7 @@ int main() {
          }
       }
 
-      if(modes != 0) {
+      if(modes >= 0) {
          fourier_modes(phi,modes);
       }
 
@@ -320,26 +325,28 @@ int main() {
       phi_diag = 0.0;
       phi_diag_freq = 0.0;
 
-      for(int i = 0; i <= imx; ++i) {
-         for(int j = 0; j <= jmx; ++j) {
-            for(int k = 0; k <= kmx; ++k) {
-               phi_diag = phi_diag + pow(abs(phi(i,j,k)),2)/(imx*jmx*kmx);
+      if(myid==0){
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j) {
+               for(int k = 0; k <= kmx; ++k) {
+                  phi_diag = phi_diag + pow(abs(phi(i,j,k)),2)/(imx*jmx*kmx);
                // phi_diag_freq = phi_diag_freq + phi(i,j,k)/(imx*jmx*kmx);
+               }
             }
-		}
+         }
+         ofstream file;
+         file.open("testPhiDiag", ios::app);
+         file << timestep << "		" << phi_diag << endl;
+         file.close();
+      
+         file.open("testPhiFreq", ios::app);
+         file << timestep << "		" << phi(192,128,0) << "    " << phi(180,128,0) << endl;
+         file.close();
+      
+         file.open("testPhiFreq2", ios::app);
+         file << timestep << "		" << phi(170,128,0) << "    " << phi(200,128,0) << endl;
+         file.close();
       }
-	  ofstream file;
-	  file.open("testPhiDiag", ios::app);
-	  file << timestep << "		" << phi_diag << endl;
-	  file.close();
-
-	  file.open("testPhiFreq", ios::app);
-	  file << timestep << "		" << phi(192,128,0) << "    " << phi(180,128,0) << endl;
-	  file.close();
-
-     file.open("testPhiFreq2", ios::app);
-	  file << timestep << "		" << phi(170,128,0) << "    " << phi(200,128,0) << endl;
-	  file.close();
 
    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -354,10 +361,12 @@ int main() {
          //MPI_Allreduce(MPI_IN_PLACE, phi,start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       } else if(i3D != 0) {
          // phi.Clear();
+         phiavg.Clear();
          for(iter = 0; iter <= iterations; ++iter) {
             phi.Clear();
+            // phiavg.Clear();
             for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
-               fluxavg_c_(phi, phiavg);
+               // fluxavg_c_(phi, phiavg);
 
                kval = (PetscInt)k;
                PetscCall(KSPSetComputeRHS(ksp,ComputeRHS,&kval));
@@ -373,6 +382,7 @@ int main() {
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
             }
+            fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
          }
       } else {
@@ -425,7 +435,7 @@ int main() {
          }
       }
 
-      if(modes != 0) {
+      if(modes >= 0) {
          fourier_modes(phi,modes);
       }
 
@@ -1058,7 +1068,7 @@ void loadi_c_(){
          if(weightscheme == 1) {
             if(nonlin == 1) {
                // w2[m] = 0;
-               w2[m] = 1e-12;
+               w2[m] = 1e-12*(ran2_c_(iseed)-0.5);
             } else {
                w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.4 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
                      exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)))
@@ -2258,29 +2268,12 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
    fftw_complex* phi_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((kmx + 1) / 2 + 1));
    double* f_filtered = (double*) fftw_malloc(sizeof(double) * (kmx + 1));
 
+   // printf("Testing");
    for (int i = 0; i <= imx; ++i) {
       for (int j = 0; j <= jmx; ++j) {
          fftw_plan plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &input_phi(i,j,0), phi_hat, FFTW_ESTIMATE);
          fftw_execute(plan_forward);
          fftw_destroy_plan(plan_forward);
-
-         //  if (mod(timestep,10)==0) then
-         //     if (j = jmidplane .and. i = grad_peak) then            
-         //        ! Calculate real frequency and growth rate
-         //        do k = 0, ((kmx+1)/2 + 1)
-         //           ! Real frequency: omega_r = 2 * pi * k / L
-         //           omega_r = real(k) / R(grad_peak)
-   
-         //           ! Growth rate: look at imaginary part of phi_hat(k)
-         //           gamma = aimag(phi_hat(k))  ! Extract the imaginary part (growth rate)
-   
-         //           ! Print or store the frequency and growth rate
-         //           if (k == 8) then  ! For the selected mode, print values
-         //              print*, 'Mode ', k, ' - Frequency: ', omega_r, ' - Growth rate: ', gamma
-         //           end if
-         //        end do
-         //     end if
-         //  end if
 
          for (int k = 0; k <= ((kmx + 1) / 2); ++k) {
                phi_hat[k][0] /= (kmx + 1);
