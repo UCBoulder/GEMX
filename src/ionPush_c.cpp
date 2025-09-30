@@ -276,6 +276,12 @@ void ppush_c_(const int &n) {
 			zeta3[m]=zeta2[m];
 			w3[m]=0;
         }
+
+	// CBC SPECIFIC
+	if(sqrt((x3[m]+Rgrid[0]-xctr)*(x3[m]+Rgrid[0]-xctr) + (z3[m]+Zgrid[0])*(z3[m]+Zgrid[0])) > 0.6012){
+		w3[m] = 0;
+	}	
+	
 	}
 	updateHostData();
 	end_ppush_tm = MPI_Wtime();
@@ -567,6 +573,11 @@ void cpush_c_(const int &timestep){
 		w2[m]=0.;
 		w3[m]=0.;
 	}
+
+	// CBC SPECIFIC
+	if(sqrt((x3[m]+Rgrid[0]-xctr)*(x3[m]+Rgrid[0]-xctr) + (z3[m]+Zgrid[0])*(z3[m]+Zgrid[0])) > 0.6012){
+		w3[m] = 0;
+	}	
 
 	//TEMPORARY FLUX DIAGNOSTIC
 	Q_flux = Q_flux + w3[m]*(0.5*mims[1]*pow(u3[m],2))*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);

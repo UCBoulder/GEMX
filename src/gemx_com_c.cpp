@@ -87,7 +87,7 @@ MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;
 int imx, jmx, kmx, mmx;
 int numprocs;
 int last,myid, cnt , ierr;
-int PADE, CST, weightscheme,modes,filtering_iterations, cold_start,checkpoint;
+int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations, cold_start,checkpoint;
 
 int nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
 int rand_table[10007];

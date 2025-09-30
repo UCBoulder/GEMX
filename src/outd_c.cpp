@@ -7,38 +7,39 @@ void outd_c_(const int &n) {
     ofstream testPhi;
     if(myid == 0) {
         printf("timestep = %d\n", timestep);
-    }
+    
 
-    outTracer.open("./out/tracer.out", ios::app); 
-    for(int m = 0; m < ntracer; ++m) {
-        outTracer << "            " << timestep << "            " << m << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << "\n";
-    }
-    outTracer.close();
-
-    testNe.open("./out/testne");
-    if(testNe.is_open()) {
-        for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j) {  
-                testNe << fixed << setprecision(16) << dene(i,j,0) << "    ";
-            }
-            testNe << "\n";
+        outTracer.open("./out/tracer.out", ios::app); 
+        for(int m = 0; m < ntracer; ++m) {
+            outTracer << "            " << timestep << "            " << m << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << "\n";
         }
-        testNe.close();
-    } else {
-        cout << "Warning testne failed to open/ wasn't created" << "\n";
-    }
+        outTracer.close();
 
-    testPhi.open("./out/testphi");
-    if(testPhi) {
-        for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j) {
-                testPhi << fixed << setprecision(16) << phi(i,j,0) <<  "    "; 
+        testNe.open("./out/testne");
+        if(testNe.is_open()) {
+            for(int i = 0; i <= imx; ++i) {
+                for(int j = 0; j <= jmx; ++j) {  
+                    testNe << fixed << setprecision(16) << dene(i,j,0) << "    ";
+                }
+                testNe << "\n";
             }
-            testPhi << "\n";
+            testNe.close();
+        } else {
+            cout << "Warning testne failed to open/ wasn't created" << "\n";
         }
-        testPhi.close();
-    } else {
-        cout << "Warning testphi failed to open/ wasn't created" << "\n";
+
+        testPhi.open("./out/testphi");
+        if(testPhi) {
+            for(int i = 0; i <= imx; ++i) {
+                for(int j = 0; j <= jmx; ++j) {
+                    testPhi << fixed << setprecision(16) << phi(i,j,0) <<  "    "; 
+                }
+                testPhi << "\n";
+            }
+            testPhi.close();
+        } else {
+            cout << "Warning testphi failed to open/ wasn't created" << "\n";
+        }
     }
 
 

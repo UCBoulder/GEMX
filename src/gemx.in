@@ -34,8 +34,8 @@
 'CST'
 0
 
-'weightscheme'
-1
+'weightscheme       loadingscheme'
+1                         0
 
 'modes    filtering_iterations'
 10                   1

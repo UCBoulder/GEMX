@@ -159,9 +159,9 @@ int main() {
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
    if(ifield_solver == 1) ncurr=1;
-      
+       start_total_tm = MPI_Wtime();
    for(timestep=ncurr; timestep<=nm; ++timestep) {
-      start_total_tm = MPI_Wtime();
+      // start_total_tm = MPI_Wtime();
       for(int randTabInd = 0; randTabInd <= 10006; ++randTabInd){
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[randTabInd]=1;
@@ -186,7 +186,7 @@ int main() {
       weightFile << timestep << "   " << weight_diag << "   " << zeta2[mmx-1] <<"\n";
       weightFile.close();
    }
-
+   
 
    if(ifield_solver == 1) {
       phi.Clear();
@@ -234,7 +234,7 @@ int main() {
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             // fluxavg(phi,phiavg) //Turned off for CBC
          }
-         
+      
       } else {
          k = 0;
          phi.Clear();
@@ -285,7 +285,7 @@ int main() {
             }
          }
       }
-
+   
       if(modes >= 0) {
          fourier_modes(phi,modes);
       }
@@ -307,14 +307,17 @@ int main() {
          efieldcalc_c_(phi);
       }
 
-      get_apar_(-1);
+      // get_apar_(-1);
       //smooth(apars,2);
-      get_jpar_(apars);
+      // get_jpar_(apars);
       //smooth(jpar,3)
-      get_ne_c_(-1);
+      // get_ne_c_(-1);
+
 
       if(ision==1) ppush_c_(timestep);
       if(ifluid==1) integ_c_(0);
+
+
    } else {
          if(ision==1) ppush_c_(timestep);
          //if(ifluid==1)call pintef
@@ -477,12 +480,12 @@ int main() {
          file.close();
       }
 
-      get_apar_(1);
+      // get_apar_(1);
       //  !call smooth_c(apar,2)
       // !call get_jpar(apar)
-      get_jpar_(apar);
+      // get_jpar_(apar);
       //call smooth(jpar,3)
-      get_ne_c_(1);
+      // get_ne_c_(1);
 
       if(myid == 0 && (timestep%10) == 0) {
          file.open("testphiavg");
@@ -619,6 +622,15 @@ int main() {
    MPI_Reduce(&total_tm, &tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); CHKERRQ(ierr);
    if(myid==0)total_tm = tmp/std::real(numprocs);
 
+   if (myid == 0) {
+    file.open("gemx_timing.txt");
+    file << ppush_tm << " "
+         << cpush_tm << " "
+         << integ_tm << " "
+         << total_tm << "\n";
+    file.close();
+   }
+
    lasttm=MPI_Wtime();
    tottm=lasttm-starttm;
 
@@ -709,7 +721,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &CST);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d", &weightscheme);
+      fscanf(in_file, "%d %d", &weightscheme, &loadingscheme);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d", &modes, &filtering_iterations);
       fscanf(in_file, " %*[^\n]\n");
@@ -1032,8 +1044,7 @@ void loadi_c_(){
       wz0 = ((k+1)*dzeq-dumy)/dzeq;
       wz1 = 1.-wz0;
 
-      if(ran2_c_(iseed)<jacp && ran2_c_(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)) {
-
+      if(loadingscheme==1){
          zeta2[m] = dumz;
          x2[m] = dumx;
          z2[m] = dumy;
@@ -1059,12 +1070,10 @@ void loadi_c_(){
          mu[m] = 0.5*vperp2/bfldp*ter;
 
          myavgv = myavgv+u2[m];
-   //    LINEAR: perturb w(m) to get linear growth...
-   //       w2(m)=2.*amp*ran2(iseed)
-         w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
-                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
-         gw[m] = 1;
 
+         w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
+         gw[m] = 1;
          if(weightscheme == 1) {
             if(nonlin == 1) {
                // w2[m] = 0;
@@ -1074,13 +1083,64 @@ void loadi_c_(){
                      exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)))
                      * cos(atan2(Zgrid[j] - Zgrid[jmx / 2], Rgrid[i] - Rgrid[imx / 2]) / 2);
             }
-            // gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
-            gw[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
+            gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                  +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
          }
 
          myavgw += w2[m];
          m++;
-      }
+      } else {
+         if(ran2_c_(iseed)<jacp && ran2_c_(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)) {
+
+            zeta2[m] = dumz;
+            x2[m] = dumx;
+            z2[m] = dumy;
+
+            parperp_c_(vpar, vperp2, m+1, cnt);
+
+            x = x2[m];
+            i = static_cast<int>(x/dxeq);
+            wx0 = ((i+1)*dxeq-x)/dxeq;
+            wx1 = 1 - wx0;
+
+            z = z2[m];
+            k = static_cast<int>(z/dzeq);
+            wz0 = ((k+1)*dzeq-z)/dzeq;
+            wz1 = 1-wz0;
+
+            bfldp = wx0*wz0*b0(i,k)+wx0*wz1*b0(i,k+1) 
+                     +wx1*wz0*b0(i+1,k)+wx1*wz1*b0(i+1,k+1); 
+            ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) 
+                     +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1);
+
+            u2[m] = vpar/sqrt(mims[0]/ter);
+            mu[m] = 0.5*vperp2/bfldp*ter;
+
+            myavgv = myavgv+u2[m];
+      //    LINEAR: perturb w(m) to get linear growth...
+      //       w2(m)=2.*amp*ran2(iseed)
+            // w2[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) 
+                     // +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
+            w2[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
+            gw[m] = 1;
+
+            if(weightscheme == 1) {
+               if(nonlin == 1) {
+                  // w2[m] = 0;
+                  w2[m] = 1e-12*(ran2_c_(iseed)-0.5);
+               } else {
+                  w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.4 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
+                        exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)))
+                        * cos(atan2(Zgrid[j] - Zgrid[jmx / 2], Rgrid[i] - Rgrid[imx / 2]) / 2);
+               }
+               // gw[m] = (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1) + wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx);
+               gw[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
+            }
+
+            myavgw += w2[m];
+            m++;
+         }
+      }      
    }
    
    if(CST != 0) {
@@ -1508,7 +1568,7 @@ void integ_c_(int iflag) {
 
    
    auto end_integ_tm = MPI_Wtime();
-   integ_tm = end_integ_tm - start_integ_tm;  //integ_tm + 
+   integ_tm = integ_tm + end_integ_tm - start_integ_tm;  //integ_tm + 
 }
 
 void get_apar_(const int &flagnumber) {
@@ -2268,12 +2328,16 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
    fftw_complex* phi_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((kmx + 1) / 2 + 1));
    double* f_filtered = (double*) fftw_malloc(sizeof(double) * (kmx + 1));
 
+   fftw_plan plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &input_phi(0,0,0), phi_hat, FFTW_ESTIMATE);
+   fftw_plan plan_backward = fftw_plan_dft_c2r_1d(kmx + 1, phi_hat, f_filtered, FFTW_ESTIMATE);
    // printf("Testing");
    for (int i = 0; i <= imx; ++i) {
       for (int j = 0; j <= jmx; ++j) {
-         fftw_plan plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &input_phi(i,j,0), phi_hat, FFTW_ESTIMATE);
-         fftw_execute(plan_forward);
-         fftw_destroy_plan(plan_forward);
+         // fftw_plan plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &input_phi(i,j,0), phi_hat, FFTW_ESTIMATE);
+         // fftw_execute(plan_forward);
+         // fftw_destroy_plan(plan_forward);
+
+         fftw_execute_dft_r2c(plan_forward, &input_phi(i,j,0), phi_hat);
 
          for (int k = 0; k <= ((kmx + 1) / 2); ++k) {
                phi_hat[k][0] /= (kmx + 1);
@@ -2284,15 +2348,20 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
                }
          }
 
-         fftw_plan plan_backward = fftw_plan_dft_c2r_1d(kmx + 1, phi_hat, f_filtered, FFTW_ESTIMATE);
-         fftw_execute(plan_backward);
-         fftw_destroy_plan(plan_backward);
+         // fftw_plan plan_backward = fftw_plan_dft_c2r_1d(kmx + 1, phi_hat, f_filtered, FFTW_ESTIMATE);
+         // fftw_execute(plan_backward);
+         // fftw_destroy_plan(plan_backward);
+
+         fftw_execute_dft_c2r(plan_backward, phi_hat, f_filtered);
 
          for (int k = 0; k <= kmx; ++k) {
                input_phi(i,j,k) = f_filtered[k];
          }
       }
    }
+
+   fftw_destroy_plan(plan_forward);
+   fftw_destroy_plan(plan_backward);
 
    if(myid == 0 && ((timestep%10) == 0)) {
       // write(*,*) phi(:,:,outk);
@@ -2311,7 +2380,6 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
    fftw_free(phi_hat);
    fftw_free(f_filtered);
 }
-
 
 //TEST------------------------------------------------------------------------------------------------------------
 inline void prepareDeviceData() {

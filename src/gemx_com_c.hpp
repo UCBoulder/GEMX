@@ -12,7 +12,7 @@ void cleanupCom();
 void new_gemx_com();
 //Variables and Constants
 extern int imx, jmx, kmx, mmx;
-extern int PADE, CST, weightscheme,modes,filtering_iterations,cold_start,checkpoint;
+extern int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,cold_start,checkpoint;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int rand_table[]; //10007
 extern int timestep,iez;
