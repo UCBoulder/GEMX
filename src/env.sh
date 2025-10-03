@@ -1,1 +1,0 @@
-/pscratch/sd/s/stirkas/GEMX_ftn/scripts/env.sh
