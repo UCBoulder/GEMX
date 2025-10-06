@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+#Store local code updates in run dir.
+./storeChanges.sh
+
+mpirun -n 1 ./gemx

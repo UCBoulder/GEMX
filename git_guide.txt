@@ -1,0 +1,35 @@
+###Basic commands
+
+git pull                          - Pull the latest changes.
+git add .                         - Stage every new change for commit. (Period for all, can add just select files manually though.)
+git commit -m "commit message"    - Create a commit with added changes. Message should be descriptive about what was updated.
+git push                          - Push latest changes.
+
+git clone <link>                  - To initially download a repository.
+git checkout main                 - Revert to main branch (latest).
+git checkout <commit_id>          - Revert to older branches using identifier for each commit.
+git checkout -b <branch_name>     - Make a new branch separate from main branch. Can be useful for large project changes such as the C++ conversion.
+git gui                           - Open the gui. Can be useful for looking at commit histories. (Repository -> Visualize All Branch History)
+
+
+###Creating a repository
+
+Details could be found in the link: https://www.atlassian.com/git/tutorials/setting-up-a-repository
+
+
+Step 1: Executing "git init" creates a .git subdirectory in the current working directory
+
+Step 2: Add modified files to the staging area:(e.g, if gem.F90 is modified ingemx_scott_1018), the following command could be used (under the GEMX directory): "git add gemx_scott_1018"
+
+Step 3: Commit the staged files: Once the files are staged, you can commit them to your repository with: git commit -m "modification info"
+
+Step 4: Push the commit to a remote repository: git push origin branch-name
+
+Note that when type username and password here comes the following error that remote: Support for password authentication was removed on August 13, 2021.
+remote: Please see https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories#cloning-with-https-urls for information on currently recommended modes of authentication.
+fatal: Authentication failed for 'https://github.com/UCBoulder/GEMX.git/' 
+
+*Note that password should be the personal access token
+
+Here are the steps to set up the personal access token in github:
+In the upper-right corner of any page, click your profile photo, then click Settings. In the left sidebar, click Developer settings. In the left sidebar, under Personal access tokens, click Tokens (classic). Select Generate new token, then click Generate new token (classic).
