@@ -37,7 +37,6 @@ int main() {
    //call init
    
    initialize_c_();
-   prepareDeviceData();
    
    while(dbg == 1){
       sleep(1);         //if debug option set sleep for forever. To release type "dbg = 0" into debug consol once attatched. Happy Hunting!
@@ -69,6 +68,7 @@ int main() {
    } 
 
    if(iget == 0) loadi_c_();
+   prepareDeviceData();
    integ_c_(1);
    if(myid == 0) {
       
@@ -180,6 +180,7 @@ int main() {
    if(myid==0){
       weightFile.open("testweights", ios::app);
       double weight_diag = 0.0;
+      #pragma acc update self(zeta2[0:mmx], w2[0:mmx])
       for(int m = 0; m < mm[0]; ++m) {
        //  weight_diag =+ w2[m]/mm[0];
        weightFile << gw[m] << "\n";
@@ -1387,17 +1388,12 @@ void integ_c_(int iflag) {
 
    size_t idx = 0;                     // idx used to store index calculated for loop - used in den_ptr and upar_ptr 
 
-   den.updatedev();                        // prepare device (multicore CPU or GPU) with data from objects explicitly
+   den.updatedev();                        
    upar.updatedev();
-   auto* den_ptr = den.start();        // grab starting address of den array object
-   auto* upar_ptr = upar.start();      // grab starting address of upar array object
-   //copy used to copy data info to device and then to host implicitly
-   //copyin used to just copy data into device, no update on host
+   auto* den_ptr = den.start();       
+   auto* upar_ptr = upar.start(); 
 
-   #pragma acc data \
-   copyin(x3[0:mmx], z3[0:mmx], zeta3[0:mmx], u3[0:mmx], w3[0:mmx], gw[0:mmx]) \
-   copy(mu[0:mmx])
-   #pragma acc parallel loop gang vector present(den_ptr, upar_ptr) private(rhox,rhoy)
+   #pragma acc parallel loop gang vector present(den_ptr, upar_ptr, x3, z3, zeta3, u3, w3, gw, mu) private(rhox,rhoy) 
    for(m = 0; m < mm[0]; ++m) {
       const auto denY = den.getY();
       const auto denZ = den.getZ();
@@ -2434,7 +2430,6 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
    fftw_free(f_filtered);
 }
 
-//TEST------------------------------------------------------------------------------------------------------------
 inline void prepareDeviceData() {
    //ionpush data
    curlb.todev();
@@ -2461,6 +2456,9 @@ inline void prepareDeviceData() {
    //integ data
    den.todev();
    upar.todev();
+
+   //particle data arrays
+   #pragma acc enter data copyin(mu[0:mmx], u2[0:mmx], u3[0:mmx], x2[0:mmx] ,x3[0:mmx], z2[0:mmx], z3[0:mmx], zeta2[0:mmx], zeta3[0:mmx],  w2[0:mmx], w3[0:mmx], gw[0:mmx])
 }
 
 inline void freeDeviceData() {
@@ -2489,5 +2487,8 @@ inline void freeDeviceData() {
    //integ data
    den.fromdev();
    upar.fromdev();
+
+   //particle data arrays
+      #pragma acc exit data delete(mu[0:mmx], u2[0:mmx], u3[0:mmx], x2[0:mmx] ,x3[0:mmx], z2[0:mmx], z3[0:mmx], zeta2[0:mmx], zeta3[0:mmx],  w2[0:mmx], w3[0:mmx], gw[0:mmx])
+
 }
-//TEST------------------------------------------------------------------------------------------------------------

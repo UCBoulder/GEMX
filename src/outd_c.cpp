@@ -8,7 +8,7 @@ void outd_c_(const int &n) {
     if(myid == 0) {
         printf("timestep = %d\n", timestep);
     
-
+        #pragma acc update self(x3[0:mmx], z3[0:mmx])
         outTracer.open("./out/tracer.out", ios::app); 
         for(int m = 0; m < ntracer; ++m) {
             outTracer << "            " << timestep << "            " << m << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << "\n";
