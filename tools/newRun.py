@@ -41,7 +41,7 @@ def create_run_directory(run_name=None):
                 full_entry_path = os.path.join(folder, entry)
                 if os.path.isdir(full_entry_path):
                     #Copy the directory and its contents
-                    shutil.copytree(full_entry_path, os.path.join(run_dir, entry))
+                    shutil.copytree(full_entry_path, os.path.join(run_dir, entry),ignore=shutil.ignore_patterns('.ipynb_checkpoints'))
                 elif os.path.isfile(full_entry_path):
                     if (entry == 'gemx' or ".sh" in entry):
                         #Create an absolute symbolic link to these files

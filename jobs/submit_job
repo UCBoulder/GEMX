@@ -28,4 +28,8 @@ export OMP_PROC_BIND=spread
 
 ./storeChanges.sh
 
+<<<<<<< HEAD
 srun ./gemx
+=======
+srun ./gemx
+>>>>>>> origin/CPPMain
