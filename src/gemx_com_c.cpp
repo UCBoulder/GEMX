@@ -28,6 +28,8 @@ CArray3D<double> OPPphik;
 CArray3D<double> l_hand;
 CArray3D<double> r_hand;
 
+CArray3D<double> hyper_operator;
+
 CArray2D<double> den2d1; 
 CArray2D<double> den2d2; 
 CArray2D<double> dden2d;
@@ -54,6 +56,9 @@ CArray2D<double> gcptez;
 CArray2D<double> gnuobx;
 CArray2D<double> gnuoby;
 CArray2D<double> gupae0;
+
+CArray2D<double> fffoutput;
+CArray2D<double> fffcount;
 
 CArray3D<double> rho;
 CArray3D<double> phi;//!,den_pre(0:imx,0:jmx,0:kmx),dden(0:imx,0:jmx,0:kmx))
@@ -87,7 +92,7 @@ MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;
 int imx, jmx, kmx, mmx;
 int numprocs;
 int last,myid, cnt , ierr;
-int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations, cold_start,checkpoint;
+int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations, cold_start,hyper_filter,fourier_flux,checkpoint;
 
 int nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
 int rand_table[10007];
@@ -149,6 +154,8 @@ double *rmsez = nullptr;
 double *rmsapa = nullptr;
 double *avewi = nullptr;
 double *vol = nullptr;
+
+// double *temp_flux_array = nullptr;
 
 CArray4D<double> den;
 
@@ -223,6 +230,9 @@ void new_gemx_com(){
     l_hand.resize(imx+1, jmx+1, kmx+1);
     r_hand.resize(imx+1, jmx+1, kmx+1);
 
+    //Hyperdiffusion Operator
+    hyper_operator.resize(imx+1,jmx+1,kmx+1);
+
     /*The following arrays didn't have a label*/
 
     //2D Arrays
@@ -252,6 +262,9 @@ void new_gemx_com(){
     gnuobx.resize(imx+1, jmx+1);
     gnuoby.resize(imx+1, jmx+1);
     gupae0.resize(imx+1, jmx+1);
+
+    fffoutput.resize(imx+1,jmx+1);
+    fffcount.resize(imx+1,jmx+1);
 
         // Calder Edit
         // real(8),dimension(:,:),allocatable :: phiavg

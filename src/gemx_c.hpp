@@ -29,6 +29,11 @@ void poloidal_filter_methods(CArray3D<double> &input_phi);
 void binomial_filter(CArray3D<double> &input_phi);
 void fourier_modes(CArray3D<double> &input_phi, const int &modes);
 
+void flux_fourier_filter(CArray3D<double> &input);
+// void flux_fourier_filter_inner(std::vector<double> &input_data, const int &flux_len);
+
+void hyperdiffusion_filter(CArray3D<double> &input);
+
 void gradz_c_(CArray3D<double> &u, CArray3D<double> &uz);
 void gradpar_c_(CArray3D<double> &matrix, CArray3D<double> &gradPar);
 void init();

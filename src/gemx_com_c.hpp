@@ -12,7 +12,7 @@ void cleanupCom();
 void new_gemx_com();
 //Variables and Constants
 extern int imx, jmx, kmx, mmx;
-extern int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,cold_start,checkpoint;
+extern int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,cold_start,hyper_filter,fourier_flux,checkpoint;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int rand_table[]; //10007
 extern int timestep,iez;
@@ -108,6 +108,9 @@ extern CArray2D<double> pfle;
 extern CArray2D<double> pfl; 
 extern CArray2D<double> efl;
 
+extern CArray2D<double> fffoutput;
+extern CArray2D<double> fffcount;
+
 //3D Arrays
 extern CArray3D<double> rk_hand;
 extern CArray3D<double> rho;
@@ -148,6 +151,8 @@ extern CArray3D<double> OPPphi;
 extern CArray3D<double> OPPphik;
 extern CArray3D<double> l_hand;
 extern CArray3D<double> r_hand;
+
+extern CArray3D<double> hyper_operator;
 
 //4D arrays
 extern CArray4D<double> den;

@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <iostream>
 
+#include <vector>
+
 using namespace std;
 
 int main() {
@@ -176,19 +178,19 @@ int main() {
    //	   gkps()
    //    field(timestep-1,0)
 
-   ofstream weightFile;
-   if(myid==0){
-      weightFile.open("testweights", ios::app);
-      double weight_diag = 0.0;
-      #pragma acc update self(zeta2[0:mmx], w2[0:mmx])
-      for(int m = 0; m < mm[0]; ++m) {
-       //  weight_diag =+ w2[m]/mm[0];
-       weightFile << gw[m] << "\n";
-      }
-     // weightFile << timestep << "   " << weight_diag << "   " << zeta2[mmx-1] <<"\n";
+   // ofstream weightFile;
+   // if(myid==0){
+   //    weightFile.open("testweights", ios::app);
+   //    double weight_diag = 0.0;
+   //    #pragma acc update self(zeta2[0:mmx], w2[0:mmx])
+   //    for(int m = 0; m < mm[0]; ++m) {
+   //     //  weight_diag =+ w2[m]/mm[0];
+   //     weightFile << gw[m] << "\n";
+   //    }
+   //   // weightFile << timestep << "   " << weight_diag << "   " << zeta2[mmx-1] <<"\n";
      
-      weightFile.close();
-   }
+   //    weightFile.close();
+   // }
    
 
    if(ifield_solver == 1) {
@@ -300,6 +302,14 @@ int main() {
          for(int filter_int = 1; filter_int <= filtering_iterations; ++filter_int) {
             poloidal_filter_methods(phi); 
          }
+      }
+
+      if(hyper_filter == 1){
+         hyperdiffusion_filter(phi);
+      }
+
+      if(fourier_flux == 1){
+         flux_fourier_filter(phi);
       }
 
       //EFIELD TESTING
@@ -463,6 +473,14 @@ int main() {
          for(int filter_int = 1; filter_int <= filtering_iterations; ++filter_int) {
             poloidal_filter_methods(phi);
          }
+      }
+
+      if(hyper_filter == 1){
+         hyperdiffusion_filter(phi);
+      }
+
+      if(fourier_flux == 1){
+         flux_fourier_filter(phi);
       }
 
       //EFIELD TESING
@@ -744,7 +762,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d", &modes, &filtering_iterations);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d", &cold_start);
+      fscanf(in_file, "%d %d %d", &cold_start, &hyper_filter, &fourier_flux);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%lf %d %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
       fscanf(in_file, " %*[^\n]\n");
@@ -2428,6 +2446,191 @@ void fourier_modes(CArray3D<double> &input_phi, const int &modes) {
 
    fftw_free(phi_hat);
    fftw_free(f_filtered);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void flux_fourier_filter(CArray3D<double> &input) {
+   //Local Variables
+
+   int i = 0, j = 0, k = 0, l = 0, line = 0;
+   int line_marker, temp_length;
+   int gi = 0;
+   double weightinput=0;
+   double input_mag = 0;
+   double output_mag = 0;
+
+   std::vector<double> temp_flux_array;
+
+   //REVISED COMPUTATION
+   // line_marker = 0;
+
+   for(k = 0; k <= kmx; ++k) {
+      weightinput = 0.0;
+      line_marker = 0;
+      for(i=0; i<=imx; ++i){
+         for(j=0; j<=jmx; ++j){
+            fffoutput(i,j) = input(i,j,k);
+            fffcount(i,j) = 1;
+         }
+      }
+      for(gi = 0; gi < 100; ++gi) {
+         temp_length = -1;
+         temp_flux_array.clear();
+         for(line = line_marker; line<= num_lines; ++line) {
+            if(gindex[line] == gi){
+               weightinput = (weight00[line]*input(iarray[line], jarray[line],k) + 
+                           weight10[line]*input(iarray[line]+1, jarray[line],k) + 
+                           weight01[line]*input(iarray[line], jarray[line]+1,k) + 
+                           weight11[line]*input(iarray[line]+1, jarray[line]+1,k));
+               temp_flux_array.push_back(weightinput);
+               temp_length = temp_length + 1;
+            } else{
+               break;
+            }
+         }
+
+         if(temp_length < 0){
+            continue;
+         }
+
+         // flux_fourier_filter_inner(temp_flux_array,temp_length);
+
+         ///////// Fourier Filter////////////
+         fftw_complex* flux_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((temp_length + 1) / 2 +1));
+         double* f_filtered = (double*) fftw_malloc(sizeof(double) * (temp_length + 1));
+
+         fftw_plan plan_forward = fftw_plan_dft_r2c_1d(temp_length + 1, temp_flux_array.data(), flux_hat, FFTW_ESTIMATE);
+         fftw_plan plan_backward = fftw_plan_dft_c2r_1d(temp_length + 1, flux_hat, f_filtered, FFTW_ESTIMATE);
+
+         fftw_execute_dft_r2c(plan_forward, &temp_flux_array[0], flux_hat);
+
+         for (l = 0; l <= ((temp_length + 1)/2); ++l) {
+            flux_hat[l][0] /= (temp_length + 1);
+            flux_hat[l][1] /= (temp_length + 1);
+            if (l > 0.8*((temp_length + 1)/2)){
+
+               flux_hat[l][0] = 0.0;
+               flux_hat[l][1] = 0.0;
+            }
+
+         }
+
+         fftw_execute_dft_c2r(plan_backward, flux_hat, f_filtered);
+
+         for (l = 0; l <= temp_length; ++l) {
+            temp_flux_array[l] = f_filtered[l];
+         }
+
+         fftw_destroy_plan(plan_forward);
+         fftw_destroy_plan(plan_backward);
+
+         fftw_free(flux_hat);
+         fftw_free(f_filtered);
+         ////////////////////////////////////
+
+         for(line = line_marker; line<= num_lines; ++line){
+            if (gindex[line] == gi){
+               fffoutput(iarray[line],jarray[line]) += weight00[line]*temp_flux_array[line-line_marker];
+               fffoutput(iarray[line]+1,jarray[line]) += weight10[line]*temp_flux_array[line-line_marker];
+               fffoutput(iarray[line],jarray[line]+1) += weight01[line]*temp_flux_array[line-line_marker];
+               fffoutput(iarray[line]+1,jarray[line]+1) += weight11[line]*temp_flux_array[line-line_marker];
+
+               if (weight00[line] == 0.0){
+                  fffcount(iarray[line],jarray[line]) += 0;
+               } else{
+                  fffcount(iarray[line],jarray[line]) += 1;
+               }
+               if (weight10[line] == 0.0){
+                  fffcount(iarray[line]+1,jarray[line]) += 0;
+               } else{
+                  fffcount(iarray[line]+1,jarray[line]) += 1;
+               }
+               if (weight01[line] == 0.0){
+                  fffcount(iarray[line],jarray[line]+1) += 0;
+               } else{
+                  fffcount(iarray[line],jarray[line]+1) += 1;
+               }
+               if (weight11[line] == 0.0){
+                  fffcount(iarray[line]+1,jarray[line]+1) += 0;
+               } else{
+                  fffcount(iarray[line]+1,jarray[line]+1) += 1;
+               }
+
+               // fffcount(iarray[line],jarray[line]) += 1; 
+               // fffcount(iarray[line]+1,jarray[line]) += 1;
+               // fffcount(iarray[line],jarray[line]+1) += 1;
+               // fffcount(iarray[line]+1,jarray[line]+1) += 1;
+            } else{
+               break;
+            }
+         }
+         line_marker = line;
+      }
+      for(i=0; i<=imx; ++i){
+         for(j=0; j<=jmx; ++j){
+            if(mask(i,j) < 0.99){
+               input(i,j,k) = 0.0;
+            }else{
+               input(i,j,k) = fffoutput(i,j)/fffcount(i,j);
+            }
+         }
+      }
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void hyperdiffusion_filter(CArray3D<double> &input) {
+
+   int i = 0;
+   int j = 0;
+   int k = 0;
+
+   double r_1 = 0;
+   double r_2 = 0;
+   double r_3 = 0;
+   double r_4 = 0;
+
+   double z_4 = 0;
+
+   double rz_2 = 0;
+   double r_2_z_2 = 0;
+
+   double hyper_alpha = 0;
+
+   hyper_alpha = 0.02*pow(dx,4)/dt;
+
+   for(int i = 2; i <= imx-2; ++i) {
+      for(int j = 2; j <= jmx-2; ++j) {
+         for(int k =0; k <= kmx; ++k){
+            z_4 = (input(i,j+2,k) - 4*input(i,j+1,k) + 6*input(i,j,k) - 4*input(i,j-1,k) + input(i,j-2,k))/pow(dz,4);
+
+            r_4 = (input(i+2,j,k) - 4*input(i+1,j,k) + 6*input(i,j,k) - 4*input(i-1,j,k) + input(i-2,j,k))/pow(dx,4);
+            r_3 = (input(i+2,j,k) - 2*input(i+1,j,k) + 2*input(i-1,j,k) - input(i-2,j,k))/(2*pow(dx,3));
+            r_2 = (input(i+1,j,k) - 2*input(i,j,k) + input(i-1,j,k))/pow(dx,2);
+            r_1 = (input(i+1,j,k) - input(i-1,j,k))/(2*dx);
+
+            rz_2 = ((input(i+1,j+1,k)-2*input(i+1,j,k)+input(i+1,j-1,k))-(input(i-1,j+1,k)-2*input(i-1,j,k)+input(i-1,j-1,k)))/(2*dx*pow(dz,2));
+
+            r_2_z_2 = ((input(i+1,j+1,k)-2*input(i+1,j,k)+input(i+1,j-1,k)) - 2*(input(i,j+1,k)-2*input(i,j,k)+input(i,j-1,k)) + (input(i-1,j+1,k)-2*input(i-1,j,k)+input(i-1,j-1,k)))/(pow(dx,2)*pow(dz,2));
+
+            hyper_operator(i,j,k) = z_4 + r_4 + (2/Rgrid[i])*r_3 - (1/pow(Rgrid[i],2))*r_2 + (1/pow(Rgrid[i],3))*r_1 + (2/Rgrid[i])*rz_2 + 2*r_2_z_2;
+         }   
+      }
+   }
+
+   for(int i = 0; i <= imx; ++i) {
+      for(int j = 0; j <= jmx; ++j) {
+         for(int k = 0; k <= kmx; ++k) {
+            if (mask(i,j) < 0.99) {
+               input(i,j,k) = 0.0;
+            } else {
+               input(i,j,k) = input(i,j,k) - dt*hyper_operator(i,j,k)*hyper_alpha;
+               // input(i,j,k) = 1;
+            }
+         }   
+      }
+   }
 }
 
 inline void prepareDeviceData() {

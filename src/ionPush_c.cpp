@@ -35,7 +35,7 @@ void ppush_c_(const int &n) {
     updateDeviceData();
     #pragma acc data \
     copyin(rand_table[0:10007]) 
-    #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox,curlbp) present(mu, x2, x3, u2, u3, z2, z3, zeta2, zeta3, w2, w3)
+    #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox,curlbp) present(mu, x2, x3, u2, u3, z2, z3, zeta2, zeta3, w2, w3,gw)
     for(m = 0; m < mm[0]; ++m) {
         x = x2[m];
         i = static_cast<int>(x/dxeq);
@@ -318,7 +318,7 @@ void cpush_c_(const int &timestep){
         
 	updateDeviceData();
 	#pragma acc data copyin(rand_table[0:10007]) 
-	#pragma acc parallel loop gang vector private(BStar3,rhoy,rhox,curlbp) present(mu, u2, u3, x2, x3, z2, z3, zeta2, zeta3, w2, w3) 
+	#pragma acc parallel loop gang vector private(BStar3,rhoy,rhox,curlbp) present(mu, u2, u3, x2, x3, z2, z3, zeta2, zeta3, w2, w3,gw) 
 	for(m = 0; m < mm[0]; ++m) {
 		x=x3[m];
 		i = static_cast<int>(x/dxeq);
