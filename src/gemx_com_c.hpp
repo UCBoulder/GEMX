@@ -54,7 +54,7 @@ extern double *rmsez;
 extern double *rmsapa;
 extern double *avewi;
 extern double *vol;
-extern double *mu;
+/*extern double *mu;
 extern double *x2;
 extern double *zeta2;
 extern double *z2;
@@ -66,8 +66,13 @@ extern double *u3;
 extern double *w2;
 extern double *w3;
 extern double *gw;
+*/
 
 //2D Arrays
+
+extern CArray2D<double> mu,x2,z2,zeta2,u2,x3,z3,zeta3,u3,w2,w3,gw;
+
+
 extern CArray2D<double> den2d1;
 extern CArray2D<double> den2d2;
 extern CArray2D<double> dden2d;

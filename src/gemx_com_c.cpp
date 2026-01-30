@@ -29,6 +29,7 @@ CArray3D<double> l_hand;
 CArray3D<double> r_hand;
 
 CArray3D<double> hyper_operator;
+CArray2D<double> mu,x2,z2,zeta2,u2,x3,z3,zeta3,u3,w2,w3,gw;
 
 CArray2D<double> den2d1; 
 CArray2D<double> den2d2; 
@@ -134,7 +135,7 @@ double *zg = nullptr;
 double *jac = nullptr;
 
 //          particle array declarations
-double *mu = nullptr; //note: be careful here - these are 1-based index in c++, need account for in code
+/*double *mu = nullptr; //note: be careful here - these are 1-based index in c++, need account for in code
 double *x2 = nullptr;
 double *zeta2 = nullptr;
 double *z2 = nullptr;
@@ -146,7 +147,7 @@ double *u3 = nullptr;
 double *w2 = nullptr;
 double *w3 = nullptr;
 double *gw = nullptr;
-
+*/
 double *fe = nullptr;
 double *te = nullptr;
 double *rmsphi = nullptr;
@@ -174,9 +175,21 @@ void new_gemx_com(){
     xg = new double[imx+1]; std::fill(xg, xg+imx+1, 0.0);
     zg = new double[jmx+1]; std::fill(zg, zg+jmx+1, 0.0);
     jac = new double[imx+1]; std::fill(jac, jac+imx+1, 0.0);
-
+    x2.resize(nsmx,mmx);
+   z2.resize(nsmx,mmx);
+  zeta2.resize(nsmx,mmx);
+   u2.resize(nsmx,mmx);
+   x3.resize(nsmx,mmx);
+   z3.resize(nsmx,mmx);
+   zeta3.resize(nsmx,mmx);
+   u3.resize(nsmx,mmx);
+   mu.resize(nsmx,mmx);
+   w2.resize(nsmx,mmx);
+   w3.resize(nsmx,mmx);
+   gw.resize(nsmx,mmx);
+    
     //          particle array declarations
-    mu = new double[mmx]; std::fill(mu, mu+mmx, 0.0);//note: be careful here - these are 1-based index in c++, need account for in code
+    /* mu = new double[mmx]; std::fill(mu, mu+mmx, 0.0);//note: be careful here - these are 1-based index in c++, need account for in code
     x2 = new double[mmx]; std::fill(x2, x2+mmx, 0.0);
     zeta2 = new double[mmx]; std::fill(zeta2, zeta2+mmx, 0.0);
     z2 = new double[mmx]; std::fill(z2, z2+mmx, 0.0);
@@ -188,7 +201,7 @@ void new_gemx_com(){
     w2 = new double[mmx]; std::fill(w2, w2+mmx, 0.0);
     w3 = new double[mmx]; std::fill(w3, w3+mmx, 0.0);
     gw = new double[mmx]; std::fill(gw,gw+mmx, 0.0);
-
+    */
 //      variables for tracing a grid (i,j) along field lien to the neighboring planes
     ileft.resize(imx+1, jmx+1); 
     jleft.resize(imx+1, jmx+1);
@@ -299,7 +312,7 @@ void new_gemx_com(){
     dupadx.resize(imx+1, jmx+1, kmx+1);
     dupady.resize(imx+1, jmx+1, kmx+1);
 
-    den.resize(2, imx+1, jmx+1, kmx+1); //1st index 1 based - careful
+    den.resize(nsmx, imx+1, jmx+1, kmx+1); //1st index 1 based - careful
 }
 
 //cleans 1d arrays in COM
@@ -317,7 +330,7 @@ void cleanupCom(){
     delete[] rmsapa;
     delete[] avewi;
     delete[] vol;
-    delete[] mu;
+    /*    delete[] mu;
     delete[] x2;
     delete[] zeta2;
     delete[] z2;
@@ -328,5 +341,5 @@ void cleanupCom(){
     delete[] u3;
     delete[] w2;
     delete[] w3;
-    delete[] gw;
+    delete[] gw;*/
 }

@@ -5,13 +5,14 @@ void outd_c_(const int &n) {
     ofstream outTracer;
     ofstream testNe;
     ofstream testPhi;
+    int s=1;
     if(myid == 0) {
         printf("timestep = %d\n", timestep);
     
-        #pragma acc update self(x3[0:mmx], z3[0:mmx])
+        #pragma acc update self(x3, z3)
         outTracer.open("./out/tracer.out", ios::app); 
         for(int m = 0; m < ntracer; ++m) {
-            outTracer << "            " << timestep << "            " << m << "    " << setprecision(16) << (x3[m])*xu+Rgrid[0] << "        " << (z3[m])*xu+Zgrid[0] << "\n";
+            outTracer << "            " << timestep << "            " << m << "    " << setprecision(16) << (x3(s,m))*xu+Rgrid[0] << "        " << (z3(s,m))*xu+Zgrid[0] << "\n";
         }
         outTracer.close();
 
