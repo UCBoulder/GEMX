@@ -1067,6 +1067,8 @@ void loadi_c_(){
    }
 
    for (int s=0; s<nsmx;++s){
+       m=0;
+     cout<<s<<','<<nsmx<<","<<mm[s]<<","<<mims[s]<<","<<q[s]<<endl;
    while(m < mm[s]) {
    //load a slab of ions...
 
