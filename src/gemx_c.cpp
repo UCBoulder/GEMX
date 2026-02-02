@@ -1486,6 +1486,8 @@ void integ_c_(int iflag) {
          temp = gw(s,m)*w3(s,m);
          tempu = u3(s,m)*temp;
          idx = get4DIndex(s,i,j,k, denY, denZ, denQ);
+         // cout<<temp<<" "<<wx0+wx1+wy0+wy1<<endl;
+         //cout<<s<<endl;
          #pragma acc atomic update
          den_ptr[idx] += temp*wx0*wy0*wzeta0*R_major_over_R/4;
 
@@ -1602,7 +1604,12 @@ void integ_c_(int iflag) {
    }*/
 
    den2d2.Clear();
-   
+/*   if (myid==0){
+       for(int i =0;i<257*257;++i){
+       cout<<den_ptr[i]<<endl;
+       }
+   }*/
+             
    for(int i = 0; i <= imx; ++i) {
       for(int j = 0; j <= jmx; ++j) {
          for(int k = 0; k <= kmx; ++k) {
