@@ -5,7 +5,7 @@ void outd_c_(const int &n) {
     ofstream outTracer;
     ofstream testNe;
     ofstream testPhi;
-    int s=1;
+    int s=0;
     if(myid == 0) {
         printf("timestep = %d\n", timestep);
     

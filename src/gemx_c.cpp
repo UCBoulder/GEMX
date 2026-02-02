@@ -1249,6 +1249,7 @@ void loadi_c_(){
       u3(s,m) = u2(s,m);
 //    w2(m) = w2(m)-myavgw
       w3(s,m) = w2(s,m); 
+//    cout << u3(s,m)<<' '<<x3(s,m)<<' '<< z3(s,m)<<' '<<zeta3(s,m)<<endl;
    }
    }
 }
@@ -1998,18 +1999,18 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             	} else {
 					if(iBoltzmann == 0) {
-						tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
+						tmp_value = denes(i,j,k)-q[0]*mu0*(den(0,i,j,k)-xn0i(i,j));
 
 						} else if(eAdiabatic != 0) {
-						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*rho_squared)*(((den(1,i-1,j,k)-xn0i(i-1,j))+(den(1,i+1,j,k)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/(dx*dx) + 
-									((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+						tmp_value = -q[0]*mu0*(den(0,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*rho_squared)*(((den(0,i-1,j,k)-xn0i(i-1,j))+(den(0,i+1,j,k)-xn0i(i+1,j))-2*(den(0,i,j,k)-xn0i(i,j)))/(dx*dx) + 
+									((den(0,i,j-1,k)-xn0i(i,j-1))+(den(0,i,j+1,k)-xn0i(i,j+1))-2*(den(0,i,j,k)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
 									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) + 
 									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
 									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
 									((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
 					} else {
-						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
+						tmp_value = -q[0]*mu0*(den(0,i,j,k)-xn0i(i,j));
 					}
 				}
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2032,11 +2033,11 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 				} else {
 
 					if(iBoltzmann == 0) {
-						tmp_value = denes(i,j,k)-q[0]*mu0*(den(1,i,j,k));
+						tmp_value = denes(i,j,k)-q[0]*mu0*(den(0,i,j,k));
 					} else if (eAdiabatic != 0) {
-						tmp_value = -q[0]*mu0*(den(1,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*rho_squared)*((den(1,i-1,j,k)+den(1,i+1,j,k)-2*den(1,i,j,k))/(dx*dx) + 
-									(den(1,i,j-1,k)+den(1,i,j+1,k)-2*den(1,i,j,k))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
+						tmp_value = -q[0]*mu0*(den(0,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*rho_squared)*((den(0,i-1,j,k)+den(0,i+1,j,k)-2*den(0,i,j,k))/(dx*dx) + 
+									(den(0,i,j-1,k)+den(0,i,j+1,k)-2*den(0,i,j,k))/(dz*dz)) + PADE*(e*e*mu0*rho_squared)*(phiavg(i,j)*(((xn0e(i-1,j)/t0e(i-1,j)) + 
 									(xn0e(i+1,j)/t0e(i+1,j))-2*(xn0e(i,j)/t0e(i,j)))/(dx*dx) + ((xn0e(i,j-1)/t0e(i,j-1))+(xn0e(i,j+1)/t0e(i,j+1))-2*(xn0e(i,j)/t0e(i,j)))/(dz*dz)) +  
 									(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
 									(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
@@ -2050,7 +2051,7 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
                     //  ! (((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*dx**2) + &
                     //  ! ((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*dz**2)))
 					} else {
-						tmp_value = -q[0]*mu0*(den(1,i,j,k));
+						tmp_value = -q[0]*mu0*(den(0,i,j,k));
 					}
 				}
 			}
@@ -2292,8 +2293,8 @@ void BoltzSolve_c_(CArray3D<double> &input_phi){
                r_hand(i,j,k)  = OPPphi(i,j,k) + q[0]*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k));
                rk_hand(i,j,k) = OPPphik(i,j,k) + q[0]*mu0*den2d2(i,j) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k));
             }else{
-               r_hand(i,j,k)  = OPPphi(i,j,k) + q[0]*mu0*den(1,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k));
-               rk_hand(i,j,k) = OPPphik(i,j,k) + q[0]*mu0*den(1,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k));
+               r_hand(i,j,k)  = OPPphi(i,j,k) + q[0]*mu0*den(0,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*input_phi(i,j,k));
+               rk_hand(i,j,k) = OPPphik(i,j,k) + q[0]*mu0*den(0,i,j,k) - e*mu0*xn0e(i,j)*exp((e/t0e(i,j))*phi_k(i,j,k));
             }
 
             input_phi(i,j,k) = phi_k(i,j,k) - (input_phi(i,j,k)-phi_k(i,j,k))*r_hand(i,j,k)/(rk_hand(i,j,k)-r_hand(i,j,k));
