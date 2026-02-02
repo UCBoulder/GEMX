@@ -1605,8 +1605,9 @@ void integ_c_(int iflag) {
 
    den2d2.Clear();
 /*   if (myid==0){
-       for(int i =0;i<257*257;++i){
-       cout<<den_ptr[i]<<endl;
+       for(int i =0;i<257;++i)
+       for(int j =0;j<257;++i){
+       cout<<den(0,i,j,0)<<endl;
        }
    }*/
              
