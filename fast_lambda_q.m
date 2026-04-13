@@ -2,11 +2,15 @@ close all;
 clear all;
 p = load("./test_hit_div");
 hit_t=load("test_hit_div_t");
-
+Z=load("Z.dat");
 ini_p=load("initial_posi");
 psi_a = 0;
-number_of_beams = 100;
+number_of_beams = 150;
 dt=1500e-10;
+mi=2*1.6726e-27;
+e=1.6e-19;
+T=200;
+vth=sqrt(T*e/mi);
 %%%%%%%%%%%%%% two points define the divertor plate%%%%%%%%%%%%%%%%%%%%%%%5
 r1 = 1.2;  %1.23
 z1 = 0.25773+Z(1); %-1.4
@@ -16,10 +20,7 @@ m = (z2-z1)/(r2-r1);
 b = z1-m*r1;
 R_div = linspace(r1,r2,400);
 Z_div = linspace(z1,z2,400);
-mi=2*1.6726e-27;
-e=1.6e-19;
-T=200;
-vth=sqrt(T*e/mi);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 R = load("R.dat");
@@ -99,13 +100,14 @@ Rim=0;
 R0_loss=0;
 Z0_loss=0;
 udiv=0;
-
+Rim_w_e=0;
 number_of_particles=0
 for i = 1:length(p)
     if p(i,2) ~= 0%(i-1,2)
         number_of_particles=number_of_particles+1;
         dpsi(number_of_particles) = p(i,1)-psi_a;
         Rim(number_of_particles)   = sgin_of_psi*dpsi(number_of_particles)/gradpsim;
+        Rim_w_e(number_of_particles) = Rim(number_of_particles)*p(i,3);
         Ep(number_of_particles) = p(i,3);%(energy(i)+e*(phis(xtrg(1),ztrg(1))-phis(xtrg(k),ztrg(k))))/(R_m_a+Rim(np));%energy(i)/(R_m_a+Rim(np));
         udiv(number_of_particles) = abs(p(i,2));
 
@@ -142,6 +144,7 @@ Ridiv = dpsi/gradpsidiv;
 
 lambdadiv = sum(abs(Ridiv))/length(dpsi)
 lambdamid = sum(abs(Rim))/length(dpsi)
+lambdamid_w_e=sum(abs(Rim_w_e))/sum(Ep)
 
 
 R_midgrid = linspace(min(Rim)-0.0001,max(Rim)+0.0001,number_of_beams+1);
@@ -213,7 +216,7 @@ ylabel('Number of particles hit the outer divertor plate')
 set(gca,'FontSize',24)
 udiv_avg=sum(udiv)/length(udiv)/vth
 lambdamid
-
+lambdamid_w_e
 figure
 
 
@@ -224,7 +227,7 @@ axis equal;
 
 lambda_s=0.0005;
 lambda_d=0.2;
-nuj0=2e5;
+nuj0=3.8e-2;%2e5;
 for i=1:length(R_beam)
     if R_beam(i)<0
         nujp(i)=nuj0*exp(-(R_beam(i))/lambda_s)-1;
@@ -233,11 +236,14 @@ for i=1:length(R_beam)
     end
 end
 
+
 nuj=nujp.*exp(-0.2/lambda_d);
-factor=1./(1+nuj*0.2/vth);
+factor=1;%./(1+nuj*0.2/vth);
+lambda_avg=sum(q_mid.*R_beam.*factor)/sum(q_mid)
+
 %plot(factor);
 figure
-plot(R_beam,q_mid.*factor);
+plot(R_beam,q_mid)%.*factor);
 hold on
 plot(xx,yy)
 xlabel('s-s_0 (m)');
