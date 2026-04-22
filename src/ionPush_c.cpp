@@ -18,6 +18,7 @@ void ppush_c_(const int &n) {
     double exp1 = 0,ezp = 0,ezetap = 0,delbxp = 0,delbzp  = 0,energy = 0, energy0 = 0,nudi0 = 0,nudi = 0,T_center = 0,ni_temp = 0, ti_temp;
     double wx0 = 0,wx1 = 0,wy0 = 0,wy1 = 0,wz0 = 0,wz1 = 0,dum1 = 0; 
     int m = 0,i = 0,j = 0,k = 0,l = 0,k_plus_1 = 0;
+	int null_count = 0, cx_count = 0, ion_count = 0, ne_count = 0;
     double rhog = 0,vfac = 0,kapxp = 0,kapzp = 0,vpar = 0,kaptxp = 0,kapnxp = 0,kaptzp = 0,kapnzp = 0,xnp = 0;
     double b = 0,enerb = 0,ter = 0,z = 0,zeta = 0,bstar = 0;
     double x = 0;
@@ -34,7 +35,7 @@ void ppush_c_(const int &n) {
 
     updateDeviceData();
     #pragma acc data \
-    copyin(rand_table[0:10007]) 
+    copyin(rand_table[0:10007],rand_var1[0:10007],rand_var2[0:10007])
     #pragma acc parallel loop gang vector private(rhoy,BStar3,rhox,curlbp) present(mu, x2, x3, u2, u3, z2, z3, zeta2, zeta3, w2, w3,gw)
     for(m = 0; m < mm[0]; ++m) {
         x = x2[m];
@@ -108,6 +109,70 @@ void ppush_c_(const int &n) {
         	mu[m]= (energy0-0.5*mims[0]*(u2[m] * u2[m]))/b;
 		}
 /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   */
+
+		if(ncollision == 1){
+
+			double sigma_cx  = 0.0;
+			double sigma_ion = 0.0;
+			double sigma_ne  = 0.0;
+			double nu_cx     = 0.0;
+			double nu_ion    = 0.0;
+			double nu_ne     = 0.0;
+
+			double nu_max = 1/(20*dt);
+			double v_rel = 0.0;
+			double n_neutral = 0.0;
+			double t_neutral = 0.0;
+			double cE = 0.0;
+
+			double t_c = -log(rand_var1[globle_integer])/nu_max;
+			globle_integer = (globle_integer+1) % 10007;
+			
+			if(t_c < dt){
+				n_neutral = wx0*wz0*xn0D(i,k)+wx0*wz1*xn0D(i,k+1) 
+							+wx1*wz0*xn0D(i+1,k)+wx1*wz1*xn0D(i+1,k+1);
+
+				t_neutral = wx0*wz0*t0D(i,k)+wx0*wz1*t0D(i,k+1) 
+							+wx1*wz0*t0D(i+1,k)+wx1*wz1*t0D(i+1,k+1);
+
+				v_rel = abs(sqrt(u2[m]*u2[m] + 2*mu[m]*bfldp/mims[0]) - 1.5*t_neutral);
+
+				cE = 0.25*mims[0]*v_rel*v_rel/(2.014102*1000*e); //Want in units of (keV/amu)
+
+				//Approximation for collision cross sections
+				//charge exchange, n=1, EIRENE experimental fit
+				sigma_cx  = (3.2345*log((235.88/cE) + 2.3713))/(1 + 0.038371*cE + 3.8068*1e-6*pow(cE,3.5) + 1.1832*1e-10*pow(cE,5.4))*(1e-20);
+
+				//ionization, n=1, EIRENE experimental fit
+				sigma_ion = 2.016*1e-3*(((pow(cE,3.7154)*exp(-3.989*1e-2*cE))/(1+0.31413*pow(cE,2.1254)))+(6.399*1e3*exp(-61.897/cE)*log(1+9.2731*1e3*cE))/cE)*(1e-20);
+				
+				//neutral excitation,1s to 2s transition, EIRENE experimental fit
+				sigma_ne  = 10.082*((9.5185*1e-4*exp(-0.60403*cE))/pow(cE,-2.7993) + (8.7513*1e-3*exp(-12.125/cE))/(1+1.1038*1e-6*pow(cE,3.1597)) + exp(-45.483/cE)/cE)*(1e-20);
+				
+				nu_cx  = n_neutral*sigma_cx*v_rel;
+				nu_ion = n_neutral*sigma_ion*v_rel;
+				nu_ne  = n_neutral*sigma_ne*v_rel;
+
+				if (rand_var2[globle_integer] < nu_cx/nu_max){
+					cx_count += 1;
+					globle_integer = (globle_integer+1) % 10007;
+
+					u2[m] = neut_vpar[globle_integer]/sqrt(mims[0]/t_neutral);
+					mu[m] = 0.5*neut_vperp2[globle_integer]/bfldp*t_neutral;
+
+				} else if (rand_var2[globle_integer] < (nu_cx+nu_ion)/nu_max){
+					ion_count += 1;
+					// Need to add ion and electron
+				} else if (rand_var2[globle_integer] < (nu_cx+nu_ion+nu_ne)/nu_max){
+					ne_count += 1;
+					// ion loses some energy relative to excitation, 13.6eV??? Transition energy.
+				}else {
+					null_count += 1;
+				}
+				globle_integer = (globle_integer+1) % 10007;
+			}
+		}
+
 
         rhog=sqrt(2.*b*mu[m]*mims[0])/(q[0]*b)*iflr; 
 
@@ -283,6 +348,12 @@ void ppush_c_(const int &n) {
 	
 	}
 	updateHostData();
+
+	ofstream collision_diagnostic;
+	collision_diagnostic.open("test_collisions", ios::app);
+	collision_diagnostic << timestep << "    " << null_count << "    " << cx_count << "    " << ne_count << "    " << ion_count << "\n";
+	collision_diagnostic.close();
+
 	end_ppush_tm = MPI_Wtime();
 	ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
 
@@ -317,7 +388,7 @@ void cpush_c_(const int &timestep){
 	P_flux = 0;
         
 	updateDeviceData();
-	#pragma acc data copyin(rand_table[0:10007]) 
+	#pragma acc data copyin(rand_table[0:10007],rand_var1[0:10007],rand_var2[0:10007]) 
 	#pragma acc parallel loop gang vector private(BStar3,rhoy,rhox,curlbp) present(mu, u2, u3, x2, x3, z2, z3, zeta2, zeta3, w2, w3,gw) 
 	for(m = 0; m < mm[0]; ++m) {
 		x=x3[m];
@@ -612,6 +683,9 @@ inline void updateDeviceData() {
     delbx.updatedev();
     delbz.updatedev();
     t0i.updatedev();
+
+	t0D.updatedev();
+	xn0D.updatedev();
 }
 
 inline void updateHostData() {
@@ -635,4 +709,7 @@ inline void updateHostData() {
     t0i.updatehost();
 	dpsi_dr.updatehost();
 	dpsi_dz.updatehost();
+
+	t0D.updatehost();
+	xn0D.updatehost();
 }

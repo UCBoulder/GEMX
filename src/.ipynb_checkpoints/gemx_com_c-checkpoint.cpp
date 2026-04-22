@@ -92,25 +92,21 @@ MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;
 int imx, jmx, kmx, mmx;
 int numprocs;
 int last,myid, cnt , ierr;
-int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,low_filter, cold_start,hyper_filter,radial_filter,checkpoint;
+int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations, cold_start,hyper_filter,fourier_flux,checkpoint;
 
 int nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations,dbg;
-double rand_var1[10007], rand_var2[10007], neut_vpar[10007], neut_vperp2[10007];
 int rand_table[10007];
     char outname[71];
-    double endtm,begtm,pstm,num_diff;
+    double endtm,begtm,pstm;
     double starttm, lasttm, tottm;
       double start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm;
       double total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0;
-
 //      imx,jmx,kmx = max no. of grid pts in x,y,z
 // !    mmx         = max no. of particles
 // !    nmx         = max. no. of time steps
 // !    nsmx        = max. no. of species (including tracer particles
 int* mm = nullptr; int *tmm = nullptr; int *lr = nullptr;
 double *mims = nullptr; double *q = nullptr;
-
-
 int timestep, iez;
 int iseed;
 //double *time = nullptr; //causing issues, don't want to deal with it
@@ -118,7 +114,7 @@ int iseed;
 double dx,dz,dzeta,dt,totvol,n0,tcurr;
 double etaohm;
 double lx,lz;
-int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision,ncollision;
+int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision;
 double cut,amp,tor,amie,emass,qel,rneu;
 int iput,iget,ision,isham,peritr,iadi;
 int idg;

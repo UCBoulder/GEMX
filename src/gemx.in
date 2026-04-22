@@ -1,5 +1,5 @@
 'imx   jmx   kmx     mmx                    nmx   nsmx   ntube'
- 257   257   127        40000000          10000000   4       4
+ 299   299   63        4000000          10000000   4       4
 
 'dt       nm           nsm    iez'
  500e-10  50000        1       0
@@ -22,8 +22,8 @@
 'beta       nonlin  vcut'
 0.124e-2       0    15.0
 
-'ntracer    ifield_solver    i3D     iBolztmann   eAdiabatic   iterations    icollision'
-100              1            1        1            1			          0             0
+'ntracer    ifield_solver    i3D     iBolztmann   eAdiabatic   iterations    icollision     ncollision'
+100              1            1        1            1			          0             0              0
 
 'eBoltzmann'
 0
@@ -31,16 +31,16 @@
 'iflr         Pade_Approx'
 1                                1
 
-'CST'
-0
+'CST         num_diff'
+0               0
 
 'weightscheme       loadingscheme'
 1                         0
 
-'modes    filtering_iterations'
-10                   1
+'modes    filtering_iterations     low_filter'
+10                   1                0
 
-'cold_start      hyper_filter      fourier_flux_filter'
+'cold_start      hyper_filter      radial_filter'
 0                    0                     0
 
 'psi_out_bound,  psi_inner_bound,  R_min_for_mask, Z_min_for_mask, Z_X_point, psi_lower_divertor,     psi_a'

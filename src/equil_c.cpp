@@ -6,19 +6,21 @@ double betaVal,rmaj0,a,q0,r0,q0p,q0abs,shat0;
 double phi_diag,phi_diag_freq,weight_diag;
 double dR,dth,mu0,e,proton;
 int nr=200,nr2=100,ntheta=200,isgnf=1,isgnq=-1,isupae0=0,tor_n;
-double psi_max=0.31, psi_min=-0.1 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647;
+double psi_max=0.31, psi_min=-1.0 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_div=0.305,psi_a=0.311647;
 
 // GEM-X
 //integer :: cont=259002 !Calder Edit
 
 int nzeta = 64; 
-int nx=257, nz=257; //indexing problems
+int nx=299, nz=299; //indexing problems
+// int nx=999, nz=999;
 double zctr;
 double  dxeq, xdim, xctr, zdim, dzeq;
 double pi,pi2;
 
 CArray2D<double> b0, b0x, b0z, b0zeta,dbdx,dbdz, c2_over_vA2, q_grid;
 CArray2D<double> t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez;
+CArray2D<double> t0D,xn0D;
 
 double *psi = nullptr;
 double *psip = nullptr;
@@ -107,6 +109,8 @@ void new_equil_c(){
     t0i.resize(nx+1,nz+1),t0e.resize(nx+1,nz+1),xn0i.resize(nx+1,nz+1),xn0e.resize(nx+1,nz+1),
                  captix.resize(nx+1,nz+1),captex.resize(nx+1,nz+1),capnix.resize(nx+1,nz+1),capnex.resize(nx+1,nz+1),
                  captiz.resize(nx+1,nz+1),captez.resize(nx+1,nz+1),capniz.resize(nx+1,nz+1),capnez.resize(nx+1,nz+1);
+
+    t0D.resize(nx+1,nz+1),xn0D.resize(nx+1,nz+1);
 
     t0s.resize(5,nr+1),xn0s.resize(5,nr+1),capts.resize(5,nr+1),capns.resize(5,nr+1),
                  vpars.resize(5,nr+1),vparsp.resize(5,nr+1),psi_p.resize(nx+1,nz+1),mask.resize(nx+1,nz+1),
@@ -275,10 +279,18 @@ void new_equil_c(){
     
 //   Manufactured Temperature Profiles: 0.5*(-np.tanh(5*np.array(profiles['psinorm'])-2.5)+1)*np.max(np.array(profiles['ti']))
     // GORLER PROFILES
-    read2D("ni0_gorler.dat", xn0i, nx, nz);
-    read2D("ne0_gorler.dat", xn0e, nx, nz);
-    read2D("ti0_gorler.dat", t0i, nx, nz); //problem likley here, so likely also with others
-    read2D("te0_gorler.dat", t0e, nx, nz);
+    // read2D("ni0_gorler.dat", xn0i, nx, nz);
+    // read2D("ne0_gorler.dat", xn0e, nx, nz);
+    // read2D("ti0_gorler.dat", t0i, nx, nz); //problem likley here, so likely also with others
+    // read2D("te0_gorler.dat", t0e, nx, nz);
+    read2D("ni0_wpqh.dat", xn0i, nx, nz);
+    read2D("ne0_wpqh.dat", xn0e, nx, nz);
+    read2D("ti0_wpqh.dat", t0i, nx, nz);
+    read2D("te0_wpqh.dat", t0e, nx, nz);
+    // read2D("ni0_wpqh_ideal.dat", xn0i, nx, nz);
+    // read2D("ne0_wpqh_ideal.dat", xn0e, nx, nz);
+    // read2D("ti0_wpqh_ideal.dat", t0i, nx, nz);
+    // read2D("te0_wpqh_ideal.dat", t0e, nx, nz);
     // printf("Testing");
     //PUT INTO SI UNITS
     for(int i = 0; i <= nx; ++i) {
@@ -287,6 +299,9 @@ void new_equil_c(){
             t0e(i,j) = t0e(i,j)*tu;
             xn0i(i,j) = xn0i(i,j)*1e19;
             xn0e(i,j) = xn0e(i,j)*1e19;
+
+            t0D(i,j) = 0.01*t0i(i,j);
+            xn0D(i,j) = xn0i(i,j)*0.01;
         }
     }
 
@@ -331,13 +346,18 @@ void new_equil_c(){
 
     mask.Clear();
     //c2_over_vA2=1
+    cout << psi_min << endl;
     for(int i = 2; i <= nx-2; ++i){ 
         for(int j = 2; j <= nz-2; ++j){ 
 //          c2_over_vA2(i,j)=mu0*2*proton*xn0e(i,j)/(b0(i,j)**2)*vu**2!2*Rgrid(i)**2/(Rgrid(0)+Rgrid(nx))**2
 //          write(*,*) c2_over_vA2(i,j)
-            if(psi_p(i,j)<psi_max && psi_p(i,j)>psi_min && (Zgrid[j]>Z_internal || (Zgrid[j] && psi_p(i,j)>psi_div)) && Rgrid[i]>R_min){
+            if(psi_p(i,j)<psi_max && psi_p(i,j)>psi_min && (Zgrid[j]>Z_internal || (Zgrid[j] && psi_p(i,j)>psi_div)) && Rgrid[i]>R_min && Zgrid[j]<1.2){
                // if(psi_p(i,j)<0.3 && Zgrid(j)>-1.08){}
+            //    if(psi_p(i,j)>0.21 && Zgrid[j]<-1.2)
                 mask(i,j) = 1;
+                if (psi_p(i,j)<0.21 && Zgrid[j]<-1.2){
+                    mask(i,j) = 0;
+                }
             } else {
                 mask(i,j) = 0;
             }
@@ -442,8 +462,10 @@ void new_equil_c(){
 //  xctr = a*1.5
 //  zctr = 0.
 
-    xctr = 0.5*(Rgrid[nx]+Rgrid[0])/xu;
-    zctr = 0.5*(Zgrid[nz]+Zgrid[0])/xu;
+    // xctr = 0.5*(Rgrid[nx]+Rgrid[0])/xu;
+    // zctr = 0.5*(Zgrid[nz]+Zgrid[0])/xu;
+    xctr = Rgrid[158]; // WPQH mode specific
+    zctr = Zgrid[148]; // WPQH mode specific
     xdim = xdim/xu;
     zdim = zdim/xu;
 //  xdim = a*2;

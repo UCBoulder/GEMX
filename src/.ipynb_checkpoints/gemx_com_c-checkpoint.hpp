@@ -12,15 +12,12 @@ void cleanupCom();
 void new_gemx_com();
 //Variables and Constants
 extern int imx, jmx, kmx, mmx;
-extern int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,low_filter,cold_start,hyper_filter,radial_filter,checkpoint;
+extern int PADE, CST, weightscheme,loadingscheme,modes,filtering_iterations,cold_start,hyper_filter,fourier_flux,checkpoint;
 extern int nmx,nsmx,nsubd,ntube,petsc_color,petsc_rank,iBoltzmann,globle_integer,eBoltzmann,eAdiabatic,iterations,dbg;
 extern int rand_table[]; //10007
-
-extern double rand_var1[],rand_var2[],neut_vpar[],neut_vperp2[];
-
 extern int timestep,iez;
 extern int iseed;
-extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision,ncollision;
+extern int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision;
 extern int iput,iget,ision,isham,peritr,iadi;
 extern int idg;
 extern int nonlin,nonline,iflut,ifluid,ipara;
@@ -34,7 +31,6 @@ extern double start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_
 extern double total_tm, integ_tm, ppush_tm, cpush_tm;
 extern double dx,dz,dzeta,dt,totvol,n0,tcurr;
 extern double etaohm;
-extern double num_diff;
 extern double lx,lz;
 extern double cut,amp,tor,amie,emass,qel,rneu;
 extern double vcut;
