@@ -628,9 +628,9 @@
 
 
               
-         do nb=1, nblob
+!         do nb=1, nblob
             call moveblob()
-         end do
+!         end do
 
          
 
