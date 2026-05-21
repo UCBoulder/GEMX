@@ -9,6 +9,9 @@ number_of_beams = 150;
 dt=1500e-10;
 mi=2*1.6726e-27;
 e=1.6e-19;
+
+q=e;
+
 T=200;
 vth=sqrt(T*e/mi);
 %%%%%%%%%%%%%% two points define the divertor plate%%%%%%%%%%%%%%%%%%%%%%%5
@@ -94,14 +97,19 @@ Z_inter = Z_div(idx_R_div);
 %f(R_div(idx_R_div),Z_div(idx_R_div))
 gradpsidiv= g(R_inter,Z_inter);
 
+
+%phisolps=load("phisolps.dat");
+
 Ep=0;
+Ep_sheath=0;
+phi_sheath=0;
 dpsi=0;
 Rim=0;
 R0_loss=0;
 Z0_loss=0;
 udiv=0;
 Rim_w_e=0;
-number_of_particles=0
+number_of_particles=0;
 for i = 1:length(p)
     if p(i,2) ~= 0%(i-1,2)
         number_of_particles=number_of_particles+1;
@@ -110,10 +118,11 @@ for i = 1:length(p)
         Rim_w_e(number_of_particles) = Rim(number_of_particles)*p(i,3);
         Ep(number_of_particles) = p(i,3);%(energy(i)+e*(phis(xtrg(1),ztrg(1))-phis(xtrg(k),ztrg(k))))/(R_m_a+Rim(np));%energy(i)/(R_m_a+Rim(np));
         udiv(number_of_particles) = abs(p(i,2));
-
+        phi_sheath(number_of_particles) = interp1(psi(77,:),phi(77,:),p(i,1));
     end
 end
 
+Ep_sheath = Ep+q*phi_sheath;
 
 
 
@@ -145,6 +154,10 @@ Ridiv = dpsi/gradpsidiv;
 lambdadiv = sum(abs(Ridiv))/length(dpsi)
 lambdamid = sum(abs(Rim))/length(dpsi)
 lambdamid_w_e=sum(abs(Rim_w_e))/sum(Ep)
+lambdamid_avg_p=sum((Rim_w_e))/sum(Ep)
+lambdamid__sheath=sum((Rim.*Ep_sheath))/sum(Ep_sheath)
+
+
 
 
 R_midgrid = linspace(min(Rim)-0.0001,max(Rim)+0.0001,number_of_beams+1);
@@ -154,12 +167,15 @@ for i = 2:length(R_midgrid)
     R_beam(i-1) = 0.5*(R_midgrid(i-1)+ R_midgrid(i));
 end
 q_mid=zeros(1,length(R_beam));
+q_mid_sheath=zeros(1,length(R_beam));
+
 %q_mid=[];
 %min_i=min(floor(((Rim)-min(R_midgrid))/dRmid));
 %max_i=max(floor(((Rim)-min(R_midgrid))/dRmid));
 for i = 1:length(dpsi)
     pp=floor((Rim(i)-min(R_midgrid))/dRmid)+1;
     q_mid(pp)=q_mid(pp)+Ep(i)/dRmid;
+    q_mid_sheath(pp)=q_mid_sheath(pp)+Ep_sheath(i)/dRmid;
 end
 
 %x = R_beam*1000;
@@ -240,12 +256,15 @@ end
 nuj=nujp.*exp(-0.2/lambda_d);
 factor=1;%./(1+nuj*0.2/vth);
 lambda_avg=sum(q_mid.*R_beam.*factor)/sum(q_mid)
-
+lambdamid_avg_p=sum((Rim_w_e))/sum(Ep)
+lambdamid__sheath=sum((Rim.*Ep_sheath))/sum(Ep_sheath)
 %plot(factor);
 figure
 plot(R_beam,q_mid)%.*factor);
 hold on
 plot(xx,yy)
+plot(R_beam,q_mid_sheath);
 xlabel('s-s_0 (m)');
 ylabel('q (a.u.)')
-set(gca,'FontSize',24)
+set(gca,'FontSize',24);
+
