@@ -369,6 +369,15 @@
 
          u3(m) = u2(m) + 0.5*dt*pzdot
 
+         if (ion_source == 1) then
+                if (w2(m) == 0.0) then
+                        x3(m) = x2(m)
+                        z3(m) = z2(m)
+                        zeta3(m) = zeta2(m)
+                        u3(m) = u2(m)
+                end if
+        end if 
+
 !         write(*,*)x3(m),z3(m)
 !        dum = 1.0
 !        vxdum = (ezp/b+vpar/b*delbxp)*dum1
@@ -702,6 +711,15 @@
          z3(m) = z2(m) + dt*zdot
          zeta3(m) = zeta2(m) + dt*zetadot
          u3(m) = u2(m) + dt*pzdot
+
+        if (ion_source == 1) then
+                if (w2(m) == 0.0) then
+                        x3(m) = x2(m)
+                        z3(m) = z2(m)
+                        zeta3(m) = zeta2(m)
+                        u3(m) = u2(m)
+                end if
+        end if
 
 !         dum = 1.0
 !         vxdum = (ezp/b+vpar/b*delbxp)*dum1

@@ -17,6 +17,8 @@ INTERFACE
 END INTERFACE
 
 integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations, nstep_E,iSOLPS_phi,ielectron,izeta,imoving_blob,nblob
+integer :: ion_source,source_rate
+real(8) :: particle_buffer
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm,a_div, b_div,Ablob0,dbR,dbZ,dbzeta,Rblob0,ndRb

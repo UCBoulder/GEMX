@@ -1,0 +1,35 @@
+#!/bin/bash -l
+#SBATCH -A mp118_g
+#SBATCH -q debug
+#SBATCH -t 00:05:00
+#SBATCH -C gpu
+#SBATCH -N 2
+#SBATCH --ntasks-per-node=4
+#SBATCH --gpus-per-task=1
+#SBATCH -c 8
+#SBATCH -o run.out
+#SBATCH -e run.err
+#SBATCH -J gemx_gpu
+
+module reset
+source /opt/cray/pe/cpe/24.07/restore_lmod_system_defaults.sh
+module load PrgEnv-nvidia
+module load cudatoolkit
+module load cray-mpich
+module load cray-fftw
+
+export PETSC_DIR=/global/cfs/cdirs/mp118/software/petsc/install
+export MPIPATH=$CRAY_MPICH_DIR
+export LD_LIBRARY_PATH=$PETSC_DIR/lib:$LD_LIBRARY_PATH
+
+export OMP_NUM_THREADS=8
+export OMP_PLACES=threads
+export OMP_PROC_BIND=spread
+
+./storeChanges.sh
+
+<<<<<<< HEAD
+srun ./gemx
+=======
+srun ./gemx
+>>>>>>> origin/CPPMain

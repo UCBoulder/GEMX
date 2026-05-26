@@ -1,0 +1,3 @@
+ ppush time    821.2210476569676      cpush time    967.5137857410100      
+ integ time    0.000000000000000      total time    1820.057975326000      
+ other (including field solver)    31.32314192802255     
