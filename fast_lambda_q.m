@@ -5,14 +5,16 @@ hit_t=load("test_hit_div_t");
 Z=load("Z.dat");
 ini_p=load("initial_posi");
 psi_a = 0;
-number_of_beams = 150;
+number_of_beams = 30;
 dt=1500e-10;
 mi=2*1.6726e-27;
+m_e=9.10938e-31;
 e=1.6e-19;
+q=-e;
 
-q=e;
+isheath=1;
 
-T=200;
+T=97;
 vth=sqrt(T*e/mi);
 %%%%%%%%%%%%%% two points define the divertor plate%%%%%%%%%%%%%%%%%%%%%%%5
 r1 = 1.2;  %1.23
@@ -111,18 +113,18 @@ udiv=0;
 Rim_w_e=0;
 number_of_particles=0;
 for i = 1:length(p)
-    if p(i,2) ~= 0%(i-1,2)
+    if p(i,2) ~= 0 && (q>0 || 0.5*m_e*p(i,2)^2 > isheath*e*interp1(psi(77,100:end),phi(77,100:end),p(i,1)))
         number_of_particles=number_of_particles+1;
         dpsi(number_of_particles) = p(i,1)-psi_a;
         Rim(number_of_particles)   = sgin_of_psi*dpsi(number_of_particles)/gradpsim;
         Rim_w_e(number_of_particles) = Rim(number_of_particles)*p(i,3);
         Ep(number_of_particles) = p(i,3);%(energy(i)+e*(phis(xtrg(1),ztrg(1))-phis(xtrg(k),ztrg(k))))/(R_m_a+Rim(np));%energy(i)/(R_m_a+Rim(np));
         udiv(number_of_particles) = abs(p(i,2));
-        phi_sheath(number_of_particles) = interp1(psi(77,:),phi(77,:),p(i,1));
+        phi_sheath(number_of_particles) = interp1(psi(77,100:end),phi(77,100:end),p(i,1));
     end
 end
 
-Ep_sheath = Ep+q*phi_sheath;
+Ep_sheath = Ep+isheath*q*phi_sheath;
 
 
 
@@ -258,6 +260,8 @@ factor=1;%./(1+nuj*0.2/vth);
 lambda_avg=sum(q_mid.*R_beam.*factor)/sum(q_mid)
 lambdamid_avg_p=sum((Rim_w_e))/sum(Ep)
 lambdamid__sheath=sum((Rim.*Ep_sheath))/sum(Ep_sheath)
+sum((Rim.*Ep_sheath))
+sum(Ep_sheath)
 %plot(factor);
 figure
 plot(R_beam,q_mid)%.*factor);
