@@ -5,13 +5,13 @@ hit_t=load("test_hit_div_t");
 Z=load("Z.dat");
 ini_p=load("initial_posi");
 psi_a = 0;
-number_of_beams = 30;
+number_of_beams = 200;
 dt=1500e-10;
 mi=2*1.6726e-27;
 m_e=9.10938e-31;
 e=1.6e-19;
-q=-e;
-
+q=e;
+set(0, 'defaultfigurecolor', [1 1 1]);
 isheath=1;
 
 T=97;
@@ -129,7 +129,7 @@ Ep_sheath = Ep+isheath*q*phi_sheath;
 
 
 p_inner_divertor=0;
-plot([r2,r1],[z2,z1]);
+%plot([r2,r1],[z2,z1]);
 hold on
 contour(R,Z,psi);
 plot(ini_p(:,1),ini_p(:,2),LineStyle="none",Marker=".");
@@ -260,15 +260,19 @@ factor=1;%./(1+nuj*0.2/vth);
 lambda_avg=sum(q_mid.*R_beam.*factor)/sum(q_mid)
 lambdamid_avg_p=sum((Rim_w_e))/sum(Ep)
 lambdamid__sheath=sum((Rim.*Ep_sheath))/sum(Ep_sheath)
-sum((Rim.*Ep_sheath))
-sum(Ep_sheath)
+sum((Rim.*Ep_sheath));
+sum(Ep_sheath);
 %plot(factor);
+factor =1/(2*pi*R_M_a)*1.409e6/7.1766e-12;%*1.409e6/9.123e-12;
+%1.4954/1.5121
 figure
-plot(R_beam,q_mid)%.*factor);
-hold on
+%plot(R_beam,q_mid)%*factor);
+%hold on
 plot(xx,yy)
-plot(R_beam,q_mid_sheath);
+plot(R_beam,q_mid_sheath*factor);
 xlabel('s-s_0 (m)');
 ylabel('q (a.u.)')
 set(gca,'FontSize',24);
 
+lambda_n=sum(Rim)./(number_of_particles)
+Q=sum(Ep_sheath)
