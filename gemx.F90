@@ -345,7 +345,7 @@
 !     call field(timestep-1,0)
 
 
-!      if(ifield_solver .eq. 1 ) then
+      if(ifield_solver .eq. 1 ) then
 
 !       phi = 0.0 
 !       phiavg = 0.0
