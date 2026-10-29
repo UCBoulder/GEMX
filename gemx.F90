@@ -361,6 +361,7 @@
                if (eBoltzmann == 1) then
                   call boltzsolve(phi)
                else
+				end if
 
 
 !          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
@@ -1222,9 +1223,9 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
       subroutine gkps()
       use gemx_com
       use equil
-      use petsc
-      use petscdmda
-      use petscksp
+!      use petsc
+!      use petscdmda
+!      use petscksp
       
 
       return
@@ -1854,7 +1855,7 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
         real(8),dimension(0:1) :: x,y
 	integer :: n,i,j,k,ip
         
-        call ppinit(MyId,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank)
+!        call ppinit(MyId,numprocs,ntube,kmx,i3D,TUBE_COMM,GRID_COMM, PETSC_COMM,petsc_color,petsc_rank)
 
 !     reset timestep counter.
          Last=numprocs-1
