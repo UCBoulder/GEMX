@@ -1,5 +1,5 @@
       program gemx
-#include <petsc/finclude/petscksp.h>
+!#include <petsc/finclude/petscksp.h>
       use gemx_com
       use equil
 
