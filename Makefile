@@ -39,5 +39,5 @@ fcnt.o: fcnt.F90
 	$(F90) -c $(OPT) fcnt.F90
 
 clean:
-	rm -f *.o *.lst *.mod gem out/* dump/* xpp matrix/*  testne testphi psi_test run.out flag_debug debug.dat test* mask*
+	rm -f *.o *.lst *.mod gemx out/* dump/* xpp matrix/*  testne testphi psi_test run.out flag_debug debug.dat test* mask*
 
