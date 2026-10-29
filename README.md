@@ -17,14 +17,13 @@ On perlmutter:
 
 ```bash
 git clone git@github.com:UCBoulder/GEMX.git
-cd src
+cd to the folder
 source env.sh
 make
-cd ..
-./newRun.py
-cd runs/run001
-sbatch job_gpu
-```
+
+./gemx
+
+
 
 Mostly files related to the build are copied to the ```bin``` folder, including ```gemx.in``` and the ```job``` associated with the make configuration. This folder is meant to just store some of these
 build related files, but not meant to be run out of because recompiling will overwrite changes to the job/input files for instance. To get around this issue the ```newRun.py``` script is provided to make run directories which are stored in ```runs``` and not source controlled. Run directories should contain their own versions of job/input files associated with the run, so that originals remain
