@@ -9,7 +9,7 @@ MODULE equil
 !     GEM-X
       !integer :: cont=259002 !Calder Edit
 
-      integer :: nx, nz,nzeta,nzeta_blob,ntern_blob
+      integer :: nx, nz,nzeta,nzeta_blob,ntern_blob,nblob
       real :: xdim,zdim,xctr,zctr,dxeq,dzeq
       
       real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2
@@ -21,14 +21,13 @@ MODULE equil
                                       er,upari, Rgrid, Zgrid
       real,dimension(:,:),allocatable :: t0s,xn0s,capts,capns,vpars,vparsp,psi_p,mask,mask2,mask3,mask4
       real:: bu,tu,nu,xu,frequ,vu,eru
-      real:: eu
 
 !     for including bstar effects
-      real,dimension(:),allocatable :: psip2,Zb_table,Rb_table,zetalb_table,dldzetab_table
+      real,dimension(:),allocatable :: psip2,zetalb_table,dldzetab_table,Ablob,zeta0_blob,tempbR0
       real,dimension(:,:),allocatable :: curvbz,srbr,srbz,thbr,thbz,prsrbr,prsrbz,pthsrbr,pthsrbz,bdcrvb
 
 !     for equilibrium current                                                                                                                                         
-      real(8),dimension(:,:),allocatable :: upae0,nuob,dnuobdr,dnuobdt
+      real(8),dimension(:,:),allocatable :: upae0,nuob,dnuobdr,dnuobdt,Zb_table,Rb_table
 
       real,dimension(:,:,:),allocatable ::curlb
       
@@ -65,7 +64,7 @@ contains
          capts(1:5,0:nr),capns(1:5,0:nr),vpars(1:5,0:nr),&
          vparsp(1:5,0:nr))
 
-      allocate(Rb_table(ntern_blob*nzeta_blob+1),Zb_table(ntern_blob*nzeta_blob+1),zetalb_table(ntern_blob*nzeta_blob+1),dldzetab_table(ntern_blob*nzeta_blob+1))
+      allocate(Rb_table(nblob,ntern_blob*nzeta_blob+1),Zb_table(nblob,ntern_blob*nzeta_blob+1),zetalb_table(ntern_blob*nzeta_blob+1),dldzetab_table(ntern_blob*nzeta_blob+1),Ablob(nblob))
       allocate(upae0(0:nr,0:ntheta),nuob(0:nr,0:ntheta),dnuobdr(0:nr,0:ntheta),dnuobdt(0:nr,0:ntheta))      
 
 !     GEM-X
@@ -78,7 +77,7 @@ contains
 
       allocate(curlb(0:nx,0:nz,3))
       
-      allocate(Rgrid(0:nx),Zgrid(0:nz),bdcrvb(0:nx,0:nz))
+      allocate(Rgrid(0:nx),Zgrid(0:nz),bdcrvb(0:nx,0:nz),zeta0_blob(nblob),tempbR0(nblob))
       allocate(psi_p(0:nx,0:nz),mask(0:nx,0:nz),c2_over_vA2(0:nx,0:nz),mask2(0:nx,0:nz),mask3(0:nx,0:nz),mask4(0:nx,0:nz))
 
  
@@ -145,8 +144,7 @@ contains
 	read(10,*) b0x
       close(10)    
 
-      ! b0x=b0x/Bu
-      b0x = b0x*Bu
+      b0x=b0x/Bu
       
 !      open(unit=11, file = 'debug.dat',status='unknown',action='write')
 !      write(11,*) b0x(5,0), 'dR='dR
@@ -155,14 +153,12 @@ contains
       open(10, file = 'Bz.dat',status='old',action='read')
 	read(10,*) b0z
       close(10)
-      ! b0z=b0z/Bu
-      b0z = b0z*Bu
+      b0z=b0z/Bu
       
       open(unit=10, file = 'Bt.dat',status='old',action='read')
 	read(10,*) b0zeta
       close(10)
 
-      b0zeta = b0zeta*Bu
 !      B0x=0
 !      B0z=0
       
@@ -219,8 +215,8 @@ contains
       !     assign T, n profiles 
       do i = 0,nx
          do j = 0,nz
-            t0i(i,j) = 0.2*Tu
-            t0e(i,j) = 1.*Tu
+            t0i(i,j) = 0.097*Tu
+            t0e(i,j) = 0.097*Tu
             xn0i(i,j) = 1.*nu
             xn0e(i,j) = 1.*nu
          end do

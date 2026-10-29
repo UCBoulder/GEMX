@@ -16,12 +16,10 @@ INTERFACE
   end function en3
 END INTERFACE
 
-integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations, nstep_E,iSOLPS_phi,ielectron,izeta,imoving_blob,nblob
-integer :: ion_source,source_rate
-real(8) :: particle_buffer
+integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations, nstep_E,iSOLPS_phi,ielectron,izeta,imoving_blob,random_walk
 integer,dimension(0:10006):: rand_table
 	 character*70 outname
-	 REAL(8) :: endtm,begtm,pstm,a_div, b_div,Ablob0,dbR,dbZ,dbzeta,Rblob0,ndRb
+	 REAL(8) :: endtm,begtm,pstm,a_div, b_div,Ablob0,dbR,dbZ,dbzeta,Rblob0,ndRb,lambda_n
 	 REAL(8) :: starttm,lasttm,tottm,dpsi,Z_X
          REAL(8) :: start_total_tm, end_total_tm, start_integ_tm, end_integ_tm, start_ppush_tm, end_ppush_tm, start_cpush_tm, end_cpush_tm
          REAL(8) :: total_tm = 0.0, integ_tm = 0.0, ppush_tm = 0.0, cpush_tm = 0.0
@@ -31,7 +29,7 @@ integer,dimension(0:10006):: rand_table
 !          nsmx        = max. no. of species (including tracer particles
 
 INTEGER,dimension(:),allocatable :: mm,tmm,lr,hit_t
-REAL(8),dimension(:),allocatable :: mims,q,zeta0_blob,tempbR0
+REAL(8),dimension(:),allocatable :: mims,q
 INTEGER :: timestep,iseed,iez,smooth_order,idpsi,imid_plane
 
 real(8),dimension(:),allocatable :: time
@@ -122,7 +120,7 @@ contains
 subroutine new_gemx_com()
 
 allocate(mm(nsmx),tmm(nsmx),lr(nsmx),hit_t(mmx))
-allocate(mims(nsmx),q(nsmx),zeta0_blob(nblob),tempbR0(nblob))
+allocate(mims(nsmx),q(nsmx))
 allocate(time(0:nmx),hit_div(mmx,3))
 
       ALLOCATE( den(2,0:imx,0:jmx,0:kmx))

@@ -11,11 +11,11 @@
 
       implicit none
 
-       integer :: status,mid_i,mid_j
+       integer :: status,mid_i,mid_j,total_loss=0
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68,nb
        integer :: iter !Calder Edit
 
-       real::random
+       real::random,tot_loss_eng=0,tot_loss_E_ini=0
        real :: tmp, tempw0,tempw1,tempBzeta,tempBR,tempBz,tempER,tempEz,tempEzeta,wk0,wk1
        PetscInt is,js,iw,jw,idx,n_in_porcs
        PetscInt one,three,vec_start,vec_end
@@ -221,12 +221,22 @@
 
        if (iSOLPS_phi==1) then
            do k=0,kmx
-              phi(:,:,k)=phiavg*Eu
+              phi(:,:,k)=phiavg
  !             ex(:,:,k)=phiavg
            end do
            
         end if            
-      call efieldcalc(phi)
+        call efieldcalc(phi)
+
+!        do i=0, imx
+!           do j=0,jmx
+!              if (psi_p(i,j)>0.003875 ) then
+!                ex(i,j,:)=0
+!                ez(i,j,:)=0
+!             end if
+!          end do
+!       end do
+       
             
  if (ifield_solver .eq. 1) then         
                  ncurr = 1                      
@@ -237,16 +247,17 @@
 !                write(11,*) 'before'
 !                close(11)
  do nb=1,nblob
-    tempbR0(nb)=Rblob0!+ran2(iseed)*ndRb*dbR
-    zeta0_blob(nb)=0!2*pi*ran2(iseed)
+    tempbR0(nb)=Rblob0+ran2(iseed)*ndRb*dbR
+    zeta0_blob(nb)=2*pi*ran2(iseed)
+    Ablob(nb)=min(Ablob0*log(1/ran2(iseed)),3*Ablob0)
  end do
  
 ! write(*,*) "before"
 ! call field_line_tracing(tempbR0,0)
  ! write(*,*) "after"
- !call blob_field()
+! call blob_field()
 
- open(unit=11, file = 'testphi',status='unknown',action='write')
+ open(unit=11, file = 'nb',status='unknown',action='write')
  write(11,*)
  close(11)
 
@@ -274,7 +285,7 @@
 
       if (imoving_blob==1)then
          do nb=1,nblob
-            call field_line_tracing(tempbR0(nb),0)
+            call field_line_tracing(tempbR0(nb),0,nb)
             
 !!!!!!!!!!!!!!!!!!!!should be here if bolb on gird!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !            call blob_field(zeta0_blob(nb))
@@ -282,6 +293,15 @@
 !!!!!!!!!!!!!!!!!!!!should be here if bolb on gird!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             
          end do
+       Rb_table=Rb_table+Rgrid(0)
+       Zb_table=Zb_table+Zgrid(0)
+
+
+        call blob_field()
+
+ !      do k=1,nzeta_blob*ntern_blob+1
+ !         write(*,*) Rb_table(kblob,k),Zb_table(kblob,k),zetalb_table(kblob,k)
+ !      end do
 !         write(*,*)Zb_table
 !         call moveblob()
 
@@ -307,9 +327,9 @@
 !         write(*,*)'outk=',outk
 
         
-!         open(unit=11, file = 'testphi',status='unknown',position='append')
+!         open(unit=11, file = 'nb',status='unknown',position='append')
 !         do j=0,jmx        
-!            write(11,*) phi(:,j,outk)
+!            write(11,*) xn0e(:,j)
 !         enddo
 !         close(11)
 !      end if
@@ -628,9 +648,9 @@
 
 
               
-         ! do nb=1, nblob
+!         do nb=1, nblob
             call moveblob()
-         ! end do
+!         end do
 
          
 
@@ -742,7 +762,19 @@
 
             
             
- end do
+         end do
+
+
+          do i=1,mm(1)
+            if (w2(i)==0) then
+!!            !$acc atomic update 
+               total_loss=total_loss+1
+               tot_loss_eng=tot_loss_eng+0.5*mims(1)*u2(i)**2+mu(i)*b0zeta(0,jmx/2)*Rgrid(0)/(x2(i)+Rgrid(0))
+               tot_loss_E_ini=tot_loss_E_ini+P_energy(i)
+            end if
+         end do
+      
+         write(*,*) total_loss,tot_loss_eng,tot_loss_E_ini
 end_total_tm = MPI_WTIME()
 total_tm = total_tm + end_total_tm - start_total_tm
         call MPI_reduce(ppush_tm, tmp, 1, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
@@ -824,13 +856,10 @@ total_tm = total_tm + end_total_tm - start_total_tm
       pi2 = pi*2.
 
       open(115,file='gemx.in')
-      ! UQ Parameter Input Line: blob width, d_blob/r_blob, E field scaling, B field scaling, Blob amp scaling
       read(115,*) dumchar
-      read(115,*) dbZ,dbR,ndRb,Eu,Bu,Ablob0
+      read(115,*) imx,jmx,kmx,mmx,nmx,nsmx,ntube,random_walk
       read(115,*) dumchar
-      read(115,*) imx,jmx,kmx,mmx,nmx,nsmx,ntube
-      read(115,*) dumchar
-      read(115,*) dt,nm,nstep_E,nsm,iez,smooth_order,izeta
+      read(115,*) dt,nm,nstep_E,nsm,iez,smooth_order,izeta,lambda_n
       read(115,*) dumchar
       read(115,*) idpsi,iSOLPS_phi,dpsi,ics,psi_a,Z_X,a_div,b_div,xpoint_i_10,xpoint_j_10
       read(115,*) dumchar
@@ -838,9 +867,9 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) ielectron,q,nplot,xnplt
       read(115,*) dumchar
-      read(115,*) cut,amp,tor
+      read(115,*) cut,amp,tor,Bu
       read(115,*) dumchar
-      read(115,*) etaohm,iflr,nzeta_blob,ntern_blob,dbzeta,Rblob0,imoving_blob,nblob
+      read(115,*) etaohm,iflr,nzeta_blob,ntern_blob,Ablob0,dbZ,dbR,dbzeta,Rblob0,imoving_blob,ndRb,nblob
       read(115,*) dumchar
       read(115,*) ifluid,amie,rneu
       read(115,*) dumchar
@@ -848,16 +877,12 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,eAdiabatic,iterations,icollision
       read(115,*) dumchar    !Calder Edit: eBoltzmann
-      read(115,*) eBoltzmann, ion_source, particle_buffer, source_rate!Calder Edit: eBoltzmann
+      read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
       read(115,*) psi_max,psi_min,R_min,Z_min, Z_internal, psi_div
       close(115)
       
       nsm=1
-
-      if (ion_source == 1) then
-         mmx = mmx + particle_buffer*mmx
-      end if
       
       call new_gemx_com()
 
@@ -1656,13 +1681,13 @@ if(idg.eq.1)write(*,*)myid,'pass ion grid1'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!test_weight!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             w2(m) = n_total*(kmx+1)/(xctr*numprocs*mmx)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if (ion_source == 1) then
-               w2(m) = n_total*(kmx+1)/(xctr*numprocs*(mmx/(1+particle_buffer)))
-               if (m > mmx/(1+particle_buffer)) then
-                  w2(m) = 0.0
-               end if
-            end if
+
+            
+            
+ 
                
+
+            
             myavgw=myavgw+w2(m)
             m = m+1
          end if
@@ -2322,9 +2347,7 @@ end subroutine field
 
        IMPLICIT NONE
        integer::i,j,k,ip,m,iflag,itemp
-       real::wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex,n_total=0
-
-       integer::m_start, m_end
+       real::wx0,wx1,wzeta0,wzeta1,wy0,wy1,x,z,zeta,R_major_over_R,R_major_over_R1, ave_den,avex
 
        start_integ_tm = MPI_WTIME()
        itemp=2
@@ -2414,29 +2437,6 @@ end subroutine field
 
          end if
       end do
-
-      do i=2,imx-2
-         do j=2,jmx-2
-            n_total=n_total+xn0i(i,j)*(xctr-xdim/2+i*dx)
-         end do
-      end do
-
-      if (ion_source == 1) then
-         if (iflag == 2) then
-
-            m_start = int(mm(1)/(1.0 + particle_buffer)) + timestep*source_rate + 1
-            m_end   = int(mm(1)/(1.0 + particle_buffer)) + (timestep + 1)*source_rate
-
-            m_start = max(1, m_start)
-            m_end   = min(mm(1), m_end)
-            if (m_start <= m_end) then
-               do m = m_start, m_end
-                  w2(m) = n_total*(kmx+1)/(xctr*numprocs*(mmx/(1.0 + particle_buffer)))
-                  w3(m) = w2(m)
-               end do
-            end if
-         end if
-      end if
 !!         !$acc wait
 
       call MPI_Allreduce(MPI_IN_PLACE, den(iflag,:,:,:), (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
@@ -2620,6 +2620,12 @@ subroutine efieldcalc(phi_input)
    do k=0, kmx
       do i=2, imx-1
          do j=2, jmx-1
+            if (abs(phi_input(i+1,j,k)*phi_input(i-1,j,k)*phi_input(i,j+1,k)*phi_input(i,j-1,k))==0) then
+               ex(i,j,k)    =  0
+               ez(i,j,k)    =  0
+              ! write(*,*) i,j,"phisolps=0"
+            else
+               
             ex(i,j,k)    = -(phi_input(i+1,j,k) - phi_input(i-1,j,k))/(2*(Rgrid(1)-Rgrid(0)))
             ez(i,j,k)    = -(phi_input(i,j+1,k) - phi_input(i,j-1,k))/(2*(Zgrid(1)-Zgrid(0)))
             if (k==0) then
@@ -2631,6 +2637,8 @@ subroutine efieldcalc(phi_input)
             else
                ezeta(i,j,k) = -(phi_input(i,j,k+1) - phi_input(i,j,k-1))/(2*Rgrid(i)*(2*pi/(kmx+1)))
             end if
+         end if
+         
          end do
       end do
    end do
@@ -2798,12 +2806,12 @@ end subroutine
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!field line tracing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-     subroutine field_line_tracing(fld_R,fld_Z)
+       subroutine field_line_tracing(fld_R,fld_Z,kblob)
        use gemx_com
        use equil
        IMPLICIT NONE
        real::fld_R,fld_Z,tempR,tempZ,dzetab,x,z,bfldp,bfldxp,bfldzp,bfldzetap,wx0,wx1,wz0,wz1!,fld_R_in,fld_Z_in
-       integer::i,j,k,mid,n
+       integer::i,j,k,mid,n,kblob
 
 !       fld_R=fld_R_in
 !       fld_Z=fld_Z_in
@@ -2813,20 +2821,20 @@ end subroutine
        mid=nzeta_blob*ntern_blob/2+1
        
        zetalb_table(mid)=0
-       Rb_table(mid)=fld_R-Rgrid(0)
-       Zb_table(mid)=fld_Z-Zgrid(0)
+       Rb_table(kblob,mid)=fld_R-Rgrid(0)
+       Zb_table(kblob,mid)=fld_Z-Zgrid(0)
 !       zetalb_table=
        do k=1,nzeta_blob*ntern_blob/2
 
           zetalb_table(mid+k)=k*dzetab
-          x=Rb_table(mid+k-1)
+          x=Rb_table(kblob,mid+k-1)
          i = int(x/dxeq)
          i = min(i,nx-1)
          i = max(i,0)
          wx0 = (i+1)-x/dxeq
          wx1 = 1.-wx0
 
-         z = Zb_table(mid+k-1)
+         z = Zb_table(kblob,mid+k-1)
          j = int(z/dzeq)
          j = min(j,nz-1)
          j= max(j,0)
@@ -2842,8 +2850,8 @@ end subroutine
          bfldzetap = wx0*wz0*b0zeta(i,j)+wx0*wz1*b0zeta(i,j+1) &
                  +wx1*wz0*b0zeta(i+1,j)+wx1*wz1*b0zeta(i+1,j+1) 
 
-         tempR=Rb_table(mid+k-1)+0.5*dzetab*bfldxp*x/bfldzetap
-         tempZ=Zb_table(mid+k-1)+0.5*dzetab*bfldzp*x/bfldzetap
+         tempR=Rb_table(kblob,mid+k-1)+0.5*dzetab*bfldxp*x/bfldzetap
+         tempZ=Zb_table(kblob,mid+k-1)+0.5*dzetab*bfldzp*x/bfldzetap
 
 
          x=tempR
@@ -2869,14 +2877,14 @@ end subroutine
                  +wx1*wz0*b0z(i+1,j)+wx1*wz1*b0z(i+1,j+1) 
          bfldzetap = wx0*wz0*b0zeta(i,j)+wx0*wz1*b0zeta(i,j+1) &
                  +wx1*wz0*b0zeta(i+1,j)+wx1*wz1*b0zeta(i+1,j+1) 
-         tempR=Rb_table(mid+k-1)+dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
-         tempZ=Zb_table(mid+k-1)+dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
+         tempR=Rb_table(kblob,mid+k-1)+dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
+         tempZ=Zb_table(kblob,mid+k-1)+dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
          if ((tempR)/dxeq>5 .and. (tempR)/dxeq<jmx-5 .and. (tempZ)/dzeq>5 .and. (tempZ)/dzeq<jmx-5) then
-            Rb_table(mid+k)=tempR
-            Zb_table(mid+k)=tempZ
+            Rb_table(kblob,mid+k)=tempR
+            Zb_table(kblob,mid+k)=tempZ
          else
-            Rb_table(mid+k)=Rb_table(mid+k-1)
-            Zb_table(mid+k)=Zb_table(mid+k-1)
+            Rb_table(kblob,mid+k)=Rb_table(kblob,mid+k-1)
+            Zb_table(kblob,mid+k)=Zb_table(kblob,mid+k-1)
          end if
       
 
@@ -2888,14 +2896,14 @@ end subroutine
 
 
           zetalb_table(mid-k)=-k*dzetab
-          x=Rb_table(mid-k+1)
+          x=Rb_table(kblob,mid-k+1)
          i = int(x/dxeq)
          i = min(i,nx-1)
          i = max(i,0)
          wx0 = (i+1)-x/dxeq
          wx1 = 1.-wx0
 
-         z = Zb_table(mid-k+1)
+         z = Zb_table(kblob,mid-k+1)
          j = int(z/dzeq)
          j = min(j,nz-1)
          j = max(j,0)
@@ -2911,8 +2919,8 @@ end subroutine
          bfldzetap = wx0*wz0*b0zeta(i,j)+wx0*wz1*b0zeta(i,j+1) &
                  +wx1*wz0*b0zeta(i+1,j)+wx1*wz1*b0zeta(i+1,j+1) 
 
-         tempR=Rb_table(mid-k+1)-0.5*dzetab*bfldxp*x/bfldzetap
-         tempZ=Zb_table(mid-k+1)-0.5*dzetab*bfldzp*x/bfldzetap
+         tempR=Rb_table(kblob,mid-k+1)-0.5*dzetab*bfldxp*x/bfldzetap
+         tempZ=Zb_table(kblob,mid-k+1)-0.5*dzetab*bfldzp*x/bfldzetap
 
 
          x=tempR
@@ -2939,71 +2947,102 @@ end subroutine
          bfldzetap = wx0*wz0*b0zeta(i,j)+wx0*wz1*b0zeta(i,j+1) &
                  +wx1*wz0*b0zeta(i+1,j)+wx1*wz1*b0zeta(i+1,j+1) 
 
-         tempR=Rb_table(mid-k+1)-dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
-         tempZ=Zb_table(mid-k+1)-dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
+         tempR=Rb_table(kblob,mid-k+1)-dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
+         tempZ=Zb_table(kblob,mid-k+1)-dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
          if ((tempR)/dxeq>5 .and. (tempR)/dxeq<jmx-5 .and. (tempZ)/dzeq>5 .and. (tempZ)/dzeq<jmx-5)then
-            Rb_table(mid-k)=tempR
-            Zb_table(mid-k)=tempZ
+            Rb_table(kblob,mid-k)=tempR
+            Zb_table(kblob,mid-k)=tempZ
          else
-            Rb_table(mid-k)=Rb_table(mid-k+1)
-            Zb_table(mid-k)=Zb_table(mid-k+1)
+            Rb_table(kblob,mid-k)=Rb_table(kblob,mid-k+1)
+            Zb_table(kblob,mid-k)=Zb_table(kblob,mid-k+1)
          end if
          
 
          
          
-!         Rb_table(mid-k)=Rb_table(mid-k+1)-dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
-!         Zb_table(mid-k)=Zb_table(mid-k+1)-dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
+!         Rb_table(kblob,mid-k)=Rb_table(kblob,mid-k+1)-dzetab*bfldxp*(x+Rgrid(0))/bfldzetap
+!         Zb_table(kblob,mid-k)=Zb_table(kblob,mid-k+1)-dzetab*bfldzp*(x+Rgrid(0))/bfldzetap
          
         
 !         write(*,*)mid+k,mid-k
          
-!        write(*,*) Rb_table(mid+k)+Rgrid(0),Zb_table(mid+k)+Zgrid(0),zetalb_table(mid+k)         
+!        write(*,*) Rb_table(kblob,mid+k)+Rgrid(0),Zb_table(kblob,mid+k)+Zgrid(0),zetalb_table(kblob,mid+k)         
 
        end do
-       Rb_table=Rb_table+Rgrid(0)
-       Zb_table=Zb_table+Zgrid(0)
- !      do k=1,nzeta_blob*ntern_blob+1
- !         write(*,*) Rb_table(k),Zb_table(k),zetalb_table(k)
- !      end do
+
        
        
      end subroutine field_line_tracing
 
+
  !!CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-     subroutine  blob_field(zetab00)
+     subroutine  blob_field()
 
        use gemx_com
        use equil
        IMPLICIT NONE
-       real::zetab00,zetacenter
-       integer::i,j,k,kgrid,ic,jc,k2,k3
+       real::zetab00,zetacenter,zetaplot=0.0,ddzetablob,Rtemp,Ztemp,zetatemp,w0,w1
+       integer::i,j,k,kgrid,ic,jc,k2,k3,nb=1
 
-!       write(*,*)zetab00
-!       write(*,*)ntern_blob*nzeta_blob+1,nzeta_blob/(kmx+1)
-          k3=int((2*pi-zetab00)/(2*pi)*nzeta_blob)
-
-       
-       do k2=1,ntern_blob*nzeta_blob+1,nzeta_blob/(kmx+1)
-          !          write(*,*)k
-          k=mod((k2+k3),ntern_blob*nzeta_blob+2)
-          kgrid=mod((k2-1)*(kmx+1)/nzeta_blob,kmx+1)!+floor(zetab00*(kmx+1)/(2*pi))
-          kgrid=mod(kgrid,kmx+1)
-          ic=INT((Rb_table(k)-Rgrid(0))/dxeq)
-          jc=INT((Zb_table(k)-Zgrid(0))/dzeq)
-!          write(*,*)ic,jc,kgrid
-!          write(*,*)k,kgrid
-
-          do i=floor(-3*dbR/dxeq),ceiling(3*dbR/dxeq)
+       xn0e=0
+       ddzetablob=2*pi/nzeta_blob
+      ! write(*,*)ddzetablob
+       kgrid=zetaplot/dzeta
+       do nb=1,nblob
+          zetatemp=modulo(zetaplot-zeta0_blob(nb),2*pi)
+          k3=floor(zetatemp/ddzetablob)+1
+          w1=zetatemp/ddzetablob-k3+1
+          w0=1-w1
+!          write(*,*)k3,w1,w0
+          do k=0,ntern_blob-1
+             k2=k3+k*nzeta_blob
+             Rtemp=w0*Rb_table(nb,k2)+w1*Rb_table(nb,k2+1)
+             Ztemp=w0*Zb_table(nb,k2)+w1*Zb_table(nb,k2+1)
+             ic=INT((Rb_table(nb,k2)-Rgrid(0))/dxeq)
+             jc=INT((Zb_table(nb,k2)-Zgrid(0))/dzeq)
+!              write(*,*)k2,Rb_table(nb,k2)
+             do i=floor(-3*dbR/dxeq),ceiling(3*dbR/dxeq)
              do j=floor(-3*dbZ/dzeq),ceiling(3*dbZ/dzeq)
                 if (i+ic>0 .and. i+ic<imx+1 .and. j+jc>0 .and. j+jc<jmx+1) then
-                   phi(i+ic,j+jc,kgrid)=phi(i+ic,j+jc,kgrid)-Ablob0*(Zgrid(jc+j)-Zb_table(k))/(dbZ**2)*exp(-(Rgrid(ic+i)-Rb_table(k))**2/dbR**2-(Zgrid(jc+j)-Zb_table(k))**2/dbZ**2-(zetalb_table(k))**2/dbzeta**2)
+                   ! phi(i+ic,j+jc,kgrid)=phi(i+ic,j+jc,kgrid)-Ablob(nb)*(Zgrid(jc+j)-Zb_table(nb,k))/(dbZ**2)*exp(-(Rgrid(ic+i)-Rb_table(nb,k))**2/dbR**2-(Zgrid(jc+j)-Zb_table(nb,k))**2/dbZ**2-(zetalb_table(k))**2/dbzeta**2)
+!                   write(*,*)Ablob(nb),Rgrid(ic+i),Rtemp
+                   xn0e(i+ic,j+jc)=xn0e(i+ic,j+jc)+Ablob(nb)*exp(-(Rgrid(ic+i)-Rtemp)**2/dbR**2-(Zgrid(jc+j)-Ztemp)**2/dbZ**2-(zetalb_table(k2))**2/dbzeta**2)
+!                   write(*,*)xn0e(i+ic,j+jc),zetalb_table(k2)
                 end if
                 
 !                write(*,*)Rgrid(ic+i)-Rb_table(k),phi(i,j,kgrid)
              end do
+             end do
           end do
+          
        end do
+       
+
+!       write(*,*)zetab00
+!       write(*,*)ntern_blob*nzeta_blob+1,nzeta_blob/(kmx+1)
+!          k3=int((2*pi-zetab00)/(2*pi)*nzeta_blob)
+
+       
+!       do k2=1,ntern_blob*nzeta_blob+1,nzeta_blob/(kmx+1)
+          !          write(*,*)k
+!          k=mod((k2+k3),ntern_blob*nzeta_blob+2)
+!          kgrid=mod((k2-1)*(kmx+1)/nzeta_blob,kmx+1)!+floor(zetab00*(kmx+1)/(2*pi))
+!          kgrid=mod(kgrid,kmx+1)
+!          ic=INT((Rb_table(nb,k)-Rgrid(0))/dxeq)
+!          jc=INT((Zb_table(nb,k)-Zgrid(0))/dzeq)
+!          write(*,*)ic,jc,kgrid
+!          write(*,*)k,kgrid
+
+!          do i=floor(-3*dbR/dxeq),ceiling(3*dbR/dxeq)
+!             do j=floor(-3*dbZ/dzeq),ceiling(3*dbZ/dzeq)
+!                if (i+ic>0 .and. i+ic<imx+1 .and. j+jc>0 .and. j+jc<jmx+1) then
+!                   phi(i+ic,j+jc,kgrid)=phi(i+ic,j+jc,kgrid)-Ablob(nb)*(Zgrid(jc+j)-Zb_table(nb,k))/(dbZ**2)*exp(-(Rgrid(ic+i)-Rb_table(nb,k))**2/dbR**2-(Zgrid(jc+j)-Zb_table(nb,k))**2/dbZ**2-(zetalb_table(k))**2/dbzeta**2)
+!                end if
+                
+!                write(*,*)Rgrid(ic+i)-Rb_table(k),phi(i,j,kgrid)
+!             end do
+!          end do
+!       end do
      end subroutine blob_field
      
      
@@ -3041,11 +3080,11 @@ end subroutine
 !         write(*,*)'wk1=',wk1
 !         write(*,*) tempw0*wk0*ez(i,mid_j,k),tempw0*wk1*ez(i,mid_j,k+1),tempw1*wk0*ez(i+1,mid_j,k),tempw1*wk1*ez(i+1,mid_j,k+1)
 
-!write(*,*) Ablob0*(1)/(dbZ**2),tempEz,tempEzeta,tempER
-         tempEz=tempEz+Ablob0*(1)/(dbZ**2)!*exp(-(Rgrid(ic+i)-Rb_table(k))**2/dbR**2-(Zgrid(jc+j)-Zb_table(k))**2/dbZ**2-(zetalb_table(k))**2/dbzeta**2)
+!         write(*,*) Ablob0*(1)/(dbZ**2),tempEz,tempEzeta,tempER
+         tempEz=tempEz+Ablob(nb)/(dbZ**2)!*exp(-(Rgrid(ic+i)-Rb_table(k))**2/dbR**2-(Zgrid(jc+j)-Zb_table(k))**2/dbZ**2-(zetalb_table(k))**2/dbzeta**2)
 
 
-!         write(*,*)tempER,tempEz,tempezeta,tempBR,tempBz,tempBzeta
+ !        write(*,*)tempER,tempEz,tempezeta,tempBR,tempBz,tempBzeta
          dbR1=dt*(tempEz*tempBzeta-tempEzeta*tempBz)/tempbb**2
          dbz1=dt*(tempEzeta*tempBR-tempER*tempBzeta)/tempbb**2
          dbzeta1=dt*(tempER*tempBz-tempEz*tempBR)/(tempbb**2*(tempbR0(nb)))
@@ -3059,11 +3098,12 @@ end subroutine
 !         k = int(dbz1/dzeq)
 !         wk0 = k+1-dbz1/dzeq
 !         wk1 = 1-wk0
-         dbzeta2=-dbz1*tempBzeta/(tempBz*+Rgrid(0))
+         dbzeta2=-dbz1*tempBzeta/(tempBz*(tempbR0(nb)))
+!         write(*,*)tempBz*(tempbR0(nb)), tempBz*+Rgrid(0)
          !dbR2 = dbz1*temp
          tempbR0(nb)=tempbR0(nb)+dbR1
          zeta0_blob(nb)=modulo(zeta0_blob(nb)+dbzeta1+dbzeta2,2*pi)
-         
+!         write(*,*)dbzeta1,dbzeta2
          
 !         write(*,*)dbR1,dbz1,dbzeta1+dbzeta2
 !           write(*,*)'zeta0_blob=', zeta0_blob(nb)
@@ -3073,6 +3113,7 @@ end subroutine
          if(tempbR0(nb)>Rblob0+ndRb*dbR) then
             tempbR0(nb)=Rblob0
             zeta0_blob(nb)=ran(iseed)*2*pi
+            Ablob(nb)=min(Ablob0*log(1/ran(iseed)),3*Ablob0)
 
          end if
       end do
