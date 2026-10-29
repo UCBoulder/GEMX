@@ -828,9 +828,9 @@ total_tm = total_tm + end_total_tm - start_total_tm
   
   
   
-  if (eBoltzmann == 0) then !Calder Edit
-         PetscCallA(PetscFinalize(petsc_ierr))
-      end if !Calder Edit
+!  if (eBoltzmann == 0) then !Calder Edit
+!         PetscCallA(PetscFinalize(petsc_ierr))
+!      end if !Calder Edit
 
 
 
