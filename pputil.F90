@@ -14,12 +14,12 @@ MODULE pputil
 CONTAINS
 !======================================================================
 !
- 	SUBROUTINE ppinit(idproc,nproc,ntube,kmx,i3D,com1,com2,com_petsc,petsc_color,petsc_rank)
+ 	SUBROUTINE ppinit(idproc,nproc,ntube,kmx,i3D,com1,com2)
 !
      use mpi
      INTEGER, INTENT(IN) :: ntube,kmx,i3D
      INTEGER, INTENT(OUT) :: nproc
-     INTEGER, INTENT(OUT) :: idproc,com1,com2, com_petsc,petsc_color,petsc_rank
+     INTEGER, INTENT(OUT) :: idproc,com1,com2
      INTEGER :: ierr,npp,n_tor_planes
 
 
@@ -51,15 +51,15 @@ CONTAINS
            p_rank = mod(me,npp/n_tor_planes)
         end if
         
-           CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,p_color,p_rank,PETSC_COMM,ierr)
-           petsc_color=p_color
-           petsc_rank=p_rank
+!           CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,p_color,p_rank,PETSC_COMM,ierr)
+!           petsc_color=p_color
+!           petsc_rank=p_rank
 !        else
 !           CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,0,nproc,PETSC_COMM,ierr)
 !
 	com1=TUBE_COMM
         com2=GRID_COMM
-        com_petsc=PETSC_COMM
+!        com_petsc=PETSC_COMM
 	nvp=npp/ntube
 !
 	END SUBROUTINE ppinit
