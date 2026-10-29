@@ -8,8 +8,7 @@ F90 = ftn
 
 #OPT = -f free -O0 -s real64 -eD -hlist=a -llapack # -lblas -cpp # -Minfo=accel -acc -mp
 #OPT = -f free -O3 -s real64  -hlist=a -llapack # -lblas -cpp # -Minfo=accel -acc -mp
-OPT = -acc -Mbounds -Mfree -r8 -Minfo=accel -llapack -lblas -I/global/cfs/cdirs/mp118/software/petsc/install/include -L/global/cfs/cdirs/mp118/software/petsc/install/lib -lpetsc
-
+OPT = -acc -Mbounds -Mfree -r8 -Minfo=accel -llapack -lblas
 LDFLAGS = 
 
 #all : gemx
