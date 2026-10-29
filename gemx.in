@@ -1,5 +1,5 @@
 'imx   jmx   kmx     mmx                    nmx   nsmx   ntube      random_walk'
- 512   1024   3       200000                         100000   4       4		1
+ 512   1024   3       200000                         100000   4       4		0
 
 'dt              nm       nstep_E       nsm    iez	 smooth_order(2D ni) izeta0, lambda_n'
 3e-9    15000  	   1 	          1 	      0		   0				1         0.002519
