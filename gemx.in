@@ -2,7 +2,7 @@
  512   1024   3       200000                         100000   4       4		0
 
 'dt              nm       nstep_E       nsm    iez	 smooth_order(2D ni) izeta0, lambda_n'
-3e-9    15000  	   1 	          1 	      0		   0				1         0.002519
+150e-9    15000  	   1 	          1 	      0		   0				1         0.002519
  
 'idpsi  iSOLPS_phi    dpsi      ics	 psi_a	  Z_X	a_div	     b_div		xpoint_i_10	xpoint_j_10'
 1		   1  		0.001	0	  0		-1.1625     0		0.25773		     115			132
