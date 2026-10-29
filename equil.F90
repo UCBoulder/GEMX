@@ -215,8 +215,8 @@ contains
       !     assign T, n profiles 
       do i = 0,nx
          do j = 0,nz
-            t0i(i,j) = 0.097*Tu
-            t0e(i,j) = 0.097*Tu
+            t0i(i,j) = 0.2*Tu
+            t0e(i,j) = 0.2*Tu
             xn0i(i,j) = 1.*nu
             xn0e(i,j) = 1.*nu
          end do
