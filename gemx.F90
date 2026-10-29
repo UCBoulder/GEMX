@@ -3,9 +3,9 @@
       use gemx_com
       use equil
 
-      use petsc
-      use petscdmda
-      use petscksp
+!      use petsc
+!      use petscdmda
+!      use petscksp
 !      use para_com
 
 
@@ -17,17 +17,17 @@
 
        real::random,tot_loss_eng=0,tot_loss_E_ini=0
        real :: tmp, tempw0,tempw1,tempBzeta,tempBR,tempBz,tempER,tempEz,tempEzeta,wk0,wk1
-       PetscInt is,js,iw,jw,idx,n_in_porcs
-       PetscInt one,three,vec_start,vec_end
-       PetscErrorCode petsc_ierr
-       PetscScalar, POINTER ::phi_array(:)
-       KSP ksp
-       DM dm
-       PetscObject  vec
-       Vec petsc_phi,mpi_phi
-       PetscViewer viewer
-       VecScatter   ctx
-       external ComputeRHS,ComputeMatrix,ComputeInitialGuess
+  !     PetscInt is,js,iw,jw,idx,n_in_porcs
+  !     PetscInt one,three,vec_start,vec_end
+  !     PetscErrorCode petsc_ierr
+  !     PetscScalar, POINTER ::phi_array(:)
+  !     KSP ksp
+  !     DM dm
+  !     PetscObject  vec
+  !     Vec petsc_phi,mpi_phi
+  !     PetscViewer viewer
+  !     VecScatter   ctx
+  !     external ComputeRHS,ComputeMatrix,ComputeInitialGuess
 
 
 
@@ -40,31 +40,31 @@
        hit_t = 0
   outk=0!(kmx+1)/2
    
-       one = 1
-       three = 3
+   !    one = 1
+   !    three = 3
 
 
-      if (eBoltzmann == 0) then !Calder Edit
+   !  if (eBoltzmann == 0) then !Calder Edit
 
-       PETSC_COMM_WORLD =  PETSC_COMM
+   !    PETSC_COMM_WORLD =  PETSC_COMM
       
 
        
-       PetscCallA(PetscInitialize(petsc_ierr))
+   !    PetscCallA(PetscInitialize(petsc_ierr))
 
 
 
-       PetscCallA(KSPCreate(PETSC_COMM_WORLD,ksp,petsc_ierr))
-       PetscCallA(DMDACreate2D(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, dm, petsc_ierr))
-       PetscCallA(DMSetFromOptions(dm,petsc_ierr))
-       PetscCallA(DMSetUp(dm,petsc_ierr))
-       PetscCallA(KSPSetDM(ksp,dm,petsc_ierr))
-       PetscCallA(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,0,petsc_ierr))
-       PetscCallA(KSPSetComputeOperators(ksp,ComputeMatrix,0,petsc_ierr))      	
-       PetscCallA(DMDAGetCorners(dm,is,js,PETSC_NULL_INTEGER,iw,jw,PETSC_NULL_INTEGER,petsc_ierr))
-       PetscCallA(KSPSetFromOptions(ksp,petsc_ierr))
-       PetscCallA(KSPSetUp(ksp,petsc_ierr))
-      end if !Calder Edit
+    !   PetscCallA(KSPCreate(PETSC_COMM_WORLD,ksp,petsc_ierr))
+    !   PetscCallA(DMDACreate2D(PETSC_COMM_WORLD, DM_BOUNDARY_NONE,DM_BOUNDARY_NONE, DMDA_STENCIL_STAR,imx+1,jmx+1,PETSC_DECIDE,PETSC_DECIDE,one,one, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, dm, petsc_ierr))
+    !   PetscCallA(DMSetFromOptions(dm,petsc_ierr))
+    !   PetscCallA(DMSetUp(dm,petsc_ierr))
+    !   PetscCallA(KSPSetDM(ksp,dm,petsc_ierr))
+    !   PetscCallA(KSPSetComputeInitialGuess(ksp,ComputeInitialGuess,0,petsc_ierr))
+    !   PetscCallA(KSPSetComputeOperators(ksp,ComputeMatrix,0,petsc_ierr))      	
+    !   PetscCallA(DMDAGetCorners(dm,is,js,PETSC_NULL_INTEGER,iw,jw,PETSC_NULL_INTEGER,petsc_ierr))
+    !  PetscCallA(KSPSetFromOptions(ksp,petsc_ierr))
+    !   PetscCallA(KSPSetUp(ksp,petsc_ierr))
+    !  end if !Calder Edit
 
 
   
@@ -353,10 +353,10 @@
 
 
        
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
+!       if(i3D /= 0) then
+!       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1
                  
-         do iter=0, iterations
+!         do iter=0, iterations
          !   call fluxavg(phi,phiavg)
                if (eBoltzmann == 1) then
                   call boltzsolve(phi)
@@ -364,62 +364,62 @@
 
 
 !          PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+!         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+!         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+!         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+!         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+!         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
 
          
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
-          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-            end if
-         enddo
-       enddo
+!         do idx=1, vec_end-vec_start
+!            i=mod(idx-1,(iw))+is
+!            j=(idx-1)/(iw)+js
+!            phi(i,j,k)=phi_array(idx)!*mask(i,j)
+!         enddo
+!          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+!            end if
+!         enddo
+!       enddo
             
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-   else   
-      k=0
+!      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+!   else   
+!      k=0
 
-      call smooth2D(den2d2,smooth_order)
-
-
-       do iter=0, iterations
-          !call fluxavg(phi,phiavg)
-          phi=0
-         if (eBoltzmann == 1) then
-            call boltzsolve(phi)
-         else
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
+!      call smooth2D(den2d2,smooth_order)
 
 
-        PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+!       do iter=0, iterations
+!          !call fluxavg(phi,phiavg)
+!          phi=0
+!         if (eBoltzmann == 1) then
+!            call boltzsolve(phi)
+!         else
+!         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+!         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+!         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+!         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+!         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+!         do idx=1, vec_end-vec_start
+!            i=mod(idx-1,(iw))+is
+!            j=(idx-1)/(iw)+js
+!            phi(i,j,k)=phi_array(idx)!*mask(i,j)
+!         enddo
 
-        call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+
+!        PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+
+!        call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
 
-       end if !Calder Edit
-    end do !Calder Edit
+!       end if !Calder Edit
+!    end do !Calder Edit
 
 
-         do k=1,kmx
-            phi(:,:,k)=phi(:,:,0)
-         end do
-               
-      end if
+!         do k=1,kmx
+!            phi(:,:,k)=phi(:,:,0)
+!         end do
+!               
+!      end if
       
          
      if(timestep>nstep_E)  call efieldcalc(phi)
@@ -514,73 +514,73 @@
      if (ifield_solver .eq. 1) then
         phi=0.0
 
-       if(i3D /= 0) then
-       do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
+ !      if(i3D /= 0) then
+ !      do k=MyId*(kmx+1)/(numprocs),(MyId+1)*(kmx+1)/(numprocs)-1  
        
-         do iter=0,iterations
+ !        do iter=0,iterations
          !   call fluxavg(phi,phiavg)
-            if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-            else      
+ !           if (eBoltzmann == 1) then
+ !              call boltzsolve(phi)
+ !           else      
                      
-         PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-         PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-         PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-         PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
-         PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+ !        PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+ !        PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+ !        PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+ !        PetscCallA(VecGetOwnershipRange(petsc_phi,vec_start,vec_end,petsc_ierr))
+ !        PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
 
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
-         PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
-         end if
-	enddo
-      enddo
+ !        do idx=1, vec_end-vec_start
+ !           i=mod(idx-1,(iw))+is
+ !           j=(idx-1)/(iw)+js
+ !           phi(i,j,k)=phi_array(idx)!*mask(i,j)
+ !        enddo
+ !        PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+ !        end if
+!	enddo
+ !     enddo
 
       
-      call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
+ !     call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
            
-   else
+ !  else
 
-      k=0
-      call smooth2D(den2d2,smooth_order)
+ !     k=0
+ !     call smooth2D(den2d2,smooth_order)
 
       
-         do iter=0, iterations
+ !        do iter=0, iterations
             !call fluxavg(phi,phiavg)
-            phi=0
-            if (eBoltzmann == 1) then
-               call boltzsolve(phi)
-            else
-            PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
-            PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
-            PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
-            PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
+ !           phi=0
+ !           if (eBoltzmann == 1) then
+ !              call boltzsolve(phi)
+ !           else
+ !           PetscCallA(KSPSetComputeRHS(ksp,ComputeRHS,k,petsc_ierr))
+ !           PetscCallA(KSPSolve(ksp,PETSC_NULL_VEC,PETSC_NULL_VEC,petsc_ierr))
+ !           PetscCallA(KSPGetSolution(ksp,petsc_phi,petsc_ierr))
+ !           PetscCall(VecGetArrayReadF90(petsc_phi, phi_array, petsc_ierr))
 
-         do idx=1, vec_end-vec_start
-            i=mod(idx-1,(iw))+is
-            j=(idx-1)/(iw)+js
-            phi(i,j,k)=phi_array(idx)!*mask(i,j)
-         enddo
+ !        do idx=1, vec_end-vec_start
+ !           i=mod(idx-1,(iw))+is
+ !           j=(idx-1)/(iw)+js
+ !           phi(i,j,k)=phi_array(idx)!*mask(i,j)
+ !        enddo
          
          
             
 
-            PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
+  !          PetscCall(VecRestoreArrayReadF90(petsc_phi,phi_array,petsc_ierr))
 
-            call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
-
-
-         end if !Calder Edit
-        end do !Calder Edit
+  !          call  MPI_Allreduce(MPI_IN_PLACE, phi, (imx+1)*(jmx+1)*(kmx+1),MPI_Real8, MPI_SUM, MPI_COMM_WORLD,ierr)
 
 
-         do k=1,kmx
-            phi(:,:,k)=phi(:,:,0)
-         end do
-   end if
+   !      end if !Calder Edit
+   !     end do !Calder Edit
+
+
+  !       do k=1,kmx
+  !          phi(:,:,k)=phi(:,:,0)
+  !       end do
+  ! end if
    
 
 
@@ -2099,208 +2099,6 @@ end subroutine field
 
 
  
-       subroutine ComputeInitialGuess(ksp,init_guess,ctx,ierr)
-       use petscksp
-       implicit none
-       PetscErrorCode  ierr
-       KSP ksp
-       PetscInt ctx(*)
-       Vec init_guess
-       PetscScalar  h
-
-       h=0.0
-       PetscCall(VecSet(init_guess,h,ierr))
-       end subroutine
-       !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-      subroutine ComputeMatrix(ksp,AA,BB,dummy,ierr)
-      use petscksp
-      use gemx_com
-      use equil
-       implicit none
-       PetscErrorCode  ierr
-       KSP ksp
-       Mat AA,BB
-       integer dummy(*)
-       DM dm
-       integer :: ii,jj
-
-      PetscInt    i,j,mx,my,xm
-      PetscInt    ym,xs,ys,i1,i5
-      PetscScalar  v(5),Hx,Hy
-      PetscScalar  Hx2,Hy2,tmp_r,a_value
-      MatStencil   row(4),col(4,5)
-
-      i1 = 1
-      i5 = 5
-      a_value = 0.5
-      PetscCall(KSPGetDM(ksp,dm,ierr))
-      PetscCall(DMDAGetInfo(dm,PETSC_NULL_INTEGER,mx,my,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,ierr))
-
-      Hx =dx! (Rgrid(imx)-Rgrid(0)) / real(imx)
-      Hy =dz!(Zgrid(jmx)-Zgrid(0)) / real(jmx)
-
-      Hx2 = Hx**2
-      Hy2 = Hy**2
-      PetscCall(DMDAGetCorners(dm,xs,ys,PETSC_NULL_INTEGER,xm,ym,PETSC_NULL_INTEGER,ierr))
-      do 10,j=ys,ys+ym-1
-         do 20, i=xs,xs+xm-1
-          row(MatStencil_i) = i
-          row(MatStencil_j) = j
-          if (mask(i,j) <0.99) then
-             v(1)=c2_over_vA2(i,j)*(-2.0/Hx2-2.0/Hy2)
-             PetscCall(MatSetValuesStencil(BB,i1,row,i1,row,v(1),INSERT_VALUES,ierr))
-          else
-             if (j > 0) then
-                 if (j == jmx) then
-                    v(1) = c2_over_vA2(i,j)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1))
-                 else
-                    v(1) = c2_over_vA2(i,j)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
-                 end if
-             end if
-             col(MatStencil_i, 1) = i
-             col(MatStencil_j, 1) = j - 1    
-
-             if (i > 0) then
-                 if (i == imx) then
-                    v(2) =  c2_over_vA2(i,j)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j))
-                 else
-                    v(2) =  c2_over_vA2(i,j)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
-                 end if
-             end if
-             col(MatStencil_i, 2) = i - 1
-             col(MatStencil_j, 2) = j
-
-             v(3) = -2.0* c2_over_vA2(i,j) / Hx2 - 2.0* c2_over_vA2(i,j) / Hy2
-             col(MatStencil_i, 3) = i
-             col(MatStencil_j, 3) = j
-
- !            write(*,*)v(3), xn0e(i,j)*mu0*e/t0e(i,j)
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Boltzmann e!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-             if(iBoltzmann/=0) then
-                v(3)=v(3)-xn0e(i,j)*mu0*e*e/t0e(i,j)
-             end if
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!             
-
-             if (i < imx) then
-                 if (i == 0) then
-                    v(4) =  c2_over_vA2(i,j)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j))
-                 else
-                    v(4) =  c2_over_vA2(i,j)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j))
-                 end if
-             end if
-             col(MatStencil_i, 4) = i + 1
-             col(MatStencil_j, 4) = j
-
-             if (j < jmx) then
-                 if (j == 0) then
-                    v(5) =  c2_over_vA2(i,j)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j))
-                 else
-                    v(5) =  c2_over_vA2(i,j)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1))
-                 end if
-             end if
-             col(MatStencil_i, 5) = i
-             col(MatStencil_j, 5) = j + 1
-             PetscCall(MatSetValuesStencil(BB, i1, row, i5, col, v, INSERT_VALUES, ierr))
-          endif
-
-    
-20       continue
-10    continue
-      PetscCall(MatAssemblyBegin(BB,MAT_FINAL_ASSEMBLY,ierr))
-      PetscCall(MatAssemblyEnd(BB,MAT_FINAL_ASSEMBLY,ierr))
-      if (AA .ne. BB) then
-         PetscCall(MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY,ierr))
-         PetscCall(MatAssemblyEnd(AA,MAT_FINAL_ASSEMBLY,ierr))
-      endif
-!      PetscCall(MatView(A,PETSC_VIEWER_STDOUT_WORLD,petsc_ierr))
-!      PetscCall(MatView(B,PETSC_VIEWER_STDOUT_WORLD,petsc_ierr))
-    end subroutine
-
-    
-    !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCc
-
-
-       subroutine ComputeRHS(ksp,bbb,k,ierr)
-       use petscksp
-       use gemx_com
-       use equil
-       implicit none
-       integer::k,ii,jj,iflag
-
-       PetscErrorCode  ierr
-       PetscScalar, POINTER ::b_array(:)
-
-       KSP ksp
-       Vec bbb
-       PetscScalar  h,Hx,Hy
-       PetscInt  mx,my,i,j,xs,xm,ys,ym,vec_start,vec_end
-       DM dm
-       PetscInt idx
-       PetscScalar tmp_value,a_value,tmp_r
-
-       tmp_value=0
-
-  
-       PetscCall(KSPGetDM(ksp,dm,ierr))
-       PetscCall(DMDAGetInfo(dm,PETSC_NULL_INTEGER,mx,my,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,ierr))
-       PetscCallA(VecGetOwnershipRange(bbb,vec_start,vec_end,ierr))
-       PetscCall(DMDAGetCorners(dm,xs,ys,PETSC_NULL_INTEGER,xm,ym,PETSC_NULL_INTEGER,ierr))
-
-
-
-    idx=vec_start-1
-       do 10,j=ys,ys+ym-1
-         do 20, i=xs,xs+xm-1
-            idx=idx+1           
-             if (mask(i,j) <0.99) then
-                tmp_value = 0
-             else
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2D ni noly now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                if(i3D==0)then
-                   if (iBoltzmann==0) then
-                      tmp_value = denes(i,j,k)-q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
-                   elseif (eAdiabatic/=0) then
-                      !tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j)
-                      tmp_value = -q(1)*mu0*den2d2(i,j) + xn0e(i,j)*e*mu0*(1-e/t0e(i,j)*phiavg(i,j))
-
-                   else 
-                     tmp_value = -q(1)*mu0*(den2d2(i,j)-xn0i(i,j))
-                  end if
-                  
-
-                   
-                   !                 tmp_value = 1
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3D case!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                else
-                if (iBoltzmann==0) then
-                tmp_value = denes(i,j,k)-q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
-                endif
-                        
-                if (eAdiabatic/=0) then
-                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j)
-                else 
-                  tmp_value = -q(1)*mu0*(den(2,i,j,k)-xn0i(i,j))
-                endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
-                endif
-                
-             end if
-             PetscCall(VecSetValues(bbb,1,idx, tmp_value, INSERT_VALUES, ierr))
-       
-20       continue
-10    continue
-          
-          
-        
-             PetscCall(VecAssemblyBegin(bbb,ierr))
-             PetscCall(VecAssemblyEnd(bbb,ierr))
-
-       
-       end subroutine
 
 
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
