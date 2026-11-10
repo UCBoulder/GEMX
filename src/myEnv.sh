@@ -1,15 +1,20 @@
 #!/bin/bash
-# # Source the system default environment
-# source /opt/cray/pe/cpe/24.07/restore_lmod_system_defaults.sh
 
- # Load required modules in the right order
-module restore
+# Reset to NERSC defaults
+module reset
+
+# Remove MATLAB to prevent its libstdc++ from contaminating GEMX
+module unload matlab 2>/dev/null || true
+
+# GPU programming environment
 module load PrgEnv-nvidia
-module load cudatoolkit
-module load cray-mpich/8.1.25
+module load cudatoolkit/13.2
+module load cray-mpich
 module load cray-fftw
-#
-# # Set PETSC path if needed
-export PETSC_PATH=/global/cfs/cdirs/mp118/software/petsc/install
+
+# PETSc 3.25.5 + CUDA 13
+export PETSC_PATH=/global/cfs/cdirs/mp118/software/petsc/install_3.25.5_cuda13
+export PETSC_DIR=$PETSC_PATH
 export MPIPATH=$CRAY_MPICH_DIR
-export LD_LIBRARY_PATH=/global/cfs/cdirs/mp118/software/petsc/install/lib:$LD_LIBRARY_PATH
+
+export LD_LIBRARY_PATH=$PETSC_PATH/lib:${LD_LIBRARY_PATH:-}

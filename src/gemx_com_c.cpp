@@ -120,6 +120,7 @@ double etaohm;
 double lx,lz;
 int nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision,ncollision;
 double cut,amp,tor,amie,emass,qel,rneu;
+double dens_weight;
 int iput,iget,ision,isham,peritr,iadi;
 int idg;
 const int master = 0;

@@ -125,14 +125,14 @@ int main() {
 
 
    if(myid==0){
-      file.open("testj0");
-      for(int i = 0 ; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << jpar(i,j,outk) << "   ";
-         }
-         file << "\n";
-      }
-      file.close();
+      // file.open("testj0");
+      // for(int i = 0 ; i <= imx; ++i){
+      //    for(int j = 0; j <= jmx; ++j){
+      //       file << jpar(i,j,outk) << "   ";
+      //    }
+      //    file << "\n";
+      // }
+      // file.close();
 
       // file.open("test_particleload");
       // for(int i = 0 ; i <= imx; ++i){
@@ -185,14 +185,14 @@ int main() {
       }
       file.close();
 
-      file.open("testapar0");
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << apar(i,j,outk) << "    ";
-         }
-         file << "\n";
-      }
-      file.close();
+      // file.open("testapar0");
+      // for(int i = 0; i <= imx; ++i){
+      //    for(int j = 0; j <= jmx; ++j){
+      //       file << apar(i,j,outk) << "    ";
+      //    }
+      //    file << "\n";
+      // }
+      // file.close();
 
       file.open("testne0_zeta");
       for(int k = 0; k <= kmx; ++k){
@@ -200,11 +200,11 @@ int main() {
       }
       file.close();
 
-      file.open("testjpar0_zeta");
-      for(int k = 0; k <= kmx; ++k){
-            file << jpar(mid_i,mid_j,k) << "   \n";
-      }
-      file.close();
+      // file.open("testjpar0_zeta");
+      // for(int k = 0; k <= kmx; ++k){
+      //       file << jpar(mid_i,mid_j,k) << "   \n";
+      // }
+      // file.close();
    }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
@@ -308,9 +308,9 @@ int main() {
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
             } 
-            fluxavg_c_(phi,phiavg); //Uses previous time step phi
+            // fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            // fluxavg(phi,phiavg) //Turned off for CBC
+            fluxavg_c_(phi,phiavg); //Turned off for CBC
          }
       
       } else {
@@ -436,11 +436,11 @@ int main() {
          file.close();
       
          file.open("testPhiFreq", ios::app);
-         file << timestep << "		" << phi(192,128,0) << "    " << phi(180,128,0) << endl;
+         file << timestep << "		" << phi(240,148,0) << "    " << phi(220,148,0) << endl;
          file.close();
       
          file.open("testPhiFreq2", ios::app);
-         file << timestep << "		" << phi(170,128,0) << "    " << phi(200,128,0) << endl;
+         file << timestep << "		" << phi(200,148,0) << "    " << phi(180,148,0) << endl;
          file.close();
       }
 
@@ -490,8 +490,9 @@ int main() {
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
             }
-            fluxavg_c_(phi,phiavg); //Uses previous time step phi
+            // fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+            fluxavg_c_(phi,phiavg); //Uses previous time step phi
          }
       } else {
 
@@ -681,23 +682,23 @@ int main() {
       outd_c_(timestep);
 
       if(myid==0 && ifield_solver==1 && (timestep%1) == 0){
-         file.open("testapar");
-         for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j){
-               file << apar(i,j,outk) << "   ";
-            }
-            file << "\n";
-         }
-         file.close();
+         // file.open("testapar");
+         // for(int i = 0; i <= imx; ++i) {
+         //    for(int j = 0; j <= jmx; ++j){
+         //       file << apar(i,j,outk) << "   ";
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
 
-         file.open("testjpar");
-         for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j){
-               file << jpar(i,j,outk) << "   ";
-            }
-            file << "\n";
-         }
-         file.close();
+         // file.open("testjpar");
+         // for(int i = 0; i <= imx; ++i) {
+         //    for(int j = 0; j <= jmx; ++j){
+         //       file << jpar(i,j,outk) << "   ";
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
 
          file.open("testne");
          for(int i = 0; i <= imx; ++i) {
@@ -719,7 +720,7 @@ int main() {
       }
 
 
-      if(myid==master && (timestep%xnplt)==0 && (timestep%50)==0){
+      if(myid==master && (timestep%xnplt)==0 && (timestep%10)==0){
          file.open("testPhit", ios::app);
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
@@ -916,7 +917,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d %d", &cold_start, &hyper_filter, &radial_filter);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%lf %d %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
+      fscanf(in_file, "%lf %lf %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &checkpoint);
       fscanf(in_file, " %*[^\n]\n");
@@ -1214,7 +1215,8 @@ void loadi_c_(){
 
    for(i = 2; i <= imx-2; ++i) {
       for(j = 2; j <= jmx-2; ++j){
-         realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+         // realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+         realparticles = realparticles + xn0i(i,j)*(xctr-xdim/2+i*dx);
          // if(mask(i,j)<0.99){
          //    continue;
          // } else{
@@ -1288,8 +1290,14 @@ void loadi_c_(){
                w2[m] = 1e-3;
                // w2[m] = 1;
             } else {
-               q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)), 2) -
-                        0.16*sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) + 0.86;
+               // q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)), 2) -
+               //          0.16*sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) + 0.86;
+
+               // Approximating Large Aspect Ratio for DIII-D
+               q_safety = (sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2))/xctr) *
+                           (wx0*wz0*b0zeta(i,k)+wx0*wz1*b0zeta(i,k+1)+wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1)) / 
+                           sqrt(pow(wx0*wz0*b0x(i,k)+wx0*wz1*b0x(i,k+1)+wx1*wz0*b0x(i+1,k)+wx1*wz1*b0x(i+1,k+1), 2) + 
+                           pow(wx0*wz0*b0z(i,k)+wx0*wz1*b0z(i,k+1)+wx1*wz0*b0z(i+1,k)+wx1*wz1*b0z(i+1,k+1), 2));
 
                w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - zctr, dumx + Rgrid[0] - xctr)) *
                      exp(-pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
@@ -1338,7 +1346,7 @@ void loadi_c_(){
                      // +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
             w2[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
             // gw[m] = 1;
-            gw[m] = 1;//*1/1.007;
+            gw[m] = 1.0;//*1/1.007;
 
             if(weightscheme == 1) {
                if(nonlin == 1) {
@@ -2151,6 +2159,11 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    PetscInt idx;
    PetscScalar tmp_value = 0.0;
    double rho_squared = 0.0;
+   double delta_density = 0.0;
+   double delta_dens_ip = 0.0;
+   double delta_dens_im = 0.0;
+   double delta_dens_jp = 0.0;
+   double delta_dens_jm = 0.0;
    // PetscScalar a_value,tmp_r;
 
    PetscInt k = *(PetscInt*)ctx; 
@@ -2271,10 +2284,15 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 						// 			(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
 						// 			(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
 						// 			((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
+                  delta_density = den(1,i,j,k); //- dens_weight*xn0i(i,j);
+                  delta_dens_ip = den(1,i+1,j,k); //- dens_weight*xn0i(i+1,j);
+                  delta_dens_im = den(1,i-1,j,k); //- dens_weight*xn0i(i-1,j);
+                  delta_dens_jp = den(1,i,j+1,k); //- dens_weight*xn0i(i,j+1);
+                  delta_dens_jm = den(1,i,j-1,k);// - dens_weight*xn0i(i,j-1);
 
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*rho_squared)*(((den(1,i-1,j,k))+(den(1,i+1,j,k))-2*(den(1,i,j,k)))/(dx*dx) + 
-									((den(1,i,j-1,k))+(den(1,i,j+1,k))-2*(den(1,i,j,k)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
+                  tmp_value = -q[0]*mu0*(delta_density) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*rho_squared)*(((delta_dens_im)+(delta_dens_ip)-2*(delta_density))/(dx*dx) + 
+									((delta_dens_jm)+(delta_dens_jp)-2*(delta_density))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
                            (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
                            ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz));
 
@@ -2412,75 +2430,301 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 //    // output.Clear();
 // }
 
+// void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
+
+//    int N = 200; //Flux surface resolution;
+//    int count = 0; 
+
+//    double tmp_num = 0.0;
+//    double tmp_den = 0.0;
+//    double max_val = 0.0;
+//    double val = 0.0;
+
+//    double wmx0=0.0, wmx1=0.0, psival=0.0;
+
+//    int i,j,k,l,miw;
+
+//    // std::vector<double> psi_1d(200);
+//    bool valid_bin[200] = {false};
+
+//    double tmp_flux_surface[200];
+//    double psi_1d[200];
+
+//    std::fill(std::begin(tmp_flux_surface), std::end(tmp_flux_surface), 0.0);
+//    std::fill(std::begin(psi_1d), std::end(psi_1d), 0.0);
+//    // double max_val = -std::numeric_limits<double>::infinity();
+
+//    // Create 1d psi array
+//    for (i = 0; i<=imx; ++i){
+//       for (j = 0; j<=jmx; ++j){
+//          val = psi_p(i,j);
+//          if (val > max_val){
+//             max_val = val;
+//          }
+//       }
+//    }
+
+//    double dpsi = max_val / (N-1);
+
+//    for(l = 1; l < N; ++l){
+//       // psi_1d[l] = l*dpsi;
+//       for(k=0; k<=kmx; ++k){
+//          for(i=0; i<=imx; ++i){
+//             for(j=0; j<=jmx; ++j){
+//                if(psi_p(i,j) <= l*dpsi && psi_p(i,j) >= (l-1)*dpsi && mask(i,j) > 0.99){
+//                   tmp_num += input(i,j,k)*Rgrid[i];
+//                   tmp_den += Rgrid[i];
+//                   count += 1;
+//                }
+//             }
+//          }
+//       }
+//       if (count != 0) {
+//         tmp_flux_surface[l] = tmp_num/tmp_den;
+//         valid_bin[l] = true;
+//       }
+
+//         tmp_num = 0.0;
+//         tmp_den = 0.0;
+//         count = 0;
+//    }
+
+//    for (int l = 1; l < N; ++l) {
+
+//         if (valid_bin[l]) continue;
+    
+//         int left = l - 1;
+//         int right = l + 1;
+    
+//         while (left >= 1 && !valid_bin[left]) --left;
+//         while (right < N && !valid_bin[right]) ++right;
+    
+//         if (left >= 1 && right < N) {
+//             double w = double(l-left)/double(right-left);
+    
+//             tmp_flux_surface[l] =
+//                 (1.0-w)*tmp_flux_surface[left]
+//                 + w*tmp_flux_surface[right];
+    
+//         } else if (left >= 1) {
+//             tmp_flux_surface[l] = tmp_flux_surface[left];
+    
+//         } else if (right < N) {
+//             tmp_flux_surface[l] = tmp_flux_surface[right];
+//         }
+//     }
+
+//    tmp_flux_surface[0] = tmp_flux_surface[3];
+//    tmp_flux_surface[1] = tmp_flux_surface[3];
+//    tmp_flux_surface[2] = tmp_flux_surface[3];
+
+//    for(i=0; i<=imx; ++i){
+//       for(j=0; j<=jmx; ++j){
+//          psival = psi_p(i,j);
+//          if(mask(i,j) < 0.99){
+//             output(i,j) = 0.0;
+//          } else{
+//             // miw = static_cast<int>(psival/(psi_1d[2]-psi_1d[1]));
+//             // miw = std::clamp(static_cast<int>(psival/(psi_1d[2]-psi_1d[1])),0, N-2); 
+//             // wmx0 = ((miw+1)*(psi_1d[2]-psi_1d[1])-psival)/(psi_1d[2]-psi_1d[1]);
+//             // wmx1 = 1. - wmx0;
+//             double pos = psival/dpsi + 0.5;
+//             miw = std::clamp(static_cast<int>(pos), 0, N-2);
+//             wmx1 = std::clamp(pos - miw, 0.0, 1.0);
+//             wmx0 = 1.0 - wmx1;
+//             output(i,j) = wmx0*tmp_flux_surface[miw] + wmx1*tmp_flux_surface[miw+1];
+//          }
+//       }
+//    }
+// }
+
+
 void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
 
-   int N = 200; //Flux surface resolution; 
+   constexpr int N = 200; // Flux surface resolution
+   int count = 0;
 
    double tmp_num = 0.0;
    double tmp_den = 0.0;
    double max_val = 0.0;
    double val = 0.0;
 
-   double wmx0=0.0, wmx1=0.0, psival=0.0;
+   double wmx0 = 0.0, wmx1 = 0.0, psival = 0.0;
 
-   int i,j,k,l,miw;
+   int i, j, k, l, miw;
 
-   // std::vector<double> psi_1d(200);
+   bool valid_bin[N] = {false};
 
-   double tmp_flux_surface[200];
-   double psi_1d[200];
+   double tmp_flux_surface[N];
 
-   std::fill(std::begin(tmp_flux_surface), std::end(tmp_flux_surface), 0.0);
-   std::fill(std::begin(psi_1d), std::end(psi_1d), 0.0);
-   // double max_val = -std::numeric_limits<double>::infinity();
+   std::fill(std::begin(tmp_flux_surface),
+             std::end(tmp_flux_surface), 0.0);
 
-   // Create 1d psi array
-   for (i = 0; i<=imx; ++i){
-      for (j = 0; j<=jmx; ++j){
+   // ==========================================================
+   // 1. Find maximum psi inside plasma mask
+   // ==========================================================
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+
+         if(mask(i,j) <= 0.99) continue;
+
          val = psi_p(i,j);
-         if (val > max_val){
+
+         if(val > max_val){
             max_val = val;
          }
       }
    }
 
-   double dpsi = max_val / (N-1);
+   // Handle degenerate case where all valid psi values are zero
+   // or no plasma cells exist.
 
-   for(l = 1; l <= N; ++l){
-      // psi_1d[l] = l*dpsi;
-      for(k=0; k<=kmx; ++k){
-         for(i=0; i<=imx; ++i){
-            for(j=0; j<=jmx; ++j){
-               if(psi_p(i,j) <= l*dpsi && psi_p(i,j) >= (l-1)*dpsi){
-                  tmp_num += input(i,j,k)*Rgrid[i];
-                  tmp_den += Rgrid[i];
+   if(max_val <= 0.0){
+
+      double sum = 0.0;
+      double den = 0.0;
+
+      for(k = 0; k <= kmx; ++k){
+         for(i = 0; i <= imx; ++i){
+            for(j = 0; j <= jmx; ++j){
+
+               if(mask(i,j) > 0.99){
+                  sum += input(i,j,k)*Rgrid[i];
+                  den += Rgrid[i];
                }
             }
          }
       }
-      tmp_flux_surface[l] = tmp_num/tmp_den;
-      psi_1d[l] = dpsi*l;
-      tmp_num = 0.0;
-      tmp_den = 0.0;
+
+      double avg = (den > 0.0) ? sum/den : 0.0;
+
+      for(i = 0; i <= imx; ++i){
+         for(j = 0; j <= jmx; ++j){
+            output(i,j) = (mask(i,j) > 0.99) ? avg : 0.0;
+         }
+      }
+
+      return;
    }
 
-   tmp_flux_surface[0] = tmp_flux_surface[2];
-   tmp_flux_surface[1] = tmp_flux_surface[2];
+   double dpsi = max_val / (N-1);
 
-   for(i=0; i<=imx; ++i){
-      for(j=0; j<=jmx; ++j){
+   // ==========================================================
+   // 2. Calculate flux-surface averages
+   // ==========================================================
+
+   for(l = 1; l < N; ++l){
+
+      for(k = 0; k <= kmx; ++k){
+         for(i = 0; i <= imx; ++i){
+            for(j = 0; j <= jmx; ++j){
+
+               psival = psi_p(i,j);
+
+               // Half-open intervals prevent double-counting.
+               // Final bin includes the maximum psi value.
+
+               if(mask(i,j) > 0.99 &&
+                  psival >= (l-1)*dpsi &&
+                  (psival < l*dpsi ||
+                   (l == N-1 && psival <= l*dpsi))){
+
+                  tmp_num += input(i,j,k)*Rgrid[i];
+                  tmp_den += Rgrid[i];
+                  count += 1;
+               }
+            }
+         }
+      }
+
+      if(count != 0 && tmp_den != 0.0){
+         tmp_flux_surface[l] = tmp_num/tmp_den;
+         valid_bin[l] = true;
+      }
+
+      tmp_num = 0.0;
+      tmp_den = 0.0;
+      count = 0;
+   }
+
+   // ==========================================================
+   // 3. Fill empty flux bins using neighboring valid bins
+   // ==========================================================
+
+   for(l = 1; l < N; ++l){
+
+      if(valid_bin[l]) continue;
+
+      int left = l - 1;
+      int right = l + 1;
+
+      while(left >= 1 && !valid_bin[left]) --left;
+      while(right < N && !valid_bin[right]) ++right;
+
+      if(left >= 1 && right < N){
+
+         double w = double(l-left)/double(right-left);
+
+         tmp_flux_surface[l] =
+            (1.0-w)*tmp_flux_surface[left]
+            + w*tmp_flux_surface[right];
+
+      } else if(left >= 1){
+
+         tmp_flux_surface[l] = tmp_flux_surface[left];
+
+      } else if(right < N){
+
+         tmp_flux_surface[l] = tmp_flux_surface[right];
+      }
+   }
+
+   // ==========================================================
+   // 4. Preserve original treatment of first three bins
+   // ==========================================================
+
+   tmp_flux_surface[0] = tmp_flux_surface[3];
+   tmp_flux_surface[1] = tmp_flux_surface[3];
+   tmp_flux_surface[2] = tmp_flux_surface[3];
+
+   // ==========================================================
+   // 5. Interpolate flux-surface average onto 2D grid
+   // ==========================================================
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+
          psival = psi_p(i,j);
-         if(mask(i,j) < 0.99){
+
+         if(mask(i,j) <= 0.99){
+
             output(i,j) = 0.0;
-         } else{
-            miw = static_cast<int>(psival/(psi_1d[2]-psi_1d[1]));
-            wmx0 = ((miw+1)*(psi_1d[2]-psi_1d[1])-psival)/(psi_1d[2]-psi_1d[1]);
-            wmx1 = 1. - wmx0;
-            output(i,j) = wmx0*tmp_flux_surface[miw] + wmx1*tmp_flux_surface[miw+1];
+
+         } else {
+
+            // Flux-bin l is centered at (l-0.5)*dpsi.
+            // Shift by half a bin for consistent interpolation.
+
+            double pos = psival/dpsi + 0.5;
+
+            // Ensure miw and miw+1 are within array bounds.
+
+            miw = std::clamp(
+               static_cast<int>(pos), 0, N-2
+            );
+
+            wmx1 = std::clamp(pos - miw, 0.0, 1.0);
+            wmx0 = 1.0 - wmx1;
+
+            output(i,j) =
+               wmx0*tmp_flux_surface[miw]
+               + wmx1*tmp_flux_surface[miw+1];
          }
       }
    }
 }
+
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void efieldcalc_c_(CArray3D<double> &input_phi){ 
@@ -3114,13 +3358,17 @@ void hampel_filter(CArray3D<double>& input_phi,const int &core) {
 
 void low_mode_filter(CArray3D<double> &input_phi) {
    CArray3D<double> mode_holder;
-   mode_holder.resize(imx, jmx, kmx+1);
+   // mode_holder.resize(imx, jmx, kmx+1);
+   mode_holder.resize(imx+1,jmx+1,kmx+1);
 
    CArray3D<double> filtered;
    filtered.resize(imx, jmx, kmx+1);
 
    CArray3D<double> Filter;
    Filter.resize(imx, jmx, kmx+1);
+
+   CArray2D<double> zonal_part;
+   zonal_part.resize(imx+1, jmx+1);
 
    int rout,zout,rin,zin;
 
@@ -3152,6 +3400,15 @@ void low_mode_filter(CArray3D<double> &input_phi) {
    // printf("Testing");
 
    for(int mode=0; mode <= ((kmx+1)/2); ++mode){
+
+      for (int i = 0; i < imx; ++i) {
+         for (int j = 0; j < jmx; ++j) {
+               for (int k = 0; k <= kmx; ++k) {
+                  mode_holder(i,j,k) = 0.0;
+               }
+         }
+      }
+
       for(int i = 2; i<=imx-2; ++i){
          for(int j = 2; j<=jmx-2; ++j){
             fftw_execute_dft_r2c(plan_forward, &input_phi(i,j,0), phi_hat);
@@ -3160,7 +3417,7 @@ void low_mode_filter(CArray3D<double> &input_phi) {
                phi_hat[m][0] /= (kmx + 1);
                phi_hat[m][1] /= (kmx + 1);
                
-               if (m != mode || mode > ((kmx+1)/2)*0.8) {
+               if (m != mode || mode > ((kmx+1)/2)*0.4) {
                   phi_hat[m][0] = 0.0;
                   phi_hat[m][1] = 0.0;
                }
@@ -3177,75 +3434,89 @@ void low_mode_filter(CArray3D<double> &input_phi) {
          }
       }
 
-      if(mode < ((kmx+1)/2)*0.1){
-         // radial_binomial_filter(mode_holder);
-         // hyperdiffusion_filter(mode_holder);
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-
-                  z_4 = (mode_holder(i,j+2,k) - 4*mode_holder(i,j+1,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i,j-1,k) + mode_holder(i,j-2,k))/pow(dz,4);
-
-                  r_4 = (mode_holder(i+2,j,k) - 4*mode_holder(i+1,j,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i-1,j,k) + mode_holder(i-2,j,k))/pow(dx,4);
-                  r_3 = (mode_holder(i+2,j,k) - 2*mode_holder(i+1,j,k) + 2*mode_holder(i-1,j,k) - mode_holder(i-2,j,k))/(2*pow(dx,3));
-                  r_2 = (mode_holder(i+1,j,k) - 2*mode_holder(i,j,k) + mode_holder(i-1,j,k))/pow(dx,2);
-                  r_1 = (mode_holder(i+1,j,k) - mode_holder(i-1,j,k))/(2*dx);
-
-                  rz_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k))-(mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(2*dx*pow(dz,2));
-
-                  r_2_z_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k)) - 2*(mode_holder(i,j+1,k)-2*mode_holder(i,j,k)+mode_holder(i,j-1,k)) + (mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(pow(dx,2)*pow(dz,2));
-
-                  hyper_operator(i,j,k) = z_4 + r_4 + (2/Rgrid[i])*r_3 - (1/pow(Rgrid[i],2))*r_2 + (1/pow(Rgrid[i],3))*r_1 + (2/Rgrid[i])*rz_2 + 2*r_2_z_2;
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  // mode_holder(i,j,k)=Filter(i,j,k);
-                  mode_holder(i,j,k)=mode_holder(i,j,k) - dt*hyper_operator(i,j,k)*hyper_alpha;
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  br = b0x(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
-                  bz = b0z(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
-
-                  //Outer radial interpolation
-                  R_out = bz*dr + Rgrid[i];
-                  Z_out = Zgrid[j] - br*dr;
-                  rout = static_cast<int>((R_out-Rgrid[0])/dx);
-                  zout = static_cast<int>((Z_out-Zgrid[0])/dz);
-
-                  outer = (mode_holder(rout,zout,k)*((Rgrid[rout+1]-R_out)*(Zgrid[zout+1]-Z_out)) + 
-                           mode_holder(rout+1,zout,k)*((R_out-Rgrid[rout])*(Zgrid[zout+1]-Z_out)) +
-                           mode_holder(rout,zout+1,k)*((Rgrid[rout+1]-R_out)*(Z_out-Zgrid[zout])) + 
-                           mode_holder(rout+1,zout+1,k)*((R_out-Rgrid[rout])*(Z_out-Zgrid[zout])))/area;
-
-                  //Inner radial interpolation
-                  R_in = Rgrid[i] - bz*dr;
-                  Z_in = br*dr + Zgrid[j];
-                  rin = static_cast<int>((R_in-Rgrid[0])/dx);
-                  zin = static_cast<int>((Z_in-Zgrid[0])/dz);
-
-                  inner = (mode_holder(rin,zin,k)*((Rgrid[rin+1]-R_in)*(Zgrid[zin+1]-Z_in)) +
-                           mode_holder(rin+1,zin,k)*((R_in-Rgrid[rin])*(Zgrid[zin+1]-Z_in)) +
-                           mode_holder(rin,zin+1,k)*((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin])) +
-                           mode_holder(rin+1,zin+1,k)*((R_in-Rgrid[rin])*(Z_in-Zgrid[zin])))/area;
-                  Filter(i,j,k) = (1.0/4.0) * (inner + outer + 2*mode_holder(i,j,k));
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  mode_holder(i,j,k)=Filter(i,j,k);
-               }
+      if (mode == 0) {
+         zonal_part.Clear();
+         fluxavg_c_(mode_holder, zonal_part);
+         for (int i = 2; i <= imx-2; ++i) {
+            for (int j = 2; j <= jmx-2; ++j) {
+                  for (int k = 0; k <= kmx; ++k) {
+                     mode_holder(i,j,k) = zonal_part(i,j);
+                     // mode_holder(i,j,k) = 0.0;
+                  }
             }
          }
       }
+
+      // if(mode < ((kmx+1)/2)*0.01){
+      // // if(mode < ((kmx+1)/2)){
+      //    // radial_binomial_filter(mode_holder);
+      //    // hyperdiffusion_filter(mode_holder);
+      //    // for(int i = 3; i<=imx-3; ++i){
+      //    //    for(int j = 3; j<=jmx-3; ++j){
+      //    //       for(int k = 0; k<=kmx; ++k){
+
+      //    //          z_4 = (mode_holder(i,j+2,k) - 4*mode_holder(i,j+1,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i,j-1,k) + mode_holder(i,j-2,k))/pow(dz,4);
+
+      //    //          r_4 = (mode_holder(i+2,j,k) - 4*mode_holder(i+1,j,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i-1,j,k) + mode_holder(i-2,j,k))/pow(dx,4);
+      //    //          r_3 = (mode_holder(i+2,j,k) - 2*mode_holder(i+1,j,k) + 2*mode_holder(i-1,j,k) - mode_holder(i-2,j,k))/(2*pow(dx,3));
+      //    //          r_2 = (mode_holder(i+1,j,k) - 2*mode_holder(i,j,k) + mode_holder(i-1,j,k))/pow(dx,2);
+      //    //          r_1 = (mode_holder(i+1,j,k) - mode_holder(i-1,j,k))/(2*dx);
+
+      //    //          rz_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k))-(mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(2*dx*pow(dz,2));
+
+      //    //          r_2_z_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k)) - 2*(mode_holder(i,j+1,k)-2*mode_holder(i,j,k)+mode_holder(i,j-1,k)) + (mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(pow(dx,2)*pow(dz,2));
+
+      //    //          hyper_operator(i,j,k) = z_4 + r_4 + (2/Rgrid[i])*r_3 - (1/pow(Rgrid[i],2))*r_2 + (1/pow(Rgrid[i],3))*r_1 + (2/Rgrid[i])*rz_2 + 2*r_2_z_2;
+      //    //       }
+      //    //    }
+      //    // }
+      //    // for(int i = 3; i<=imx-3; ++i){
+      //    //    for(int j = 3; j<=jmx-3; ++j){
+      //    //       for(int k = 0; k<=kmx; ++k){
+      //    //          // mode_holder(i,j,k)=Filter(i,j,k);
+      //    //          mode_holder(i,j,k)=mode_holder(i,j,k) - dt*hyper_operator(i,j,k)*hyper_alpha;
+      //    //       }
+      //    //    }
+      //    // }
+      //    for(int i = 3; i<=imx-3; ++i){
+      //       for(int j = 3; j<=jmx-3; ++j){
+      //          for(int k = 0; k<=kmx; ++k){
+      //             br = b0x(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
+      //             bz = b0z(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
+
+      //             //Outer radial interpolation
+      //             R_out = bz*dr + Rgrid[i];
+      //             Z_out = Zgrid[j] - br*dr;
+      //             rout = static_cast<int>((R_out-Rgrid[0])/dx);
+      //             zout = static_cast<int>((Z_out-Zgrid[0])/dz);
+
+      //             outer = (mode_holder(rout,zout,k)*((Rgrid[rout+1]-R_out)*(Zgrid[zout+1]-Z_out)) + 
+      //                      mode_holder(rout+1,zout,k)*((R_out-Rgrid[rout])*(Zgrid[zout+1]-Z_out)) +
+      //                      mode_holder(rout,zout+1,k)*((Rgrid[rout+1]-R_out)*(Z_out-Zgrid[zout])) + 
+      //                      mode_holder(rout+1,zout+1,k)*((R_out-Rgrid[rout])*(Z_out-Zgrid[zout])))/area;
+
+      //             //Inner radial interpolation
+      //             R_in = Rgrid[i] - bz*dr;
+      //             Z_in = br*dr + Zgrid[j];
+      //             rin = static_cast<int>((R_in-Rgrid[0])/dx);
+      //             zin = static_cast<int>((Z_in-Zgrid[0])/dz);
+
+      //             inner = (mode_holder(rin,zin,k)*((Rgrid[rin+1]-R_in)*(Zgrid[zin+1]-Z_in)) +
+      //                      mode_holder(rin+1,zin,k)*((R_in-Rgrid[rin])*(Zgrid[zin+1]-Z_in)) +
+      //                      mode_holder(rin,zin+1,k)*((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin])) +
+      //                      mode_holder(rin+1,zin+1,k)*((R_in-Rgrid[rin])*(Z_in-Zgrid[zin])))/area;
+      //             Filter(i,j,k) = (1.0/4.0) * (inner + outer + 2*mode_holder(i,j,k));
+      //          }
+      //       }
+      //    }
+      //    for(int i = 3; i<=imx-3; ++i){
+      //       for(int j = 3; j<=jmx-3; ++j){
+      //          for(int k = 0; k<=kmx; ++k){
+      //             mode_holder(i,j,k)=Filter(i,j,k);
+      //          }
+      //       }
+      //    }
+      // }
 
       for(int i = 2; i<=imx-2; ++i){
          for(int j = 2; j<=jmx-2; ++j){

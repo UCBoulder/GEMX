@@ -37,6 +37,7 @@ extern double etaohm;
 extern double num_diff;
 extern double lx,lz;
 extern double cut,amp,tor,amie,emass,qel,rneu;
+extern double dens_weight;
 extern double vcut;
 extern const int master;
 extern MPI_Comm TUBE_COMM, GRID_COMM, PETSC_COMM;

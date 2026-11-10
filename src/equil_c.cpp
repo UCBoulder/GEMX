@@ -12,7 +12,7 @@ double psi_max=0.31, psi_min=-1.0 ,R_min=1.0, Z_min=-1.5, Z_internal=-1.2, psi_d
 //integer :: cont=259002 !Calder Edit
 
 int nzeta = 64; 
-int nx=299, nz=299; //indexing problems
+int nx=499, nz=499; //indexing problems
 // int nx=999, nz=999;
 double zctr;
 double  dxeq, xdim, xctr, zdim, dzeq;
@@ -58,6 +58,7 @@ int num_lines = 44816;    //CBC VERSION
 // int num_lines = 78427;
 int line;
 CArray2D<double> phiavg;
+// CArray2D<double> zonal_part;
 double *psitab;
 double *weight00;
 double *weight01;
@@ -124,6 +125,7 @@ void new_equil_c(){
     curlb.resize(nx+1, nz+1, 3); //last index 1 based in ftn - cPP:(0,1,2) vs ftn:(1,2,3)
 
     phiavg.resize(nx+1, nz+1);
+    // zonal_part.resize(nx+1,nz+1);
     rho_i.resize(nx+1, nz+1);
     dpsi_dr.resize(nx+1,nz+1);
     dpsi_dz.resize(nx+1,nz+1);

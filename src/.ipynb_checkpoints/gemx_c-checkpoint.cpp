@@ -12,6 +12,7 @@
 #include <chrono> //used for timing, leaving in case anyone wants to use
 #include <unistd.h>
 #include <iostream>
+// #include <random>
 
 #include <vector>
 
@@ -124,56 +125,56 @@ int main() {
 
 
    if(myid==0){
-      file.open("testj0");
-      for(int i = 0 ; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << jpar(i,j,outk) << "   ";
-         }
-         file << "\n";
-      }
-      file.close();
+      // file.open("testj0");
+      // for(int i = 0 ; i <= imx; ++i){
+      //    for(int j = 0; j <= jmx; ++j){
+      //       file << jpar(i,j,outk) << "   ";
+      //    }
+      //    file << "\n";
+      // }
+      // file.close();
 
-      file.open("test_particleload");
-      for(int i = 0 ; i <= imx; ++i){
-         for(int j = 0 ; j <= jmx; ++j){
-            for(int k = 0 ; k <= kmx; ++k){
-               if(mask(i,j)<0.99)continue;
-               if(xn0i(i,j)<0.0)continue;
-               double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
-               file << rel << "  ";
-               file << "\n";
-            }
-         }
-      }
-      file.close();
+      // file.open("test_particleload");
+      // for(int i = 0 ; i <= imx; ++i){
+      //    for(int j = 0 ; j <= jmx; ++j){
+      //       for(int k = 0 ; k <= kmx; ++k){
+      //          if(mask(i,j)<0.99)continue;
+      //          if(xn0i(i,j)<0.0)continue;
+      //          double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
+      //          file << rel << "  ";
+      //          file << "\n";
+      //       }
+      //    }
+      // }
+      // file.close();
 
-      file.open("test_Rweight_particleload_num");
-      for(int i = 0 ; i <= imx; ++i){
-         for(int j = 0 ; j <= jmx; ++j){
-            for(int k = 0 ; k <= kmx; ++k){
-               if(mask(i,j)<0.99)continue;
-               if(xn0i(i,j)<0.0)continue;
-               // double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
-               file << (den(1,i,j,k) - xn0i(i,j))*Rgrid[i] << "  ";
-               file << "\n";
-            }
-         }
-      }
-      file.close();
+      // file.open("test_Rweight_particleload_num");
+      // for(int i = 0 ; i <= imx; ++i){
+      //    for(int j = 0 ; j <= jmx; ++j){
+      //       for(int k = 0 ; k <= kmx; ++k){
+      //          if(mask(i,j)<0.99)continue;
+      //          if(xn0i(i,j)<0.0)continue;
+      //          // double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
+      //          file << (den(1,i,j,k) - xn0i(i,j))*Rgrid[i] << "  ";
+      //          file << "\n";
+      //       }
+      //    }
+      // }
+      // file.close();
 
-      file.open("test_Rweight_particleload_den");
-      for(int i = 0 ; i <= imx; ++i){
-         for(int j = 0 ; j <= jmx; ++j){
-            for(int k = 0 ; k <= kmx; ++k){
-               if(mask(i,j)<0.99)continue;
-               if(xn0i(i,j)<0.0)continue;
-               // double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
-               file << xn0i(i,j)*Rgrid[i] << "  ";
-               file << "\n";
-            }
-         }
-      }
-      file.close();
+      // file.open("test_Rweight_particleload_den");
+      // for(int i = 0 ; i <= imx; ++i){
+      //    for(int j = 0 ; j <= jmx; ++j){
+      //       for(int k = 0 ; k <= kmx; ++k){
+      //          if(mask(i,j)<0.99)continue;
+      //          if(xn0i(i,j)<0.0)continue;
+      //          // double rel = (den(1,i,j,k) - xn0i(i,j)) / xn0i(i,j);
+      //          file << xn0i(i,j)*Rgrid[i] << "  ";
+      //          file << "\n";
+      //       }
+      //    }
+      // }
+      // file.close();
 
       file.open("testne0");
       for(int i = 0; i <= imx; ++i){
@@ -184,14 +185,14 @@ int main() {
       }
       file.close();
 
-      file.open("testapar0");
-      for(int i = 0; i <= imx; ++i){
-         for(int j = 0; j <= jmx; ++j){
-            file << apar(i,j,outk) << "    ";
-         }
-         file << "\n";
-      }
-      file.close();
+      // file.open("testapar0");
+      // for(int i = 0; i <= imx; ++i){
+      //    for(int j = 0; j <= jmx; ++j){
+      //       file << apar(i,j,outk) << "    ";
+      //    }
+      //    file << "\n";
+      // }
+      // file.close();
 
       file.open("testne0_zeta");
       for(int k = 0; k <= kmx; ++k){
@@ -199,11 +200,11 @@ int main() {
       }
       file.close();
 
-      file.open("testjpar0_zeta");
-      for(int k = 0; k <= kmx; ++k){
-            file << jpar(mid_i,mid_j,k) << "   \n";
-      }
-      file.close();
+      // file.open("testjpar0_zeta");
+      // for(int k = 0; k <= kmx; ++k){
+      //       file << jpar(mid_i,mid_j,k) << "   \n";
+      // }
+      // file.close();
    }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of init perturbation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
 
@@ -212,6 +213,18 @@ int main() {
    for(timestep=ncurr; timestep<=nm; ++timestep) {
       // start_total_tm = MPI_Wtime();
       for(int randTabInd = 0; randTabInd <= 10006; ++randTabInd){
+         rand_var1[randTabInd] = ran2_c_(iseed);
+         rand_var2[randTabInd] = ran2_c_(iseed);
+
+         if (ncollision == 1){
+            double nvpar = 0.0;
+            double nvperp2 = 0.0;
+            parperp_c_(nvpar, nvperp2, randTabInd+1, 0);
+
+            neut_vpar[randTabInd] = nvpar;
+            neut_vperp2[randTabInd] = nvperp2;
+         }
+
          if(ran2_c_(iseed)-0.5 > 0){
             rand_table[randTabInd]=1;
          } else {
@@ -238,9 +251,19 @@ int main() {
      
    //    weightFile.close();
    // }
+   
+   // if(timestep == 0){
+   //    for(int i; i<=imx; ++i){
+   //       for(int j; j<=jmx;++j){
+   //          xn0i(i,j) = den(1,i,j,0);
+   //       }
+   //    }
+   // }
+
    // if (weightscheme == 0){
-   //     // density_filter(den);
-   // }    
+   //     density_filter(den);
+   // }
+
 
    if(ifield_solver == 1) {
       phi.Clear();
@@ -285,9 +308,9 @@ int main() {
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
             } 
-            fluxavg_c_(phi,phiavg); //Uses previous time step phi
+            // fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            // fluxavg(phi,phiavg) //Turned off for CBC
+            fluxavg_c_(phi,phiavg); //Turned off for CBC
          }
       
       } else {
@@ -349,10 +372,16 @@ int main() {
 
       if(radial_filter == 1){
          // flux_fourier_filter(phi);
-         radial_binomial_filter(phi);
+         // radial_binomial_filter(phi);
+         hampel_filter(phi,1);
+         hampel_filter(phi,0);
+         // median_filter(phi);
       }
       if(hyper_filter == 1){
-         hyperdiffusion_filter(phi);
+        hyperdiffusion_filter(phi);
+	      // hyperdiffusion_filter(ex);
+	      // hyperdiffusion_filter(ez);
+	      // hyperdiffusion_filter(ezeta);
       }
 
       if(filtering_iterations) {
@@ -364,6 +393,8 @@ int main() {
 
       if(low_filter == 1){
          low_mode_filter(phi);
+
+         // low_mode_filter(phi);
       }
 
       // //EFIELD TESTING
@@ -375,7 +406,6 @@ int main() {
       // get_jpar_(apars);
       //smooth(jpar,3)
       // get_ne_c_(-1);
-
 
       if(ision==1) ppush_c_(timestep);
       if(ifluid==1) integ_c_(0);
@@ -406,19 +436,19 @@ int main() {
          file.close();
       
          file.open("testPhiFreq", ios::app);
-         file << timestep << "		" << phi(192,128,0) << "    " << phi(180,128,0) << endl;
+         file << timestep << "		" << phi(240,148,0) << "    " << phi(220,148,0) << endl;
          file.close();
       
          file.open("testPhiFreq2", ios::app);
-         file << timestep << "		" << phi(170,128,0) << "    " << phi(200,128,0) << endl;
+         file << timestep << "		" << phi(200,148,0) << "    " << phi(180,148,0) << endl;
          file.close();
       }
 
    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   if (weightscheme == 0){
-       // density_filter(den);
-   } 
+   // if (weightscheme == 0){
+   //     density_filter(den);
+   // } 
 
    if(ifield_solver == 1) {
       phi.Clear();
@@ -437,12 +467,12 @@ int main() {
             // phiavg.Clear();
             for(k=myid*(kmx+1)/(numprocs); k < (myid+1)*(kmx+1)/(numprocs); ++k){
 
-               if((timestep%1)==0){ // DELETE LATER
-                  file.open("testmyid", ios::app);
-                  file << myid << "    ";
-                  file << "\n";
-                  file.close();
-               }
+               // if((timestep%1)==0){ // DELETE LATER
+               //    file.open("testmyid", ios::app);
+               //    file << myid << "    ";
+               //    file << "\n";
+               //    file.close();
+               // }
 
                // fluxavg_c_(phi, phiavg);
 
@@ -460,8 +490,9 @@ int main() {
                }
                PetscCall(VecRestoreArrayRead(petsc_phi,&phi_array));
             }
-            fluxavg_c_(phi,phiavg); //Uses previous time step phi
+            // fluxavg_c_(phi,phiavg); //Uses previous time step phi
             MPI_Allreduce(MPI_IN_PLACE, phi.start(), (imx+1)*(jmx+1)*(kmx+1),MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); CHKERRQ(ierr);
+            fluxavg_c_(phi,phiavg); //Uses previous time step phi
          }
       } else {
 
@@ -525,10 +556,16 @@ int main() {
 
       if(radial_filter == 1){
          // flux_fourier_filter(phi);
-         radial_binomial_filter(phi);
+         // radial_binomial_filter(phi);
+         hampel_filter(phi,1);
+         hampel_filter(phi,0);
+         // median_filter(phi);
       }
       if(hyper_filter == 1){
          hyperdiffusion_filter(phi);
+      	// hyperdiffusion_filter(ex);
+         // hyperdiffusion_filter(ez);
+         // hyperdiffusion_filter(ezeta);
       }
 
       if(filtering_iterations) {
@@ -540,6 +577,8 @@ int main() {
 
       if(low_filter == 1){
          low_mode_filter(phi);
+
+         // low_mode_filter(phi);
       }
 
       //EFIELD TESTING
@@ -643,23 +682,23 @@ int main() {
       outd_c_(timestep);
 
       if(myid==0 && ifield_solver==1 && (timestep%1) == 0){
-         file.open("testapar");
-         for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j){
-               file << apar(i,j,outk) << "   ";
-            }
-            file << "\n";
-         }
-         file.close();
+         // file.open("testapar");
+         // for(int i = 0; i <= imx; ++i) {
+         //    for(int j = 0; j <= jmx; ++j){
+         //       file << apar(i,j,outk) << "   ";
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
 
-         file.open("testjpar");
-         for(int i = 0; i <= imx; ++i) {
-            for(int j = 0; j <= jmx; ++j){
-               file << jpar(i,j,outk) << "   ";
-            }
-            file << "\n";
-         }
-         file.close();
+         // file.open("testjpar");
+         // for(int i = 0; i <= imx; ++i) {
+         //    for(int j = 0; j <= jmx; ++j){
+         //       file << jpar(i,j,outk) << "   ";
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
 
          file.open("testne");
          for(int i = 0; i <= imx; ++i) {
@@ -681,7 +720,7 @@ int main() {
       }
 
 
-      if(myid==master && (timestep%xnplt)==0 && (timestep%50)==0){
+      if(myid==master && (timestep%xnplt)==0 && (timestep%10)==0){
          file.open("testPhit", ios::app);
          for(int i = 0; i <= imx; ++i) {
             for(int j = 0; j <= jmx; ++j){
@@ -691,6 +730,66 @@ int main() {
          }
          file.close();
       }
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+      //Adiabatic Field Solve, RHS diagnostic
+      if (myid==0 && ifield_solver==1 && (timestep%1) == 0){
+         file.open("test_deni");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << den(1,i,j,outk) << "   ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+         file.open("test_initdeni");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << xn0i(i,j) << "   ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+         file.open("test_rhoion");
+         for(int i = 0; i <= imx; ++i) {
+            for(int j = 0; j <= jmx; ++j){
+               file << rho_i(i,j) << "   ";
+            }
+            file << "\n";
+         }
+         file.close();
+
+         // file.open("test_laplacedeltani", ios::app);
+         // for(int i = 1; i <= imx-1; ++i) {
+         //    for(int j = 1; j <= jmx-1; ++j){
+         //       if(i ==0 || j==0 || i==imx || j==jmx){
+         //          file << 0.0 << "    ";
+         //       }else{
+         //          file << (((den(1,i-1,j,outk)-xn0i(i-1,j))+(den(1,i+1,j,outk)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/(dx*dx) + 
+			// 						((den(1,i,j-1,outk)-xn0i(i,j-1))+(den(1,i,j+1,outk)-xn0i(i,j+1))-2*(den(1,i,j,outk)-xn0i(i,j)))/(dz*dz)) << "   ";
+         //       }
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
+
+         // file.open("test_laplacephiavg", ios::app);
+         // for(int i = 0; i <= imx; ++i) {
+         //    for(int j = 0; j <= jmx; ++j){
+         //       if(i ==0 || j==0 || i==imx || j==jmx){
+         //          file << 0.0 << "    ";
+         //       }else{
+         //          file << (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
+         //                   ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz)) << "   ";
+         //       }
+         //    }
+         //    file << "\n";
+         // }
+         // file.close();
+      }
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
       
       if(myid == master && ifield_solver == 1) {
          cout << "time_step=" << timestep << "\n";
@@ -804,13 +903,13 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%lf %d %lf", &betaVal, &nonlin, &vcut);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d %d %d %d %d %d %d", &ntracer, &ifield_solver, &i3D, &iBoltzmann, &eAdiabatic, &iterations, &icollision);
+      fscanf(in_file, "%d %d %d %d %d %d %d %d", &ntracer, &ifield_solver, &i3D, &iBoltzmann, &eAdiabatic, &iterations, &icollision, &ncollision);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &eBoltzmann);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d", &iflr, &PADE);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%d", &CST);
+      fscanf(in_file, "%d %d", &CST, &num_diff);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d", &weightscheme, &loadingscheme);
       fscanf(in_file, " %*[^\n]\n");
@@ -818,7 +917,7 @@ void init(){
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d %d %d", &cold_start, &hyper_filter, &radial_filter);
       fscanf(in_file, " %*[^\n]\n");
-      fscanf(in_file, "%lf %d %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
+      fscanf(in_file, "%lf %lf %lf %lf %lf %lf %lf", &psi_max, &psi_min, &R_min, &Z_min, &Z_internal, &psi_div, &psi_a);
       fscanf(in_file, " %*[^\n]\n");
       fscanf(in_file, "%d", &checkpoint);
       fscanf(in_file, " %*[^\n]\n");
@@ -1116,7 +1215,13 @@ void loadi_c_(){
 
    for(i = 2; i <= imx-2; ++i) {
       for(j = 2; j <= jmx-2; ++j){
-         realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+         // realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+         realparticles = realparticles + xn0i(i,j)*(xctr-xdim/2+i*dx);
+         // if(mask(i,j)<0.99){
+         //    continue;
+         // } else{
+         //    realparticles = realparticles + xn0i(i,j)*Rgrid[i];
+         // }
       }
    }
 
@@ -1183,12 +1288,19 @@ void loadi_c_(){
                // w2[m] = 0;
                // w2[m] = 1e-12*(ran2_c_(iseed)-0.5);
                w2[m] = 1e-3;
+               // w2[m] = 1;
             } else {
-               q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)), 2) -
-                        0.16*sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) + 0.86;
+               // q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)), 2) -
+               //          0.16*sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) + 0.86;
 
-               w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2])) *
-                     exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
+               // Approximating Large Aspect Ratio for DIII-D
+               q_safety = (sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2))/xctr) *
+                           (wx0*wz0*b0zeta(i,k)+wx0*wz1*b0zeta(i,k+1)+wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1)) / 
+                           sqrt(pow(wx0*wz0*b0x(i,k)+wx0*wz1*b0x(i,k+1)+wx1*wz0*b0x(i+1,k)+wx1*wz1*b0x(i+1,k+1), 2) + 
+                           pow(wx0*wz0*b0z(i,k)+wx0*wz1*b0z(i,k+1)+wx1*wz0*b0z(i+1,k)+wx1*wz1*b0z(i+1,k+1), 2));
+
+               w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - zctr, dumx + Rgrid[0] - xctr)) *
+                     exp(-pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
 
                // w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.4 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
                      // exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
@@ -1202,7 +1314,7 @@ void loadi_c_(){
          m++;
       } else {
          if(ran2_c_(iseed)<jacp && ran2_c_(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/xn0i(imx/2,jmx/2)) {
-
+         // if(ran2_c_(iseed)<jacp && ran2_c_(iseed) < (wx0*wz0*xn0i(i,k)+wx0*wz1*xn0i(i,k+1)+wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))/(4.66*pow(10,19))) {
             zeta2[m] = dumz;
             x2[m] = dumx;
             z2[m] = dumy;
@@ -1234,25 +1346,26 @@ void loadi_c_(){
                      // +wx1*wz0*xn0i(i+1,k)+wx1*wz1*xn0i(i+1,k+1))*r/xctr*((imx-3)*(jmx-3)*(kmx+1))/(numprocs*mmx); //*xctr/(x+xctr-xdim/2.)
             w2[m] = (kmx+1)*realparticles/(numprocs * mmx * xctr);
             // gw[m] = 1;
-            gw[m] = 1*1/1.007;
+            gw[m] = 1.0;//*1/1.007;
 
             if(weightscheme == 1) {
                if(nonlin == 1) {
                   // w2[m] = 0;
                   // w2[m] = 1e-12*(ran2_c_(iseed)-0.5);
-                  w2[m] = 1e-3 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2])) *
-                        exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
+                  w2[m] = 1e-3 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - zctr, dumx + Rgrid[0] - xctr)) *
+                        exp(-pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
                   if (modes == -1){
                      w2[m] = 1e-3;
+                     // w2[m]=0.01;
                   }
                   // w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2])) *
                   //       exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
                } else {
-                  q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)), 2) -
-                        0.16*sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) + 0.86;
+                  q_safety = 2.52*pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)), 2) -
+                        0.16*sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) + 0.86;
 
-                  w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2])) *
-                        exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
+                  w2[m] = 1e-12 * cos(modes*zeta2[m] - round(modes*q_safety)*atan2(dumy + Zgrid[0] - zctr, dumx + Rgrid[0] - xctr)) *
+                        exp(-pow(sqrt(pow(dumx + Rgrid[0] - xctr, 2) + pow(dumy + Zgrid[0] - zctr, 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
 
                   // w2[m] = 1e-12 * cos(modes * (zeta2[m] - 1.4 * atan2(dumy + Zgrid[0] - Zgrid[jmx / 2], dumx + Rgrid[0] - Rgrid[imx / 2]))) * 
                         // exp(-pow(sqrt(pow(dumx + Rgrid[0] - Rgrid[imx / 2], 2) + pow(dumy + Zgrid[0] - Zgrid[jmx / 2], 2)) - 0.3, 2) / (2 * pow(0.05, 2)));
@@ -1895,8 +2008,11 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 	MatStencil   row,col[5];
    // MatStencil   row,col[9]; 
    double rho_squared = 0;
+   double num_diff = 0;
 	i1 = 1;
 	i5 = 5;
+
+   // num_diff = 0.01*c2_over_vA2(xs/2,ys/2);
    // i5 = 9;
 	//a_value = 0.5;
    // auto start_t = MPI_Wtime();
@@ -1916,16 +2032,16 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 			row.i = i;
 			row.j = j;
 			if(mask(i,j) < 0.99){
-				v[0] = (c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))*(-2.0/Hx2-2.0/Hy2);
+				v[0] = (c2_over_vA2(i,j) + PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)*(-2.0/Hx2-2.0/Hy2);
             // v[0] = 1.0;
 				PetscCall(MatSetValuesStencil(BB,i1,&row,i1,&row,&v[0],INSERT_VALUES));
 			} else {
 				if(j > 0) {
 					if(j == jmx) {
-						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hy2-1.0/(2.0*Hy2)*( c2_over_vA2(i,j)- c2_over_vA2(i,j-1));
 						v[0] = v[0] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i,j-1)/t0e(i,j-1))/Hy2;
 					} else {
-						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+						v[0] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hy2-1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                   v[0] = v[0] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
 					}
 				}
@@ -1934,17 +2050,17 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
 				if(i > 0) {
 					if(i == imx) {
-						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hx2-1.0/(2.0*Hx2)*( c2_over_vA2(i,j)- c2_over_vA2(i-1,j));
                   v[1] = v[1] - PADE*(mu0*e*e*rho_squared)*(xn0e(i,j)/t0e(i,j) - xn0e(i-1,j)/t0e(i-1,j))/Hx2;
 					} else {
-						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+						v[1] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hx2-1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                   v[1] = v[1] - PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
 					}
 				}
 				col[1].i = i - 1;
 				col[1].j = j;
 
-				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2;
+				v[2] = -2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hx2 - 2.0*(c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hy2;
 				col[2].i = i;
 				col[2].j = j;
 
@@ -1959,10 +2075,10 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 
 				if(i < imx){
 					if(i == 0){
-						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hx2+1.0/(2.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i,j));
                   v[3] = v[3] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i,j)/t0e(i,j))/Hx2;
 					} else {
-						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
+						v[3] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared)- num_diff)/Hx2+1.0/(4.0*Hx2)*( c2_over_vA2(i+1,j)- c2_over_vA2(i-1,j));
                   v[3] = v[3] + PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j)/t0e(i+1,j) - xn0e(i-1,j)/t0e(i-1,j))/(2*Hx2);
 					}
 				}
@@ -1971,17 +2087,17 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat AA, Mat BB, void* dummy) {
 				
 				if(j < jmx) {
 					if(j == 0){
-						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hy2+1.0/(2.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j));
                   v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j)/t0e(i,j))/Hy2;
 					} else {
-						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
+						v[4] =  (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared) - num_diff)/Hy2+1.0/(4.0*Hy2)*( c2_over_vA2(i,j+1)- c2_over_vA2(i,j-1));
                   v[4] = v[4] + PADE*(mu0*e*e*rho_squared)*(xn0e(i,j+1)/t0e(i,j+1) - xn0e(i,j-1)/t0e(i,j-1))/(2*Hy2);
 					} 
 				}
 				col[4].i = i;
 				col[4].j = j + 1;   
 
-            // Implementation of the 9-point stencil
+            // // Implementation of the 9-point stencil
             // v[5] = (c2_over_vA2(i,j)+PADE*((xn0e(i,j)*mu0*e*e/t0e(i,j))*rho_squared))/(Hx*Hy) - 1.0/(4.0*(Hx*Hy))*(c2_over_vA2(i+1,j+1)- c2_over_vA2(i-1,j-1));
             // v[5] = v[5] - PADE*(mu0*e*e*rho_squared)*(xn0e(i+1,j+1)/t0e(i+1,j+1) - xn0e(i-1,j-1)/t0e(i-1,j-1))/(2*(Hx*Hy));
 
@@ -2042,7 +2158,12 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
    DM dm;
    PetscInt idx;
    PetscScalar tmp_value = 0.0;
-   double rho_squared = 0;
+   double rho_squared = 0.0;
+   double delta_density = 0.0;
+   double delta_dens_ip = 0.0;
+   double delta_dens_im = 0.0;
+   double delta_dens_jp = 0.0;
+   double delta_dens_jm = 0.0;
    // PetscScalar a_value,tmp_r;
 
    PetscInt k = *(PetscInt*)ctx; 
@@ -2054,6 +2175,29 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
                         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr));
    PetscCall(VecGetOwnershipRange(bbb,&vec_start,&vec_end));
    PetscCall(DMDAGetCorners(dm,&xs,&ys,nullptr,&xm,&ym,nullptr));
+
+   // Diagnostic: Delete later
+   // double bnum = 0.0;
+   // double bden = 0.0;
+   // double bbar = 0.0;
+
+   // for (j = ys; j < ys+ym; ++j){
+   //    for(i = xs; i < xs+xm; ++i){
+   //       if (mask(i,j)<0.99){
+   //          continue;
+   //       }else {
+   //          rho_squared = rho_i(i,j) * rho_i(i,j);
+   //          bnum += Rgrid[i] * (-q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+   //                            PADE*(mu0*q[0]*rho_squared)*(((den(1,i-1,j,k)-xn0i(i-1,j))+(den(1,i+1,j,k)-xn0i(i+1,j))-2*(den(1,i,j,k)-xn0i(i,j)))/(dx*dx) + 
+   //                            ((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
+   //                            (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
+   //                            ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz)));
+   //          bden += Rgrid[i];
+   //       }
+   //    }
+   // }
+   // bbar = bnum/bden;
+   //////////////////
 
    idx = vec_start-1;
    for(j = ys; j < ys+ym; ++j) {
@@ -2099,6 +2243,13 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 									((den(1,i,j-1,k)-xn0i(i,j-1))+(den(1,i,j+1,k)-xn0i(i,j+1))-2*(den(1,i,j,k)-xn0i(i,j)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
                            (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
                            ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz));
+
+                  // Diagnostic
+                  // tmp_value = tmp_value - bbar;
+                     
+                  // tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+						// 			PADE*(e*e*mu0*rho_squared) * (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
+                  //          ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz));
                         
 					} else {
 						tmp_value = -q[0]*mu0*(den(1,i,j,k)-xn0i(i,j));
@@ -2133,10 +2284,15 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 						// 			(xn0e(i,j)/t0e(i,j))*((phiavg(i-1,j) + phiavg(i+1,j) -2*phiavg(i,j))/(dx*dx) + (phiavg(i,j-1)+phiavg(i,j+1) -2*phiavg(i,j))/(dz*dz)) + 
 						// 			(((xn0e(i+1,j)/t0e(i+1,j))-(xn0e(i-1,j)/t0e(i-1,j)))*(phiavg(i+1,j)-phiavg(i-1,j))/(2*(dx*dx)) + 
 						// 			((xn0e(i,j+1)/t0e(i,j+1))-(xn0e(i,j-1)/t0e(i,j-1)))*(phiavg(i,j+1)-phiavg(i,j-1))/(2*(dz*dz))));
+                  delta_density = den(1,i,j,k); //- dens_weight*xn0i(i,j);
+                  delta_dens_ip = den(1,i+1,j,k); //- dens_weight*xn0i(i+1,j);
+                  delta_dens_im = den(1,i-1,j,k); //- dens_weight*xn0i(i-1,j);
+                  delta_dens_jp = den(1,i,j+1,k); //- dens_weight*xn0i(i,j+1);
+                  delta_dens_jm = den(1,i,j-1,k);// - dens_weight*xn0i(i,j-1);
 
-                  tmp_value = -q[0]*mu0*(den(1,i,j,k)) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
-									PADE*(mu0*q[0]*rho_squared)*(((den(1,i-1,j,k))+(den(1,i+1,j,k))-2*(den(1,i,j,k)))/(dx*dx) + 
-									((den(1,i,j-1,k))+(den(1,i,j+1,k))-2*(den(1,i,j,k)))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
+                  tmp_value = -q[0]*mu0*(delta_density) - (xn0e(i,j)*mu0*e*e/t0e(i,j))*phiavg(i,j) + 
+									PADE*(mu0*q[0]*rho_squared)*(((delta_dens_im)+(delta_dens_ip)-2*(delta_density))/(dx*dx) + 
+									((delta_dens_jm)+(delta_dens_jp)-2*(delta_density))/(dz*dz)) + PADE*(e*e*mu0*rho_squared) *
                            (((xn0e(i+1,j)*phiavg(i+1,j)/t0e(i+1,j))+(xn0e(i-1,j)*phiavg(i-1,j)/t0e(i-1,j))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dx*dx) + 
                            ((xn0e(i,j+1)*phiavg(i,j+1)/t0e(i,j+1))+(xn0e(i,j-1)*phiavg(i,j-1)/t0e(i,j-1))-(2*(xn0e(i,j)*phiavg(i,j)/t0e(i,j))))/(dz*dz));
 
@@ -2243,7 +2399,9 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 //    }
 
 //    //Initialize output to zero
-//    phiavg1d[0] = phiavg1d[1];
+//    // phiavg1d[0] = phiavg1d[1];
+//    phiavg1d[0] = phiavg1d[2];
+//    phiavg1d[1] = phiavg1d[2];
 //    output.Clear();
 //    //QUICK FIX
 //    //phiavg1d_private = 0;
@@ -2272,82 +2430,314 @@ PetscErrorCode ComputeRHS(KSP ksp, Vec bbb, void *ctx) {
 //    // output.Clear();
 // }
 
+// void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
+
+//    int N = 200; //Flux surface resolution;
+//    int count = 0; 
+
+//    double tmp_num = 0.0;
+//    double tmp_den = 0.0;
+//    double max_val = 0.0;
+//    double val = 0.0;
+
+//    double wmx0=0.0, wmx1=0.0, psival=0.0;
+
+//    int i,j,k,l,miw;
+
+//    // std::vector<double> psi_1d(200);
+//    bool valid_bin[200] = {false};
+
+//    double tmp_flux_surface[200];
+//    double psi_1d[200];
+
+//    std::fill(std::begin(tmp_flux_surface), std::end(tmp_flux_surface), 0.0);
+//    std::fill(std::begin(psi_1d), std::end(psi_1d), 0.0);
+//    // double max_val = -std::numeric_limits<double>::infinity();
+
+//    // Create 1d psi array
+//    for (i = 0; i<=imx; ++i){
+//       for (j = 0; j<=jmx; ++j){
+//          val = psi_p(i,j);
+//          if (val > max_val){
+//             max_val = val;
+//          }
+//       }
+//    }
+
+//    double dpsi = max_val / (N-1);
+
+//    for(l = 1; l < N; ++l){
+//       // psi_1d[l] = l*dpsi;
+//       for(k=0; k<=kmx; ++k){
+//          for(i=0; i<=imx; ++i){
+//             for(j=0; j<=jmx; ++j){
+//                if(psi_p(i,j) <= l*dpsi && psi_p(i,j) >= (l-1)*dpsi && mask(i,j) > 0.99){
+//                   tmp_num += input(i,j,k)*Rgrid[i];
+//                   tmp_den += Rgrid[i];
+//                   count += 1;
+//                }
+//             }
+//          }
+//       }
+//       if (count != 0) {
+//         tmp_flux_surface[l] = tmp_num/tmp_den;
+//         valid_bin[l] = true;
+//       }
+
+//         tmp_num = 0.0;
+//         tmp_den = 0.0;
+//         count = 0;
+//    }
+
+//    for (int l = 1; l < N; ++l) {
+
+//         if (valid_bin[l]) continue;
+    
+//         int left = l - 1;
+//         int right = l + 1;
+    
+//         while (left >= 1 && !valid_bin[left]) --left;
+//         while (right < N && !valid_bin[right]) ++right;
+    
+//         if (left >= 1 && right < N) {
+//             double w = double(l-left)/double(right-left);
+    
+//             tmp_flux_surface[l] =
+//                 (1.0-w)*tmp_flux_surface[left]
+//                 + w*tmp_flux_surface[right];
+    
+//         } else if (left >= 1) {
+//             tmp_flux_surface[l] = tmp_flux_surface[left];
+    
+//         } else if (right < N) {
+//             tmp_flux_surface[l] = tmp_flux_surface[right];
+//         }
+//     }
+
+//    tmp_flux_surface[0] = tmp_flux_surface[3];
+//    tmp_flux_surface[1] = tmp_flux_surface[3];
+//    tmp_flux_surface[2] = tmp_flux_surface[3];
+
+//    for(i=0; i<=imx; ++i){
+//       for(j=0; j<=jmx; ++j){
+//          psival = psi_p(i,j);
+//          if(mask(i,j) < 0.99){
+//             output(i,j) = 0.0;
+//          } else{
+//             // miw = static_cast<int>(psival/(psi_1d[2]-psi_1d[1]));
+//             // miw = std::clamp(static_cast<int>(psival/(psi_1d[2]-psi_1d[1])),0, N-2); 
+//             // wmx0 = ((miw+1)*(psi_1d[2]-psi_1d[1])-psival)/(psi_1d[2]-psi_1d[1]);
+//             // wmx1 = 1. - wmx0;
+//             double pos = psival/dpsi + 0.5;
+//             miw = std::clamp(static_cast<int>(pos), 0, N-2);
+//             wmx1 = std::clamp(pos - miw, 0.0, 1.0);
+//             wmx0 = 1.0 - wmx1;
+//             output(i,j) = wmx0*tmp_flux_surface[miw] + wmx1*tmp_flux_surface[miw+1];
+//          }
+//       }
+//    }
+// }
+
+
 void fluxavg_c_(CArray3D<double> &input, CArray2D<double> &output){
 
-   int N = 200; //Flux surface resolution; 
+   constexpr int N = 200; // Flux surface resolution
+   int count = 0;
 
    double tmp_num = 0.0;
    double tmp_den = 0.0;
    double max_val = 0.0;
    double val = 0.0;
 
-   double wmx0=0.0, wmx1=0.0, psival=0.0;
+   double wmx0 = 0.0, wmx1 = 0.0, psival = 0.0;
 
-   int i,j,k,l,miw;
+   int i, j, k, l, miw;
 
-   // std::vector<double> psi_1d(200);
+   bool valid_bin[N] = {false};
 
-   double tmp_flux_surface[200];
-   double psi_1d[200];
+   double tmp_flux_surface[N];
 
-   std::fill(std::begin(tmp_flux_surface), std::end(tmp_flux_surface), 0.0);
-   std::fill(std::begin(psi_1d), std::end(psi_1d), 0.0);
-   // double max_val = -std::numeric_limits<double>::infinity();
+   std::fill(std::begin(tmp_flux_surface),
+             std::end(tmp_flux_surface), 0.0);
 
-   // Create 1d psi array
-   for (i = 0; i<=imx; ++i){
-      for (j = 0; j<=jmx; ++j){
+   // ==========================================================
+   // 1. Find maximum psi inside plasma mask
+   // ==========================================================
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+
+         if(mask(i,j) <= 0.99) continue;
+
          val = psi_p(i,j);
-         if (val > max_val){
+
+         if(val > max_val){
             max_val = val;
          }
       }
    }
 
-   double dpsi = max_val / (N-1);
+   // Handle degenerate case where all valid psi values are zero
+   // or no plasma cells exist.
 
-   for(l = 1; l <= N; ++l){
-      // psi_1d[l] = l*dpsi;
-      for(k=0; k<=kmx; ++k){
-         for(i=0; i<=imx; ++i){
-            for(j=0; j<=jmx; ++j){
-               if(psi_p(i,j) <= l*dpsi && psi_p(i,j) >= (l-1)*dpsi){
-                  tmp_num += input(i,j,k)*Rgrid[i];
-                  tmp_den += Rgrid[i];
+   if(max_val <= 0.0){
+
+      double sum = 0.0;
+      double den = 0.0;
+
+      for(k = 0; k <= kmx; ++k){
+         for(i = 0; i <= imx; ++i){
+            for(j = 0; j <= jmx; ++j){
+
+               if(mask(i,j) > 0.99){
+                  sum += input(i,j,k)*Rgrid[i];
+                  den += Rgrid[i];
                }
             }
          }
       }
-      tmp_flux_surface[l] = tmp_num/tmp_den;
-      psi_1d[l] = dpsi*l;
-      tmp_num = 0.0;
-      tmp_den = 0.0;
+
+      double avg = (den > 0.0) ? sum/den : 0.0;
+
+      for(i = 0; i <= imx; ++i){
+         for(j = 0; j <= jmx; ++j){
+            output(i,j) = (mask(i,j) > 0.99) ? avg : 0.0;
+         }
+      }
+
+      return;
    }
 
-   for(i=0; i<=imx; ++i){
-      for(j=0; j<=jmx; ++j){
+   double dpsi = max_val / (N-1);
+
+   // ==========================================================
+   // 2. Calculate flux-surface averages
+   // ==========================================================
+
+   for(l = 1; l < N; ++l){
+
+      for(k = 0; k <= kmx; ++k){
+         for(i = 0; i <= imx; ++i){
+            for(j = 0; j <= jmx; ++j){
+
+               psival = psi_p(i,j);
+
+               // Half-open intervals prevent double-counting.
+               // Final bin includes the maximum psi value.
+
+               if(mask(i,j) > 0.99 &&
+                  psival >= (l-1)*dpsi &&
+                  (psival < l*dpsi ||
+                   (l == N-1 && psival <= l*dpsi))){
+
+                  tmp_num += input(i,j,k)*Rgrid[i];
+                  tmp_den += Rgrid[i];
+                  count += 1;
+               }
+            }
+         }
+      }
+
+      if(count != 0 && tmp_den != 0.0){
+         tmp_flux_surface[l] = tmp_num/tmp_den;
+         valid_bin[l] = true;
+      }
+
+      tmp_num = 0.0;
+      tmp_den = 0.0;
+      count = 0;
+   }
+
+   // ==========================================================
+   // 3. Fill empty flux bins using neighboring valid bins
+   // ==========================================================
+
+   for(l = 1; l < N; ++l){
+
+      if(valid_bin[l]) continue;
+
+      int left = l - 1;
+      int right = l + 1;
+
+      while(left >= 1 && !valid_bin[left]) --left;
+      while(right < N && !valid_bin[right]) ++right;
+
+      if(left >= 1 && right < N){
+
+         double w = double(l-left)/double(right-left);
+
+         tmp_flux_surface[l] =
+            (1.0-w)*tmp_flux_surface[left]
+            + w*tmp_flux_surface[right];
+
+      } else if(left >= 1){
+
+         tmp_flux_surface[l] = tmp_flux_surface[left];
+
+      } else if(right < N){
+
+         tmp_flux_surface[l] = tmp_flux_surface[right];
+      }
+   }
+
+   // ==========================================================
+   // 4. Preserve original treatment of first three bins
+   // ==========================================================
+
+   tmp_flux_surface[0] = tmp_flux_surface[3];
+   tmp_flux_surface[1] = tmp_flux_surface[3];
+   tmp_flux_surface[2] = tmp_flux_surface[3];
+
+   // ==========================================================
+   // 5. Interpolate flux-surface average onto 2D grid
+   // ==========================================================
+
+   for(i = 0; i <= imx; ++i){
+      for(j = 0; j <= jmx; ++j){
+
          psival = psi_p(i,j);
-         if(mask(i,j) < 0.99){
+
+         if(mask(i,j) <= 0.99){
+
             output(i,j) = 0.0;
-         } else{
-            miw = static_cast<int>(psival/(psi_1d[2]-psi_1d[1]));
-            wmx0 = ((miw+1)*(psi_1d[2]-psi_1d[1])-psival)/(psi_1d[2]-psi_1d[1]);
-            wmx1 = 1. - wmx0;
-            output(i,j) = wmx0*tmp_flux_surface[miw] + wmx1*tmp_flux_surface[miw+1];
+
+         } else {
+
+            // Flux-bin l is centered at (l-0.5)*dpsi.
+            // Shift by half a bin for consistent interpolation.
+
+            double pos = psival/dpsi + 0.5;
+
+            // Ensure miw and miw+1 are within array bounds.
+
+            miw = std::clamp(
+               static_cast<int>(pos), 0, N-2
+            );
+
+            wmx1 = std::clamp(pos - miw, 0.0, 1.0);
+            wmx0 = 1.0 - wmx1;
+
+            output(i,j) =
+               wmx0*tmp_flux_surface[miw]
+               + wmx1*tmp_flux_surface[miw+1];
          }
       }
    }
 }
 
+
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CALDER E FIELD SUBROUTINE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 void efieldcalc_c_(CArray3D<double> &input_phi){ 
    //local vars
    int i, j, k, kminus, kplus;
+   double diffusion;
+   diffusion = 0.001;
+
    for(i = 2; i < imx; ++i){
       for(j = 2; j < jmx; ++j){
          for(k = 0; k <= kmx; ++k) {
-            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*(Rgrid[1]-Rgrid[0]));
-            ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/(2*(Zgrid[1]-Zgrid[0]));
+            ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/(2*abs(Rgrid[1]-Rgrid[0])); //+ diffusion*(input_phi(i+1,j,k)+input_phi(i-1,j,k)-2*input_phi(i,j,k))/((Rgrid[1]-Rgrid[0])*(Rgrid[1]-Rgrid[0]));
+            ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/(2*abs(Zgrid[1]-Zgrid[0])); //+ diffusion*(input_phi(i,j+1,k)+input_phi(i,j-1,k)-2*input_phi(i,j,k))/((Zgrid[1]-Zgrid[0])*(Zgrid[1]-Zgrid[0]));
 
             // ex(i,j,k) = -(input_phi(i+1,j,k) - input_phi(i-1,j,k))/((Rgrid[i+1]-Rgrid[i-1]));
             // ez(i,j,k) = -(input_phi(i,j+1,k) - input_phi(i,j-1,k))/((Zgrid[j+1]-Zgrid[j-1]));
@@ -2501,28 +2891,232 @@ void BoltzSolve_c_(CArray3D<double> &input_phi){
    // end if
 }
 
-void density_filter(CArray4D<double> &input_density){
-   CArray3D<double> Filter;
+// void density_filter(CArray4D<double> &input_density){
+  
+//    CArray3D<double> Filter;
+//    Filter.resize(imx, jmx, kmx+1);
 
-   Filter.resize(imx, jmx, kmx+1);
+//    int core = 1;
+//    int w = 3;
+//    double tau = 1.25;
+//    if (core == 1){
+//       w = 4;
+//       tau = 1.05;
+//    }
 
-   for(int i = 1; i < imx; ++i) { //inclusive do loops - imx-1 -> < imx. Also better caching performance for c++ if i,j,k. Not sure for fortran
-      for(int j = 1; j < jmx; ++j) {
-         for(int k = 0; k <= kmx; ++k) {
-            Filter(i,j,k) = (1.0/16.0) * (input_density(1,i-1,j-1,k) + 2*input_density(1,i,j-1,k) + input_density(1,i+1,j-1,k) + 
-                           2*input_density(1,i-1,j,k) + 4*input_density(1,i,j,k) + 2*input_density(1,i+1,j,k) + 
-                           input_density(1,i-1,j+1,k) + 2*input_density(1,i,j+1,k) + input_density(1,i+1,j+1,k));
-         }
-      }
-   }
-   for(int i = 0; i <= imx; ++i) {
-      for(int j = 0; j <= jmx; ++j) {
-         for(int k = 0; k <= kmx; ++k) {
-            input_density(1,i,j,k) = Filter(i,j,k);
-         }
-      }
-   }        
-}
+//   for (int k=0; k<=kmx; ++k) {
+//     for (int i=2; i<=imx-2; ++i) {
+//       for (int j=2; j<=jmx-2; ++j) {
+
+//         if (mask(i,j) < 0.99) continue;
+//         if (core == 1){
+//            if (psi_p(i,j) > 0.025) continue;
+//         }
+
+//         // Collect local window values
+//         std::vector<double> vals;
+//         vals.reserve((2*w+1)*(2*w+1));
+
+//         for (int di=-w; di<=w; ++di) {
+//           for (int dj=-w; dj<=w; ++dj) {
+//             int ii = i + di, jj = j + dj;
+//             if (mask(ii,jj) < 0.99) continue;
+//             vals.push_back(input_density(1,ii,jj,k));
+//           }
+//         }
+
+//         if (vals.size() < 5) continue; //Boundary or too few valid points
+
+//         // median
+//         auto mid = vals.begin() + vals.size()/2;
+//         std::nth_element(vals.begin(), mid, vals.end());
+//         double m = *mid;
+
+//         // MAD
+//         std::vector<double> absdev;
+//         absdev.reserve(vals.size());
+//         for (double v : vals) absdev.push_back(std::abs(v - m));
+//         auto mid2 = absdev.begin() + absdev.size()/2;
+//         std::nth_element(absdev.begin(), mid2, absdev.end());
+//         double mad = *mid2;
+
+//         double sigma = 1.4826 * mad + 1e-14; // robust scale
+//         double x = input_density(1,i,j,k);
+
+//         if (std::abs(x - m) > tau * sigma) {
+//             // cout << "Filtering" << endl;
+//             Filter(i,j,k) = m + clamp(x - m, -tau*sigma, tau*sigma); // replace blip by median
+//         }
+//       }
+//     }
+//   }
+
+//    for(int i=2;i<=imx-2;++i){
+//       for(int j=2;j<=jmx-2;++j){
+//          for(int k=0;k<=kmx;++k){
+//             // input_density(1,i,j,k) = Filter(i,j,k);
+//             // input_density(1,i,j,k) = 0; //test
+//             if (Filter(i,j,k) != 0){
+//                input_density(1,i,j,k) = Filter(i,j,k);
+//             }
+//          }
+//       }
+//    }
+// }
+
+// void k_parallel_filter(CArray3D<double> &input_phi){
+//    CArray3D<double> phi_mapped;
+//    phi_mapped.resize(imx, jmx, kmx+1);
+
+//    CArray3D<double> mode_holder;
+//    mode_holder.resize(imx,jmx,kmx+1);
+
+//    CArray3D<double> filtered;
+//    filtered.resize(imx,jmx,kmx+1);
+
+//    int psi_len, theta_len, rout, zout, pout, tout;
+//    double area,area_pt,R_out,Z_out,psi_out,theta_out,map_point,psi_min,psi_max;
+//    // Mapping
+//    psi_len = imx;
+//    theta_len = jmx;
+//    std::vector<double> psi_u(psi_len+1), theta_u(theta_len+1);
+
+//    for (int i=0;i<=imx;++i){
+//       for (int j=0;j<=jmx;++j){
+//          if (mask(i,j) < 0.99) continue;
+//          psi_min = std::min(psi_min, psi(i,j));
+//          psi_max = std::max(psi_max, psi(i,j));
+//       }
+//    }
+
+//    for (int p=0;p<=psi_len;++p){
+//       psi_u[p] = psi_min + (psi_max - psi_min) * (double(p) / double(psi_len));
+//    }
+
+//    for (int t=0;t<=theta_len;++t){
+//       theta_u[t] = (pi2) * (double(t) / double(theta_len));
+//    }
+
+//    for(int i=0; i<=imx; ++i){
+//       for(int j=0; j<=jmx; ++j){
+//          theta(i,j) = std::atan2((Zgrid[j]-Zgrid[jmx/2]),(Rgrid[i]-Rgrid[imx/2]))
+//       }
+//    }
+
+//    for(int p=0; p<=psi_len;++p){
+//       for(int t=0; t<=theta_len;++t){
+//          for(int i=0; i<=imx;++i){
+//             for(int j=0; j<=jmx:++j){
+//                if (mask(i,j)<0.99) continue;
+
+//             }
+//          }
+//       }
+//    }
+
+//    area = dx*dz;
+//    for(int i=0;i<=imx;++i){
+//       for(int j=0;j<=jmx;++j){
+//          for(int k=0;k<=kmx;++k){
+//             R_out = ;
+//             Z_out = ;
+//             rout = static_cast<int>((R_out-Rgrid[0])/dx);
+//             zout = static_cast<int>((Z_out-Zgrid[0])/dz);
+
+//             phi_mapped(i,j,k) = (input_phi(rout,zout,k)*((Rgrid[rout+1]-R_out)*(Zgrid[zout+1]-Z_out)) + 
+//                               input_phi(rout+1,zout,k)*((R_out-Rgrid[rout])*(Zgrid[zout+1]-Z_out)) +
+//                               input_phi(rout,zout+1,k)*((Rgrid[rout+1]-R_out)*(Z_out-Zgrid[zout])) + 
+//                               input_phi(rout+1,zout+1,k)*((R_out-Rgrid[rout])*(Z_out-Zgrid[zout])))/area;
+//          }
+//       }
+//    }
+
+//    // First Fourier Transform
+//    fftw_complex* phi_n_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((kmx + 1) / 2 + 1));
+//    double* f_filtered = (double*) fftw_malloc(sizeof(double) * (kmx + 1));
+//    fftw_plan first_plan_forward = fftw_plan_dft_r2c_1d(kmx + 1, &phi_mapped(0,0,0), phi_n_hat, FFTW_ESTIMATE);
+//    fftw_plan first_plan_backward = fftw_plan_dft_c2r_1d(kmx + 1, phi_n_hat, f_filtered, FFTW_ESTIMATE);
+
+//    // Second Fourier Transform
+//    fftw_complex* phi_m_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ((theta_len + 1) / 2 + 1));
+//    double* s_filtered = (double*) fftw_malloc(sizeof(double) * (kmx + 1));
+//    fftw_plan second_plan_forward = fftw_plan_dft_r2c_1d(theta_len + 1, &mode_holder(0,0,0), phi_m_hat, FFTW_ESTIMATE);
+//    fftw_plan second_plan_backward = fftw_plan_dft_c2r_1d(theta_len + 1, phi_m_hat, s_filtered, FFTW_ESTIMATE);
+
+//    for(int n_mode=0; n_mode <= ((kmx+1)/2); ++n_mode){
+//       for(int p; p<=psi_len; ++p){
+//          for(int t; t<=theta_len; ++t){
+//             fftw_execute_dft_r2c(first_plan_forward, &phi_mapped(p,t,0), phi_n_hat);
+
+//             for (int n = 0; n <= ((kmx + 1) / 2); ++n) {
+//                phi_n_hat[n][0] /= (kmx + 1);
+//                phi_n_hat[n][1] /= (kmx + 1);
+               
+//                if (n != n_mode) {
+//                   phi_n_hat[n][0] = 0.0;
+//                   phi_n_hat[n][1] = 0.0;
+//                }
+//             }
+//             fftw_execute_dft_c2r(first_plan_backward, phi_n_hat, f_filtered);
+//             for (int k = 0; k <= kmx; ++k) {
+//                mode_holder(p,t,k) = f_filtered[k];
+//             }
+//          }
+//       }
+
+//       // Second Fourier Transform
+//       for(int k=0; k<=kmx; ++k){
+//          for(int p=0; p<=psi_len; ++p){
+//             fftw_execute_dft_r2c(second_plan_forward, &mode_holder(p,0,k), phi_m_hat);
+
+//             for (int m = 0; m <= ((theta_len + 1) / 2); ++m) {
+//                phi_m_hat[m][0] /= (theta_len + 1);
+//                phi_m_hat[m][1] /= (theta_len + 1);
+
+//                if (m > n_mode*q_1d(p) - 5) {
+//                   phi_m_hat[m][0] = 0.0;
+//                   phi_m_hat[m][1] = 0.0;
+//                }
+//             }
+//             fftw_execute_dft_c2r(second_plan_backward, phi_m_hat, s_filtered);
+//             for (int t = 0; t <= theta_len; ++t) {
+//                mode_holder(p,t,k) = s_filtered[t];
+//             }
+//          }
+//       }
+//       for(int p = 0; p<=psi_len; ++p){
+//          for(int t = 0; t<=theta_len; ++t){
+//             for(int k = 0; k<=kmx; ++k){
+//                filtered(p,t,k) = filtered(p,t,k) + mode_holder(p,t,k);
+//             }
+//          }
+//       }
+//       mode_holder.Clear();
+//    }
+//    // Inverse Mapping
+//    area_pt = ;
+//    for(int i=0; i<=imx;++i){
+//       for(int j=0;j<=jmx;++j){
+//          for(int k=0;k<=kmx;++k){
+//             if (mask(i,j)<0.99){
+//                input_phi(i,j,k) = 0.0;
+//             } else{
+//                psi_out = psi_p(i,j);
+//                theta_out = theta(i,j);
+//                R_out = ;
+//                Z_out = ;
+//                pout = static_cast<int>((psi_out)/abs(psi_u[1]-psi_u[0]));
+//                tout = static_cast<int>((theta_out)/abs(theta_u[1]-theta-u[0]));
+
+//                input_phi(i,j,k) = (filtered(pout,tout,k)*((psi_u[pout+1]-psi_out)*(theta_u[tout+1]-theta_out)) + 
+//                                  filtered(pout+1,tout,k)*((psi_out-psi_u[pout])*(theta_u[tout+1]-theta_out)) +
+//                                  filtered(pout,tout+1,k)*((psi_u[pout+1]-psi_out)*(theta_out-theta_u[tout])) + 
+//                                  filtered(pout+1,tout+1,k)*((psi_out-psi_u[pout])*(theta_out-theta_u[tout])))/area_pt;
+//             }
+//          }
+//       }
+//    }
+// }
 
 void poloidal_filter_methods(CArray3D<double> &input_phi) {
    CArray3D<double> Filter;
@@ -2559,16 +3153,16 @@ void radial_binomial_filter(CArray3D<double> &input) {
    CArray3D<double> Filter;
    Filter.resize(imx, jmx, kmx+1);
 
-   int i,j,k,rout,zout,rin,zin;
+   int i,j,k,rout,zout,rin,zin,m;
 
    double br = 0.0;
    double bz = 0.0;
    double dr = 0.0;
-
    double R_out,Z_out,R_in,Z_in,inner,outer,area;
 
    dr = 0.36*1.67 / (45*2); //CBC specific dr for filtering. About 3 times dx
    area = dx*dz;
+   m = 1;
 
    for(i=2;i<=imx-2;++i){
       for(j=2;j<=jmx-2;++j){
@@ -2577,6 +3171,10 @@ void radial_binomial_filter(CArray3D<double> &input) {
             if(mask(i,j) < 0.99){
                continue;
             }else{
+               // if(psi_p(i,j) < 0.01){
+               //    Filter(i,j,k) = input(i,j,k);
+               //    continue;
+               // }
                br = b0x(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
                bz = b0z(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
 
@@ -2602,7 +3200,7 @@ void radial_binomial_filter(CArray3D<double> &input) {
                         input(rin,zin+1,k)*((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin])) +
                         input(rin+1,zin+1,k)*((R_in-Rgrid[rin])*(Z_in-Zgrid[zin])))/area;
 
-               Filter(i,j,k) = (1.0/4.0) * (inner + outer + 2*input(i,j,k));
+               Filter(i,j,k) = (1.0/(2*m + 2)) * (inner + outer + 2*m*input(i,j,k));
 
                
                // cout << ((Rgrid[rin+1]-R_in)*(Zgrid[zin+1]-Z_in))/area <<' ' << ((R_in-Rgrid[rin])*(Zgrid[zin+1]-Z_in))/area << ' '<<((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin]))/area <<' '<< ((R_in-Rgrid[rin])*(Z_in-Zgrid[zin]))/area << endl;
@@ -2614,7 +3212,145 @@ void radial_binomial_filter(CArray3D<double> &input) {
    for(i=2;i<=imx-2;++i){
       for(j=2;j<=jmx-2;++j){
          for(k=0;k<=kmx;++k){
+            // if (Filter(i,j,k) != 0){
+            //    input(i,j,k) = Filter(i,j,k);
+            // }
             input(i,j,k) = Filter(i,j,k);
+         }
+      }
+   }
+}
+
+
+void median_filter(CArray3D<double>& input_phi){
+   CArray3D<double> Filter;
+   Filter.resize(imx, jmx, kmx+1);
+
+   double tau = 1.25;
+
+   for (int k=0; k<=kmx; ++k){
+      std::vector<double> vals;
+      vals.reserve(imx*jmx);
+      for (int i=2; i<=imx-2; ++i){
+         for (int j=2; j<=jmx-2; ++j){
+            if (mask(i,j) < 0.99) continue;
+            vals.push_back(input_phi(i,j,k));
+         }
+      }
+
+      if (vals.size() < 5) continue; //Boundary or too few valid points
+      auto mid = vals.begin() + vals.size()/2;
+      std::nth_element(vals.begin(), mid, vals.end());
+      double m = *mid;
+
+      std::vector<double> absdev;
+      absdev.reserve(vals.size());
+      for (double v : vals) absdev.push_back(std::abs(v - m));
+      auto mid2 = absdev.begin() + absdev.size()/2;
+      std::nth_element(absdev.begin(), mid2, absdev.end());
+      double mad = *mid2;
+
+      double sigma = 1.4826 * mad + 1e-14; // robust scale
+
+      for (int i=2; i<=imx-2; ++i) {
+         for (int j=2; j<=jmx-2; ++j){
+            if (mask(i,j)<0.99) continue;
+            double x = input_phi(i,j,k);
+            if (std::abs(x - m) > tau * sigma) {
+            // cout << "Filtering" << endl;
+               Filter(i,j,k) = m;// + clamp(x - m, -tau*sigma, tau*sigma); // replace blip by median
+            }
+         }
+      }
+   }
+   for (int i=2; i<=imx-2; ++i) {
+      for (int j=2; j<=jmx-2; ++j) {
+
+         for (int k=0; k<=kmx; ++k){
+
+            if (mask(i,j)> 0.99 && Filter(i,j,k) != 0) {
+               input_phi(i,j,k) = Filter(i,j,k);
+            }
+         }
+      }
+   }
+}
+
+void hampel_filter(CArray3D<double>& input_phi,const int &core) {
+   CArray3D<double> Filter;
+   Filter.resize(imx, jmx, kmx+1);
+
+   int w = 3;
+   double tau = 1.25;
+   if (core == 1){
+      w = 4;
+      tau = 1.05;
+   }
+
+  for (int k=0; k<=kmx; ++k) {
+    for (int i=2; i<=imx-2; ++i) {
+      for (int j=2; j<=jmx-2; ++j) {
+
+        if (mask(i,j) < 0.99) continue;
+        if (core == 1){
+           if (psi_p(i,j) > 0.025) continue;
+        }
+
+        // Collect local window values
+        std::vector<double> vals;
+        vals.reserve((2*w+1)*(2*w+1));
+
+        for (int di=-w; di<=w; ++di) {
+          for (int dj=-w; dj<=w; ++dj) {
+            int ii = i + di, jj = j + dj;
+            if (mask(ii,jj) < 0.99) continue;
+            vals.push_back(input_phi(ii,jj,k));
+          }
+        }
+
+        if (vals.size() < 5) continue; //Boundary or too few valid points
+
+        // median
+        auto mid = vals.begin() + vals.size()/2;
+        std::nth_element(vals.begin(), mid, vals.end());
+        double m = *mid;
+
+        // MAD
+        std::vector<double> absdev;
+        absdev.reserve(vals.size());
+        for (double v : vals) absdev.push_back(std::abs(v - m));
+        auto mid2 = absdev.begin() + absdev.size()/2;
+        std::nth_element(absdev.begin(), mid2, absdev.end());
+        double mad = *mid2;
+
+        double sigma = 1.4826 * mad + 1e-14; // robust scale
+        double x = input_phi(i,j,k);
+
+        if (std::abs(x - m) > tau * sigma) {
+            // cout << "Filtering" << endl;
+            Filter(i,j,k) = m + clamp(x - m, -tau*sigma, tau*sigma); // replace blip by median
+        }
+      }
+    }
+  }
+//   ofstream file;
+//   file.open("test_hampel_filter");
+//    for(int i = 2; i <= imx-2; ++i) {
+//       for(int j = 2; j <= jmx-2; ++j){
+//          file << Filter(i,j,0) << "   ";
+//       }
+//       file << "\n";
+//    }
+//    file.close();
+
+   for (int i=2; i<=imx-2; ++i) {
+      for (int j=2; j<=jmx-2; ++j) {
+
+         for (int k=0; k<=kmx; ++k){
+
+            if (mask(i,j)> 0.99 && Filter(i,j,k) != 0) {
+               input_phi(i,j,k) = Filter(i,j,k);
+            }
          }
       }
    }
@@ -2622,13 +3358,17 @@ void radial_binomial_filter(CArray3D<double> &input) {
 
 void low_mode_filter(CArray3D<double> &input_phi) {
    CArray3D<double> mode_holder;
-   mode_holder.resize(imx, jmx, kmx+1);
+   // mode_holder.resize(imx, jmx, kmx+1);
+   mode_holder.resize(imx+1,jmx+1,kmx+1);
 
    CArray3D<double> filtered;
    filtered.resize(imx, jmx, kmx+1);
 
    CArray3D<double> Filter;
    Filter.resize(imx, jmx, kmx+1);
+
+   CArray2D<double> zonal_part;
+   zonal_part.resize(imx+1, jmx+1);
 
    int rout,zout,rin,zin;
 
@@ -2660,6 +3400,15 @@ void low_mode_filter(CArray3D<double> &input_phi) {
    // printf("Testing");
 
    for(int mode=0; mode <= ((kmx+1)/2); ++mode){
+
+      for (int i = 0; i < imx; ++i) {
+         for (int j = 0; j < jmx; ++j) {
+               for (int k = 0; k <= kmx; ++k) {
+                  mode_holder(i,j,k) = 0.0;
+               }
+         }
+      }
+
       for(int i = 2; i<=imx-2; ++i){
          for(int j = 2; j<=jmx-2; ++j){
             fftw_execute_dft_r2c(plan_forward, &input_phi(i,j,0), phi_hat);
@@ -2668,7 +3417,7 @@ void low_mode_filter(CArray3D<double> &input_phi) {
                phi_hat[m][0] /= (kmx + 1);
                phi_hat[m][1] /= (kmx + 1);
                
-               if (m != mode || mode > ((kmx+1)/2)*0.8) {
+               if (m != mode || mode > ((kmx+1)/2)*0.4) {
                   phi_hat[m][0] = 0.0;
                   phi_hat[m][1] = 0.0;
                }
@@ -2685,75 +3434,89 @@ void low_mode_filter(CArray3D<double> &input_phi) {
          }
       }
 
-      if(mode < ((kmx+1)/2)*0.1){
-         // radial_binomial_filter(mode_holder);
-         // hyperdiffusion_filter(mode_holder);
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-
-                  z_4 = (mode_holder(i,j+2,k) - 4*mode_holder(i,j+1,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i,j-1,k) + mode_holder(i,j-2,k))/pow(dz,4);
-
-                  r_4 = (mode_holder(i+2,j,k) - 4*mode_holder(i+1,j,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i-1,j,k) + mode_holder(i-2,j,k))/pow(dx,4);
-                  r_3 = (mode_holder(i+2,j,k) - 2*mode_holder(i+1,j,k) + 2*mode_holder(i-1,j,k) - mode_holder(i-2,j,k))/(2*pow(dx,3));
-                  r_2 = (mode_holder(i+1,j,k) - 2*mode_holder(i,j,k) + mode_holder(i-1,j,k))/pow(dx,2);
-                  r_1 = (mode_holder(i+1,j,k) - mode_holder(i-1,j,k))/(2*dx);
-
-                  rz_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k))-(mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(2*dx*pow(dz,2));
-
-                  r_2_z_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k)) - 2*(mode_holder(i,j+1,k)-2*mode_holder(i,j,k)+mode_holder(i,j-1,k)) + (mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(pow(dx,2)*pow(dz,2));
-
-                  hyper_operator(i,j,k) = z_4 + r_4 + (2/Rgrid[i])*r_3 - (1/pow(Rgrid[i],2))*r_2 + (1/pow(Rgrid[i],3))*r_1 + (2/Rgrid[i])*rz_2 + 2*r_2_z_2;
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  // mode_holder(i,j,k)=Filter(i,j,k);
-                  mode_holder(i,j,k)=mode_holder(i,j,k) - dt*hyper_operator(i,j,k)*hyper_alpha;
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  br = b0x(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
-                  bz = b0z(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
-
-                  //Outer radial interpolation
-                  R_out = bz*dr + Rgrid[i];
-                  Z_out = Zgrid[j] - br*dr;
-                  rout = static_cast<int>((R_out-Rgrid[0])/dx);
-                  zout = static_cast<int>((Z_out-Zgrid[0])/dz);
-
-                  outer = (mode_holder(rout,zout,k)*((Rgrid[rout+1]-R_out)*(Zgrid[zout+1]-Z_out)) + 
-                           mode_holder(rout+1,zout,k)*((R_out-Rgrid[rout])*(Zgrid[zout+1]-Z_out)) +
-                           mode_holder(rout,zout+1,k)*((Rgrid[rout+1]-R_out)*(Z_out-Zgrid[zout])) + 
-                           mode_holder(rout+1,zout+1,k)*((R_out-Rgrid[rout])*(Z_out-Zgrid[zout])))/area;
-
-                  //Inner radial interpolation
-                  R_in = Rgrid[i] - bz*dr;
-                  Z_in = br*dr + Zgrid[j];
-                  rin = static_cast<int>((R_in-Rgrid[0])/dx);
-                  zin = static_cast<int>((Z_in-Zgrid[0])/dz);
-
-                  inner = (mode_holder(rin,zin,k)*((Rgrid[rin+1]-R_in)*(Zgrid[zin+1]-Z_in)) +
-                           mode_holder(rin+1,zin,k)*((R_in-Rgrid[rin])*(Zgrid[zin+1]-Z_in)) +
-                           mode_holder(rin,zin+1,k)*((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin])) +
-                           mode_holder(rin+1,zin+1,k)*((R_in-Rgrid[rin])*(Z_in-Zgrid[zin])))/area;
-                  Filter(i,j,k) = (1.0/4.0) * (inner + outer + 2*mode_holder(i,j,k));
-               }
-            }
-         }
-         for(int i = 3; i<=imx-3; ++i){
-            for(int j = 3; j<=jmx-3; ++j){
-               for(int k = 0; k<=kmx; ++k){
-                  mode_holder(i,j,k)=Filter(i,j,k);
-               }
+      if (mode == 0) {
+         zonal_part.Clear();
+         fluxavg_c_(mode_holder, zonal_part);
+         for (int i = 2; i <= imx-2; ++i) {
+            for (int j = 2; j <= jmx-2; ++j) {
+                  for (int k = 0; k <= kmx; ++k) {
+                     mode_holder(i,j,k) = zonal_part(i,j);
+                     // mode_holder(i,j,k) = 0.0;
+                  }
             }
          }
       }
+
+      // if(mode < ((kmx+1)/2)*0.01){
+      // // if(mode < ((kmx+1)/2)){
+      //    // radial_binomial_filter(mode_holder);
+      //    // hyperdiffusion_filter(mode_holder);
+      //    // for(int i = 3; i<=imx-3; ++i){
+      //    //    for(int j = 3; j<=jmx-3; ++j){
+      //    //       for(int k = 0; k<=kmx; ++k){
+
+      //    //          z_4 = (mode_holder(i,j+2,k) - 4*mode_holder(i,j+1,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i,j-1,k) + mode_holder(i,j-2,k))/pow(dz,4);
+
+      //    //          r_4 = (mode_holder(i+2,j,k) - 4*mode_holder(i+1,j,k) + 6*mode_holder(i,j,k) - 4*mode_holder(i-1,j,k) + mode_holder(i-2,j,k))/pow(dx,4);
+      //    //          r_3 = (mode_holder(i+2,j,k) - 2*mode_holder(i+1,j,k) + 2*mode_holder(i-1,j,k) - mode_holder(i-2,j,k))/(2*pow(dx,3));
+      //    //          r_2 = (mode_holder(i+1,j,k) - 2*mode_holder(i,j,k) + mode_holder(i-1,j,k))/pow(dx,2);
+      //    //          r_1 = (mode_holder(i+1,j,k) - mode_holder(i-1,j,k))/(2*dx);
+
+      //    //          rz_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k))-(mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(2*dx*pow(dz,2));
+
+      //    //          r_2_z_2 = ((mode_holder(i+1,j+1,k)-2*mode_holder(i+1,j,k)+mode_holder(i+1,j-1,k)) - 2*(mode_holder(i,j+1,k)-2*mode_holder(i,j,k)+mode_holder(i,j-1,k)) + (mode_holder(i-1,j+1,k)-2*mode_holder(i-1,j,k)+mode_holder(i-1,j-1,k)))/(pow(dx,2)*pow(dz,2));
+
+      //    //          hyper_operator(i,j,k) = z_4 + r_4 + (2/Rgrid[i])*r_3 - (1/pow(Rgrid[i],2))*r_2 + (1/pow(Rgrid[i],3))*r_1 + (2/Rgrid[i])*rz_2 + 2*r_2_z_2;
+      //    //       }
+      //    //    }
+      //    // }
+      //    // for(int i = 3; i<=imx-3; ++i){
+      //    //    for(int j = 3; j<=jmx-3; ++j){
+      //    //       for(int k = 0; k<=kmx; ++k){
+      //    //          // mode_holder(i,j,k)=Filter(i,j,k);
+      //    //          mode_holder(i,j,k)=mode_holder(i,j,k) - dt*hyper_operator(i,j,k)*hyper_alpha;
+      //    //       }
+      //    //    }
+      //    // }
+      //    for(int i = 3; i<=imx-3; ++i){
+      //       for(int j = 3; j<=jmx-3; ++j){
+      //          for(int k = 0; k<=kmx; ++k){
+      //             br = b0x(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
+      //             bz = b0z(i,j)/sqrt(pow(b0x(i,j),2)+pow(b0z(i,j),2));
+
+      //             //Outer radial interpolation
+      //             R_out = bz*dr + Rgrid[i];
+      //             Z_out = Zgrid[j] - br*dr;
+      //             rout = static_cast<int>((R_out-Rgrid[0])/dx);
+      //             zout = static_cast<int>((Z_out-Zgrid[0])/dz);
+
+      //             outer = (mode_holder(rout,zout,k)*((Rgrid[rout+1]-R_out)*(Zgrid[zout+1]-Z_out)) + 
+      //                      mode_holder(rout+1,zout,k)*((R_out-Rgrid[rout])*(Zgrid[zout+1]-Z_out)) +
+      //                      mode_holder(rout,zout+1,k)*((Rgrid[rout+1]-R_out)*(Z_out-Zgrid[zout])) + 
+      //                      mode_holder(rout+1,zout+1,k)*((R_out-Rgrid[rout])*(Z_out-Zgrid[zout])))/area;
+
+      //             //Inner radial interpolation
+      //             R_in = Rgrid[i] - bz*dr;
+      //             Z_in = br*dr + Zgrid[j];
+      //             rin = static_cast<int>((R_in-Rgrid[0])/dx);
+      //             zin = static_cast<int>((Z_in-Zgrid[0])/dz);
+
+      //             inner = (mode_holder(rin,zin,k)*((Rgrid[rin+1]-R_in)*(Zgrid[zin+1]-Z_in)) +
+      //                      mode_holder(rin+1,zin,k)*((R_in-Rgrid[rin])*(Zgrid[zin+1]-Z_in)) +
+      //                      mode_holder(rin,zin+1,k)*((Rgrid[rin+1]-R_in)*(Z_in-Zgrid[zin])) +
+      //                      mode_holder(rin+1,zin+1,k)*((R_in-Rgrid[rin])*(Z_in-Zgrid[zin])))/area;
+      //             Filter(i,j,k) = (1.0/4.0) * (inner + outer + 2*mode_holder(i,j,k));
+      //          }
+      //       }
+      //    }
+      //    for(int i = 3; i<=imx-3; ++i){
+      //       for(int j = 3; j<=jmx-3; ++j){
+      //          for(int k = 0; k<=kmx; ++k){
+      //             mode_holder(i,j,k)=Filter(i,j,k);
+      //          }
+      //       }
+      //    }
+      // }
 
       for(int i = 2; i<=imx-2; ++i){
          for(int j = 2; j<=jmx-2; ++j){
@@ -3083,6 +3846,9 @@ inline void prepareDeviceData() {
 	dpsi_dr.todev();
 	dpsi_dz.todev();
 
+   t0D.todev();
+   xn0D.todev();
+
    //integ data
    den.todev();
    upar.todev();
@@ -3113,6 +3879,9 @@ inline void freeDeviceData() {
    t0i.fromdev();
 	dpsi_dr.fromdev();
 	dpsi_dz.fromdev();
+
+   t0D.fromdev();
+   xn0D.fromdev();
 
    //integ data
    den.fromdev();

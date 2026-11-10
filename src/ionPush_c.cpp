@@ -19,6 +19,7 @@ void ppush_c_(const int &n) {
     double wx0 = 0,wx1 = 0,wy0 = 0,wy1 = 0,wz0 = 0,wz1 = 0,dum1 = 0; 
     int m = 0,i = 0,j = 0,k = 0,l = 0,k_plus_1 = 0;
 	int null_count = 0, cx_count = 0, ion_count = 0, ne_count = 0;
+	int part_sum = 0;
     double rhog = 0,vfac = 0,kapxp = 0,kapzp = 0,vpar = 0,kaptxp = 0,kapnxp = 0,kaptzp = 0,kapnzp = 0,xnp = 0;
     double b = 0,enerb = 0,ter = 0,z = 0,zeta = 0,bstar = 0;
     double x = 0;
@@ -32,6 +33,8 @@ void ppush_c_(const int &n) {
 	nudi = 0;
     //write(*,*)t0i(200,201);
     T_center = t0i(imx/2, jmx/2);
+
+	dens_weight = 0.0;
 
     updateDeviceData();
     #pragma acc data \
@@ -331,6 +334,12 @@ void ppush_c_(const int &n) {
                 + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)));
 			 //print("%lf", (xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
 		}
+		
+		if (abs(w3[m]) > 1.0){ //
+			// w3[m] = 1.0;
+			w3[m] = 0.0;
+		}
+
 		//printf("%lf", w3[m]);
 	}
     if( !((x3[m]>2*dxeq) && (x3[m]<lx-2*dxeq) && (z3[m]>2*dzeq) && (z3[m]<lz-2*dzeq)) ) {   
@@ -345,14 +354,21 @@ void ppush_c_(const int &n) {
 	// if(sqrt((x3[m]+Rgrid[0]-xctr)*(x3[m]+Rgrid[0]-xctr) + (z3[m]+Zgrid[0])*(z3[m]+Zgrid[0])) > 0.6012){
 	// 	w3[m] = 0;
 	// }	
-	
+	if(abs(w3[m]) > 1.0E-50){
+		dens_weight += w3[m];
+		part_sum    += 1;
 	}
+
+	}
+
+	dens_weight = dens_weight/part_sum;
+
 	updateHostData();
 
-	ofstream collision_diagnostic;
-	collision_diagnostic.open("test_collisions", ios::app);
-	collision_diagnostic << timestep << "    " << null_count << "    " << cx_count << "    " << ne_count << "    " << ion_count << "\n";
-	collision_diagnostic.close();
+	// ofstream collision_diagnostic;
+	// collision_diagnostic.open("test_collisions", ios::app);
+	// collision_diagnostic << timestep << "    " << null_count << "    " << cx_count << "    " << ne_count << "    " << ion_count << "\n";
+	// collision_diagnostic.close();
 
 	end_ppush_tm = MPI_Wtime();
 	ppush_tm = ppush_tm + end_ppush_tm - start_ppush_tm;
@@ -370,7 +386,8 @@ void cpush_c_(const int &timestep){
 //-----------------------------------------------------------------------
 	double exp1,ezp,ezetap,delbxp,delbzp,nudi0,ni_temp,ti_temp,T_center;                          //nudi=0,energy,rrr,energy0
 	double wx0,wx1,wy0,wy1,wz0,wz1,dum1;                                                  //dum,vxdum,vzdum,vzetadum
-	int m,i,j,k,l,k_plus_1=0;                                                             //p_m,
+	int m,i,j,k,l,k_plus_1=0;      
+	int part_sum=0;                                                       //p_m,
 	double rhog,vfac,kapxp,kapzp,vpar,kaptxp,kapnxp,kaptzp,kapnzp,xnp;                    //pidum,bdcurlbp
 	double b,enerb,ter,x,z,zeta;                                                          //th,r,qr
 	double xt,zt,xdot,zdot,zetadot,pzdot,edot;                                            //xs,xdt,ydt,pzd0,vp0,vcurlbdotE
@@ -382,6 +399,7 @@ void cpush_c_(const int &timestep){
 	start_cpush_tm = MPI_Wtime();
 	nudi0 = 1/sqrt(2.0)*18.4*pow(e,1.5)*(4.7140e-8)*(1.e-6);
 	T_center = t0i(imx/2,jmx/2);
+	dens_weight = 0.0;
 
 	Q_flux = 0;
 	G_flux = 0;
@@ -531,7 +549,7 @@ void cpush_c_(const int &timestep){
 	delbxp = delbxp*0.25;
 	delbzp = delbzp*0.25;
        
-	vfac = 0.5*(mims[0]*(u2[m] * u2[m]) + 2.*mu[m]*b);
+	vfac = 0.5*(mims[0]*(u3[m] * u3[m]) + 2.*mu[m]*b);
 	kapxp = kapnxp - (1.5-vfac/ter)*kaptxp;
 	kapzp = kapnzp - (1.5-vfac/ter)*kaptzp;        
 
@@ -570,7 +588,7 @@ void cpush_c_(const int &timestep){
 // !         write(*,*)dbdzetap
 	xdot = (vpar*BStar3[0]+(mu[m]*(bfldzp*dbdzetap-bfldzetap*dbdzp)/q[0]+(ezp*bfldzetap-ezetap*bfldzp)*nonlin)/(b))/bstar;
 	zdot = (vpar*BStar3[1]+(mu[m]*(bfldzetap*dbdxp-bfldxp*dbdzetap)/q[0]+ (ezetap*bfldxp-exp1*bfldzetap)*nonlin)/(b))/bstar;
-	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x2[m]+(xctr-0.5*xdim));
+	zetadot = (vpar*BStar3[2]+(mu[m]*(bfldxp*dbdzp-bfldzp*dbdxp)/q[0]+(exp1*bfldzp-ezp*bfldxp)*nonlin)/(b))/bstar/(x3[m]+(xctr-0.5*xdim));
 
 // !        pzd0 = -mu(m)/mims(1)/b*(bfldxp*dbdxp+bfldzp*dbdzp)
 // !         pzdot = pzd0+(exp1*bfldxp+ezp*bfldzp+ezetap*bfldzetap)/b*q(1)/mims(1)*nonlin
@@ -581,7 +599,7 @@ void cpush_c_(const int &timestep){
 	// pzdot = (BStar3[0]*(q[0]*exp1-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap-mu[m]*dbdzetap))/(mims[0]*bstar);
 	pzdot = (BStar3[0]*(q[0]*exp1*nonlin-mu[m]*dbdxp)+BStar3[1]*(q[0]*ezp*nonlin-mu[m]*dbdzp)+BStar3[2]*(q[0]*ezetap*nonlin-mu[m]*dbdzetap))/(mims[0]*bstar);
 
-	edot = q[0]*(xdot*exp1 + zdot*ezp + zetadot*(x2[m]+(xctr-0.5*xdim))*ezetap);
+	edot = q[0]*(xdot*exp1 + zdot*ezp + zetadot*(x3[m]+(xctr-0.5*xdim))*ezetap);
 
 	x3[m] = x2[m] + dt*xdot;
 	z3[m] = z2[m] + dt*zdot;
@@ -623,10 +641,15 @@ void cpush_c_(const int &timestep){
                         + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp));
 			} else {
 				// w3[m] = w2[m] + dt*((1-w2[m])*(xdot*(kapnxp + (energy0/(ti_temp) - 3/2)*kaptxp) + zdot*(kapnzp + (energy0/(ti_temp) - 3/2)*kaptzp) + edot/(ti_temp)));
-				w3[m] = w2[m] + dt*((1-w2[m])*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
+				w3[m] = w2[m] + dt*((1-w3[m])*(((ezp*bfldzetap-ezetap*bfldzp)/(b*bstar))*(kapnxp + (energy0/(ti_temp) - 3.0/2.0)*kaptxp) 
                 + ((ezetap*bfldxp-exp1*bfldzetap)/(b*bstar))*(kapnzp + (energy0/(ti_temp) - 3.0/2.0)*kaptzp) + edot/(ti_temp)));
 			}
 			//printf("%lf", w3[m]);
+
+			if (abs(w3[m]) > 1.0){ // If threshold is passed, particle transitions
+				// w3[m] = 1.0;
+				w3[m] = 0.0;
+			}
 		}
 		
 		w2[m]=w3[m];
@@ -642,6 +665,10 @@ void cpush_c_(const int &timestep){
 		w3[m]=0.;
 	}
 
+	if(abs(w3[m]) > 1.0E-50){
+		dens_weight += w3[m];
+		part_sum    += 1;
+	}
 	// CBC SPECIFIC
 	// if(sqrt((x3[m]+Rgrid[0]-xctr)*(x3[m]+Rgrid[0]-xctr) + (z3[m]+Zgrid[0])*(z3[m]+Zgrid[0])) > 0.6012){
 	// 	w3[m] = 0;
@@ -652,6 +679,7 @@ void cpush_c_(const int &timestep){
 	G_flux = G_flux + gw[m]*w3[m]*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
 	P_flux = P_flux + w3[m]*(mims[0]*u3[m])*((ezp*bfldzetap-ezetap*bfldzp)*dpsidxp + (ezetap*bfldxp-exp1*bfldzetap)*dpsidzp)/(sqrt(pow(dpsidxp,2) + pow(dpsidzp,2))*b*bstar);
   }
+  dens_weight = dens_weight/part_sum;
   updateHostData();
 
   ofstream fluxDiag;
