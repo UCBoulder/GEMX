@@ -17,7 +17,9 @@ INTERFACE
 END INTERFACE
 
 integer :: imx,jmx,kmx,mmx,nmx,nsmx,nsubd=8,ntube=4,petsc_color,petsc_rank,iBoltzmann,globle_integer=0,eBoltzmann,eAdiabatic,iterations, nstep_E,iSOLPS_phi,ielectron,izeta,imoving_blob,random_walk
+real(8) :: coll_prim,coll_seco
 integer,dimension(0:10006):: rand_table
+real,dimension(0:10006):: rand_var1,rand_var2,neut_vpar,neut_vperp2
 	 character*70 outname
 	 REAL(8) :: endtm,begtm,pstm,a_div, b_div,Ablob0,dbR,dbZ,dbzeta,Rblob0,ndRb,lambda_n
 	 REAL(8) :: starttm,lasttm,tottm,dpsi,Z_X
@@ -28,7 +30,7 @@ integer,dimension(0:10006):: rand_table
 !          nmx         = max. no. of time steps
 !          nsmx        = max. no. of species (including tracer particles
 
-INTEGER,dimension(:),allocatable :: mm,tmm,lr,hit_t
+INTEGER,dimension(:),allocatable :: mm,tmm,lr,hit_t,nc_t,hit_t_perp,hit_t_para,small_nu_max
 REAL(8),dimension(:),allocatable :: mims,q
 INTEGER :: timestep,iseed,iez,smooth_order,idpsi,imid_plane
 
@@ -36,8 +38,8 @@ real(8),dimension(:),allocatable :: time
 REAL(8) :: dx,dz,dzeta,pi,pi2,dt,totvol,n0,tcurr
 REAL(8) :: etaohm,xmid_plane,zmid_plane
 REAL(8) :: lx,lz
-INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision,ics
-REAL(8) :: cut,amp,tor,amie,emass,qel,rneu
+INTEGER :: nm,nsm,ncurr,iflr,ifield_solver,ntracer,i3D,icollision,ncollision,ics
+REAL(8) :: cut,amp,tor,amie,emass,qel,rneu,eng_tot,tot_hit,cx_hit,T_perp,T_par
 INTEGER :: iput,iget,idg,ision,isham,peritr,iadi,xpoint_i_10,xpoint_j_10
 real(8), dimension(:,:,:), allocatable :: phi_k, dphidr, dphi_kdr, d2phidr2, d2phi_kdr2, dphidz, dphi_kdz, d2phidz2, d2phi_kdz2, OPPphi, OPPphik, l_hand, r_hand  !!!!!!!!!! why these 3D? -zhichen
 
@@ -119,9 +121,10 @@ save
 contains
 subroutine new_gemx_com()
 
-allocate(mm(nsmx),tmm(nsmx),lr(nsmx),hit_t(mmx))
+allocate(mm(nsmx),tmm(nsmx),lr(nsmx),hit_t(mmx),nc_t(mmx),hit_t_perp(mmx),hit_t_para(mmx),small_nu_max(mmx))
 allocate(mims(nsmx),q(nsmx))
-allocate(time(0:nmx),hit_div(mmx,3))
+allocate(time(0:nmx),hit_div(mmx,3),hit_t_temp(mmx,2))
+allocate(nc_counts(mmx,4))
 
       ALLOCATE( den(2,0:imx,0:jmx,0:kmx))
       
