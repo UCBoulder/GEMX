@@ -14,6 +14,7 @@ MODULE equil
       
       real,dimension(:,:),allocatable :: b0,b0x,b0z,b0zeta,dbdx,dbdz,c2_over_vA2
       real,dimension(:,:),allocatable :: t0i,t0e,xn0i,xn0e,captix,captex,capnix,capnex,captiz,captez,capniz,capnez
+	  real,dimension(:,:),allocatable :: xn0n,t0n
       
       real,dimension(:),allocatable :: psi,f,psip,sf,zetab_table,&
                                       vpari,vparip, &
@@ -73,7 +74,9 @@ contains
       allocate(b0(0:nx,0:nz),b0x(0:nx,0:nz),b0z(0:nx,0:nz),b0zeta(0:nx,0:nz),dbdx(0:nx,0:nz),dbdz(0:nx,0:nz))
       allocate(t0i(0:nx,0:nz),t0e(0:nx,0:nz),xn0i(0:nx,0:nz),xn0e(0:nx,0:nz), &
                capnix(0:nx,0:nz),capnex(0:nx,0:nz),captix(0:nx,0:nz),captex(0:nx,0:nz), &
-               capniz(0:nx,0:nz),capnez(0:nx,0:nz),captiz(0:nx,0:nz),captez(0:nx,0:nz))      
+               capniz(0:nx,0:nz),capnez(0:nx,0:nz),captiz(0:nx,0:nz),captez(0:nx,0:nz))
+
+     allocate(xn0n(0:nx,0:nz),t0n(0:nx,0:nz))
 
       allocate(curlb(0:nx,0:nz,3))
       
@@ -211,6 +214,22 @@ contains
       nu = 1e20
       beta = 4*3.14159*1e-7*nu*Tu/Bu**2
 
+      open(unit=10, file = 'nn0.dat',status='old',action='read')
+      read(10,*) xn0n
+      close(10)
+
+      open(unit=10, file = 'tn0.dat',status='old',action='read')
+      read(10,*) t0n
+      close(10)
+
+      open(unit=10, file = 'ti0.dat',status='old',action='read')
+      read(10,*) t0i
+      close(10)
+
+      open(unit=10, file = 'te0.dat',status='old',action='read')
+      read(10,*) t0e
+      close(10)
+
 
       !     assign T, n profiles 
       do i = 0,nx
@@ -219,6 +238,9 @@ contains
             t0e(i,j) = 0.2*Tu
             xn0i(i,j) = 1.*nu
             xn0e(i,j) = 1.*nu
+
+            xn0n(i,j) = xn0n(i,j)*nu
+            t0n(i,j) = t0n(i,j)*Tu
          end do
       end do
 
