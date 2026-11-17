@@ -15,6 +15,7 @@
        integer :: n,i,j,k,ip,m,outk,ix=135,jx=68,nb
        integer :: iter !Calder Edit
 
+       real :: nvpar,nvperp2
        real::random,tot_loss_eng=0,tot_loss_E_ini=0
        real :: tmp, tempw0,tempw1,tempBzeta,tempBR,tempBz,tempER,tempEz,tempEzeta,wk0,wk1
   !     PetscInt is,js,iw,jw,idx,n_in_porcs
@@ -38,6 +39,12 @@
        ntracer=mmx
        hit_div=0
        hit_t = 0
+       hit_t_perp = 0
+       hit_t_para = 0
+       hit_t_temp = 0
+       small_nu_max = 0
+       nc_counts = 0
+       nc_t = 0
   outk=0!(kmx+1)/2
    
    !    one = 1
@@ -264,6 +271,17 @@
   start_total_tm = MPI_WTIME()
   do  timestep=ncurr,nm
      do i=0,10006
+
+        rand_var1(i) = ran2(iseed)
+          rand_var2(i) = ran2(iseed)
+
+         !  if (ncollision /= 0) then
+            call parperp(nvpar,nvperp2,i+1,pi,cnt,MyId)
+            
+            neut_vpar(i)   = nvpar
+            neut_vperp2(i) = nvperp2
+         !  end if
+
           if (ran2(iseed)-0.5>0) then
              rand_table(i)=1
           else
@@ -868,6 +886,8 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) ielectron,q,nplot,xnplt
       read(115,*) dumchar
+      read(115,*) coll_prim,coll_seco
+      read(115,*) dumchar
       read(115,*) cut,amp,tor,Bu
       read(115,*) dumchar
       read(115,*) etaohm,iflr,nzeta_blob,ntern_blob,Ablob0,dbZ,dbR,dbzeta,Rblob0,imoving_blob,ndRb,nblob
@@ -876,7 +896,7 @@ total_tm = total_tm + end_total_tm - start_total_tm
       read(115,*) dumchar
       read(115,*) beta,nonlin,nonline,vcut
       read(115,*) dumchar
-      read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,eAdiabatic,iterations,icollision
+      read(115,*) ntracer,ifield_solver,i3D,iBoltzmann,eAdiabatic,iterations,icollision,ncollision
       read(115,*) dumchar    !Calder Edit: eBoltzmann
       read(115,*) eBoltzmann !Calder Edit: eBoltzmann
       read(115,*) dumchar
