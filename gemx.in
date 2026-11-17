@@ -26,8 +26,8 @@
 'beta       nonlin   nonline  vcur'
 0.124e-2       1       0      15.0
 
-'ntracer    ifield_solver    i3D     iBolztmann   eAdiabatic   iterations    icollision'
-10            0                     0            1                     1	              0             0		
+'ntracer    ifield_solver    i3D     iBolztmann   eAdiabatic   iterations    icollision     ncollision'
+10            0                     0            1                     1	              0             0     0		
 
 'eBoltzmann'
 0
