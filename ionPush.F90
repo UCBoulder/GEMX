@@ -14,6 +14,10 @@
       REAL(8) :: xt,zt,xdot,zdot,zetadot,xdt,ydt,pzdot,edot,pzd0,vp0
       REAL(8) :: dbdxp,dbdzp,bfldp,bfldxp,bfldzp,bfldzetap,vcurlbdotE,dbdzetap=0
       REAL(8) :: rhox(4),rhoy(4),psp,pzp,curlbp(3),Bstar3(3),tempb(60)
+      REAL(8) :: sigma_cx,sigma_ion,sigma_ne,nu_cx,nu_ion,nu_ne,nu_max,v_rel,n_neutral,t_neutral,cE,t_c,u_neut,mu_neut
+      REAL(8) :: sigma_ee,sigma_ei,nu_ee,nu_ei,eE,uavg,eng
+      INTEGER :: cx_count,ion_count,ne_count,null_count,ee_count,ei_count
+      INTEGER :: ir, ir2, ir3, ir4
 !      real(8),dimension(3)::curlbp,Bstar3
       start_ppush_tm = MPI_WTIME()
 
@@ -22,9 +26,20 @@
 !      write(*,*)t0i(200,201)
        T_center = t0i(imx/2,jmx/2)
        dzetab=2*pi/nzeta_blob!zetab_table(2)-zetab_table(1)
+       eng_tot = 0
+       tot_hit = 0
+       cx_hit  = 0
+       T_perp  = 0
+       T_par   = 0
+       uavg    = 0
+
+!$acc parallel loop reduction(+:uavg)
+       do m=1,mm(1)
+        uavg = uavg + u2(m)/mm(1)
+      end do
 
        
-!$acc parallel loop gang vector private(rhoy,Bstar3,rhox,curlbp,tempb) copy(rand_table)
+!$acc parallel loop gang vector private(rhoy,Bstar3,rhox,curlbp,tempb) reduction(+:eng_tot,tot_hit,cx_hit,T_perp,T_par) copy(rand_table,rand_var1,rand_var2,neut_vpar,neut_vperp2)
       do m=1,mm(1)
          x=x2(m)
          i = int(x/dxeq)
@@ -66,7 +81,9 @@
          bfldzetap = wx0*wz0*b0zeta(i,k)+wx0*wz1*b0zeta(i,k+1) &
                  +wx1*wz0*b0zeta(i+1,k)+wx1*wz1*b0zeta(i+1,k+1) 
          ter = wx0*wz0*t0i(i,k)+wx0*wz1*t0i(i,k+1) &
-                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1) 
+                 +wx1*wz0*t0i(i+1,k)+wx1*wz1*t0i(i+1,k+1)
+        tee = wx0*wz0*t0e(i,k)+wx0*wz1*t0e(i,k+1) &
+                 +wx1*wz0*t0e(i+1,k)+wx1*wz1*t0e(i+1,k+1)
          kaptxp = wx0*wz0*captix(i,k)+wx0*wz1*captix(i,k+1) &
                  +wx1*wz0*captix(i+1,k)+wx1*wz1*captix(i+1,k+1) 
          kapnxp = wx0*wz0*capnix(i,k)+wx0*wz1*capnix(i,k+1) &
@@ -98,6 +115,7 @@
 !               write(*,*) psiparticle, u2(m), (mu(m)*b+0.5*mims(1)*u2(m)**2)
                hit_div(m,:)= (/psiparticle,u2(m), mu(m)*b+0.5*mims(1)*u2(m)**2/)
                hit_t(m) = timestep
+               hit_t_temp(m,:)= (/abs(b*mu(m)/q(1)),(mims(1)/(abs(q(1))))*(u2(m)-uavg)**2/)
 !               hit_div(m,2)= u2(m)
 !               hit_div(m,3)= mu(m)*b+0.5*mims(1)*u2(m)**2
             end if
@@ -131,6 +149,185 @@
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of pitch angle collision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!         
         
    
+        !!!!! Calder's neutral collisions !!!!!!!
+        ! All collision cross sections come from EIRENE documentation
+         null_count = 0
+         cx_count   = 0
+         ion_count  = 0
+         ne_count   = 0
+         ee_count   = 0
+         ei_count   = 0
+        if (ncollision == 1 .and. w2(m)>1e-100) then !Need to add scattering for both species
+
+             ir = mod(mod(timestep,10007)*mod(mm(1),10007) + mod(m,10007), 10007)
+             if (ir == 10007) ir = 0
+
+             ir2 = mod(ir + 37, 10007)
+             if (ir2 == 10007) ir2 = 0
+
+             ir3 = mod(ir2 + 37, 10007)
+             if (ir3 == 10007) ir3 = 0
+
+             ir4 = mod(ir3 + 37, 10007)
+             if (ir4 == 10007) ir4 = 0
+
+             nu_max = 1/(20*dt)
+
+             n_neutral = wx0*wz0*xn0n(i,k)+wx0*wz1*xn0n(i,k+1) &
+                           +wx1*wz0*xn0n(i+1,k)+wx1*wz1*xn0n(i+1,k+1)
+             t_neutral = wx0*wz0*t0n(i,k)+wx0*wz1*t0n(i,k+1) &
+                           +wx1*wz0*t0n(i+1,k)+wx1*wz1*t0n(i+1,k+1)
+
+             u_neut    = neut_vpar(ir3)/sqrt((2.0*1.67e-27)/t_neutral)
+             mu_neut   = 0.5*neut_vperp2(ir3)/bfldp*t_neutral
+                        
+        !      v_rel = sqrt((u2(m)*u2(m) + 2*mu(m)*bfldp/mims(1)) + 3.0*(1.6e-19*t_neutral)/(2.0*1.67e-27))
+             v_rel = sqrt((u2(m)*u2(m) + 2*mu(m)*bfldp/mims(1)) + (u_neut*u_neut + 2*mu_neut*bfldp/(2.0*1.67e-27)) &
+                         - 2*u2(m)*u_neut - 4*bfldp*sqrt((mu(m)*mu_neut)/(mims(1)*2.0*1.67e-27))*cos(pi2*ir4))
+             
+             if (ielectron == 0) then
+             ! Ion-Neutral Collisions        
+
+             !Select candidates
+             if (rand_var1(ir) < (1.0 - exp(-nu_max*dt))) then
+                tot_hit = tot_hit + 1
+        
+                cE    = 0.25*mims(1)*v_rel*v_rel/(2.014102*1000*e) !Want in units of (keV/amu)
+
+                !Approximation for collision cross sections
+		!charge exchange, n=1, EIRENE experimental fit
+		sigma_cx  = (3.2345*log((235.88/cE) + 2.3713))/(1 + 0.038371*cE + 3.8068*1e-6*cE**3.5 + 1.1832*1e-10*cE**5.4)*(1e-20)
+
+		!ionization, n=1, EIRENE experimental fit
+		sigma_ion = 2.016*1e-3*(((cE**3.7154*exp(-3.989*1e-2*cE))/(1+0.31413*cE**2.1254))+(6.399*1e3*exp(-61.897/cE)*log(1+9.2731*1e3*cE))/cE)*(1e-20)
+				
+		!neutral excitation,1s to 2s transition, EIRENE experimental fit
+		sigma_ne  = 10.082*((9.5185*1e-4*exp(-0.60403*cE))/cE**-2.7993 + (8.7513*1e-3*exp(-12.125/cE))/(1+1.1038*1e-6*cE**3.1597) + exp(-45.483/cE)/cE)*(1e-20)
+               
+                nu_cx  = coll_prim*n_neutral*sigma_cx*v_rel
+                nu_ion = n_neutral*sigma_ion*v_rel
+                nu_ne  = coll_seco*n_neutral*sigma_ne*v_rel
+
+                if(nu_cx+nu_ion+nu_ne > nu_max) then
+                    small_nu_max(m) = small_nu_max(m) + 1
+                end if
+                
+                if (rand_var2(ir2) < nu_cx/nu_max) then
+                    cx_count = 1
+
+                    u2(m) = u_neut
+                    mu(m) = mu_neut
+
+                else if (rand_var2(ir2) < (nu_cx+nu_ion)/nu_max) then
+                        ion_count = 1
+                        ! Need to add, ion and electron
+                else if (rand_var2(ir2) < (nu_cx+nu_ion+nu_ne)/nu_max) then
+                    ne_count = 1 
+                !     u2(m) = u2(m)*sqrt(abs(((0.5*mims(1)*v_rel*v_rel)/1.6e-19)-10.2)/((0.5*mims(1)*v_rel*v_rel)/1.6e-19))
+                !     mu(m) = mu(m)*(abs(((0.5*mims(1)*v_rel*v_rel)/1.6e-19)-10.2))/((0.5*mims(1)*v_rel*v_rel)/1.6e-19)
+                    eng = 0.5*mims(1)*u2(m)*u2(m)+mu(m)*bfldp
+                    u2(m) = u2(m)*sqrt(abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19))
+                    mu(m) = mu(m)*abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19)
+                else
+                        null_count = 1
+                end if
+             end if
+        else
+                !Electron-Neutral collisions
+                if (rand_var1(ir) < (1.0 - exp(-nu_max*dt))) then
+                     tot_hit = tot_hit + 1
+
+                     eE = (0.5*(mims(1)*2.0*1.67e-27/(mims(1)+2.0*1.67e-27))*v_rel*v_rel)/1.6e-19 !Relative kinetic energy (eV)
+
+                     !Excitation,1s to n=2 transition, EIRENE experimental fit  
+		!      sigma_ee  = (5.984/eE)*(0.88606 - (2.799/(eE/10.2)) + (5.9451/(eE/10.2)**2) - (7.6948/(eE/10.2)**3) + (4.4152/(eE/10.2)**4))*(1e-20)
+                     sigma_ee = (5.984/eE)*(4.4979*log(eE/10.2) + 1.4182 - (20.877/(eE/10.2)) + (49.735/(eE/10.2)**2) - (46.249/(eE/10.2)**3) + (17.442/(eE/10.2)**4))*(1e-20)
+
+                     !Ionization
+                     sigma_ei  = (1/(13.6*eE))*(0.18450*log(eE/13.6) - 0.032226*(1-13.6/eE) - 0.034539*(1-13.6/eE)**2 + 1.4003*(1-13.6/eE)**3 - 2.8115*(1-13.6/eE)**4 + 2.2986*(1-13.6/eE)**5)*(1e-17)
+                
+                     nu_ee  = coll_prim*n_neutral*sigma_ee*v_rel
+                     nu_ei  = coll_seco*n_neutral*sigma_ei*v_rel
+
+                     if(nu_ee+nu_ei > nu_max) then
+                        small_nu_max(m) = small_nu_max(m) + 1
+                     end if
+
+                     if (rand_var2(ir2) < nu_ee/nu_max) then
+                        ! ee_count = ee_count + 1
+                        !Excitation energy removed from electron
+                        if(eE > 10.2)then
+                                cx_count = 1
+                                eng = 0.5*mims(1)*u2(m)*u2(m)+mu(m)*bfldp
+                                ! u2(m) = u2(m)*sqrt(abs(eE-10.2)/eE)
+                                u2(m) = u2(m)*sqrt(abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19))
+                                mu(m) = mu(m)*abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19)
+                        end if
+                        
+                        else if (rand_var2(ir2) < (nu_ee+nu_ei)/nu_max) then
+                                ei_count = ei_count + 1
+                                ! Need to add, ion and electron
+                        else
+                                null_count = null_count + 1
+                     end if
+                end if
+        end if
+        end if
+
+        if (ncollision == 2) then
+
+                ir = mod(mod(timestep,10007)*mod(mm(1),10007) + mod(m,10007), 10007)
+                if (ir ==  10007) ir = 0
+
+                ir2 = mod(ir + 37, 10007)
+                if (ir2 ==  10007) ir2 = 0
+
+                ir3 = mod(ir2 + 37, 10007)
+                if (ir3 == 10007) ir3 = 0
+
+                ir4 = mod(ir3 + 37, 10007)
+                if (ir4 == 10007) ir4 = 0
+
+                n_neutral = wx0*wz0*xn0n(i,k)+wx0*wz1*xn0n(i,k+1) &
+                           +wx1*wz0*xn0n(i+1,k)+wx1*wz1*xn0n(i+1,k+1)
+                t_neutral = wx0*wz0*t0n(i,k)+wx0*wz1*t0n(i,k+1) &
+                           +wx1*wz0*t0n(i+1,k)+wx1*wz1*t0n(i+1,k+1)
+
+                u_neut    = neut_vpar(ir3)/sqrt((2.0*1.67e-27)/t_neutral)
+                mu_neut   = 0.5*neut_vperp2(ir3)/bfldp*t_neutral
+                        
+                v_rel = sqrt((u2(m)*u2(m) + 2*mu(m)*bfldp/mims(1)) + (u_neut*u_neut + 2*mu_neut*bfldp/(2.0*1.67e-27)) &
+                           - 2*u2(m)*u_neut - 4*bfldp*sqrt((mu(m)*mu_neut)/(mims(1)*2.0*1.67e-27))*cos(pi2*ir4))
+                
+                ! cE    = 0.25*mims(1)*v_rel*v_rel/(2.014102*1000*e)
+                eE = (0.5*(mims(1)*2.0*1.67e-27/(mims(1)+2.0*1.67e-27))*v_rel*v_rel)/1.6e-19 !Relative kinetic energy (eV)
+
+                ! sigma_cx  = (3.2345*log((235.88/cE) + 2.3713))/(1 + 0.038371*cE + 3.8068*1e-6*cE**3.5 + 1.1832*1e-10*cE**5.4)*(1e-20)
+                sigma_ee = (5.984/eE)*(4.4979*log(eE/10.2) + 1.4182 - (20.877/(eE/10.2)) + (49.735/(eE/10.2)**2) - (46.249/(eE/10.2)**3) + (17.442/(eE/10.2)**4))*(1e-20)
+                
+                ! nu_cx  = n_neutral*sigma_cx*v_rel
+                nu_ee  = coll_prim*n_neutral*sigma_ee*v_rel
+
+                if (rand_var1(ir) < (1.0-exp(-nu_ee*dt))) then
+
+                        if(eE > 10.2)then
+                        cx_count = 1
+                        eng = 0.5*mims(1)*u2(m)*u2(m)+mu(m)*bfldp
+                        u2(m) = u2(m)*sqrt(abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19))
+                        mu(m) = mu(m)*abs((eng)/1.6e-19 - 10.2)/((eng)/1.6e-19)
+                        end if
+                end if
+        end if
+        ! tot_hit = tot_hit + null_count +ion_count+ne_count+cx_count
+        ! Diagnostics
+        cx_hit  = cx_hit + cx_count
+        eng_tot = eng_tot + mu(m)*b + 0.5*mims(1)*u2(m)**2 + q(1)*phi_particle
+
+        T_perp  = T_perp + abs((b/mm(1))*mu(m)/q(1))
+        ! T_par   = T_par  + (mims(1)/(abs(q(1))*mm(1)))*(u2(m)+SIGN(1.0,q(1))*sqrt(tee/mims(1)))**2
+        T_par   = T_par  + (mims(1)/(abs(q(1))*mm(1)))*(u2(m)-uavg)**2
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           
          rhog=sqrt(2.*b*mu(m)*mims(1))/(q(1)*b)*iflr
